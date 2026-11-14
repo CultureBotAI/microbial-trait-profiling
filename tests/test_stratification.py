@@ -446,7 +446,10 @@ def test_run_stratification_pipeline_e2e(tmp_path: Path) -> None:
         "NCBITaxon:1\t1\t1\n"
         "NCBITaxon:2\t1\t0\n"
         "NCBITaxon:3\t0\t1\n"
-        "NCBITaxon:4\t1\t1\n",
+        "NCBITaxon:4\t1\t1\n"
+        "NCBITaxon:5\t1\t0\n"
+        "NCBITaxon:6\t0\t1\n"
+        "NCBITaxon:7\t0\t0\n",
         encoding="utf-8",
     )
 
@@ -536,7 +539,10 @@ def test_run_stratification_pipeline_single_site(tmp_path: Path) -> None:
         "NCBITaxon:1\t1\t1\n"
         "NCBITaxon:2\t1\t0\n"
         "NCBITaxon:3\t0\t1\n"
-        "NCBITaxon:4\t1\t1\n",
+        "NCBITaxon:4\t1\t1\n"
+        "NCBITaxon:5\t1\t0\n"
+        "NCBITaxon:6\t0\t1\n"
+        "NCBITaxon:7\t0\t0\n",
         encoding="utf-8",
     )
 
@@ -797,7 +803,7 @@ def test_report_only_export_preserves_unavailable_denominator(tmp_path: Path) ->
 def test_zero_discoveries_are_distinct_from_zero_tests(tmp_path: Path, draw_count: int) -> None:
     """An empty selected ranking never erases the analyzer's eligible universe."""
     matrix = tmp_path / "matrix.tsv"
-    matrix.write_text("taxon_id\tNull\nNCBITaxon:1\t1\nNCBITaxon:2\t0\n")
+    matrix.write_text("taxon_id\tNull\nNCBITaxon:1\t1\nNCBITaxon:2\t0\nNCBITaxon:3\t0\n")
     profiles = tmp_path / "profiles.tsv"
     profiles.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tNull\n"

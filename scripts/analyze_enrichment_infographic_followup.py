@@ -44,7 +44,7 @@ PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 # Taken from each profile's own experiment in the profile metadata table (#555, #688).
 PROFILE_LABEL_COLUMNS = ["condition", "body_site", "location", "host_species"]
 MISSING_TITLE = "(title missing from the pinned study table)"
-TARGET_CONDITIONS = (
+TARGET_CONDITIONS: tuple[str, ...] = (
     "Thalassemia",
     "Sleep Disorder",
     "Head and neck squamous cell carcinoma",
@@ -84,6 +84,16 @@ DIRECTION_TO_INC_DEC = {"increased": "inc", "decreased": "dec"}
 INC_DEC_TO_DIRECTION = {"inc": "increased", "dec": "decreased"}
 MATRIX_METADATA_COLUMNS = ["taxon_id", "taxon_name", "taxonomic_rank"]
 PREFERRED_HEATMAP_RANKS = {"genus", "species", "strain"}
+COMPANION_HEATMAP_PALETTE_COLORS: tuple[str, ...] = (
+    "#c2410c",
+    "#60a5fa",
+    "#eab308",
+    "#3b0764",
+    "#7f1d1d",
+    "#ab7578",
+    "#86efac",
+    "#300012",
+)
 METAPHLAN_RANK_MAP = {
     "k__": "superkingdom",
     "p__": "phylum",
@@ -94,6 +104,18 @@ METAPHLAN_RANK_MAP = {
     "s__": "species",
     "t__": "strain",
 }
+
+
+def validate_companion_heatmap_condition_count(condition_count: int) -> None:
+    """Refuse condition counts that exceed the distinct companion-heatmap palette size."""
+    max_conditions = len(COMPANION_HEATMAP_PALETTE_COLORS)
+    if condition_count > max_conditions:
+        msg = (
+            f"The companion heatmap has {max_conditions} distinct condition colours; "
+            f"{condition_count} conditions would reuse one. Use "
+            f"--top-paired-conditions {max_conditions} or fewer."
+        )
+        raise ValueError(msg)
 
 
 def clean_text(value: object) -> str:
@@ -117,6 +139,8 @@ def compact_label(value: object, max_length: int = 44) -> str:
 
 def format_optional_float(value: object, digits: int = 2) -> str:
     """Format optional numeric values for Markdown tables."""
+    if not isinstance(value, (int, float, str)):
+        return ""
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -572,7 +596,7 @@ def compute_condition_centroids(
         if norm <= 0:
             continue
         centroid = centroid / norm
-        centroids[condition] = centroid.astype("float32")
+        centroids[str(condition)] = centroid.astype("float32")
         records.append(
             {
                 "condition": condition,
@@ -1086,7 +1110,7 @@ def build_traits_vs_organisms_heatmap(
 
         taxa_metadata = ranked_taxa.loc[selected_taxa].copy()
         taxa_metadata["display_condition"] = [
-            display_conditions.get(taxon_id, clean_text(row["dominant_condition"]))
+            display_conditions.get(str(taxon_id), clean_text(row["dominant_condition"]))
             for taxon_id, row in taxa_metadata.iterrows()
         ]
     else:
@@ -1110,7 +1134,7 @@ def display_taxon_label(taxon_id: str, taxa_metadata: pd.DataFrame) -> str:
     name = clean_text(row["taxon_name"])
     if name.startswith("taxon_"):
         name = taxon_id
-    label = f"{name} ({int(row['target_profile_count'])} profiles)"
+    label = f"{name} ({int(clean_text(row['target_profile_count']))} profiles)"
     return compact_label(label, 64)
 
 
@@ -1132,36 +1156,29 @@ def save_traits_vs_organisms_heatmap(
         trait_metadata.loc[trait_id, "heatmap_label"] for trait_id in display_matrix.columns
     ]
 
-    palette_colors = [
-        "#c2410c",
-        "#60a5fa",
-        "#eab308",
-        "#3b0764",
-        "#7f1d1d",
-        "#ab7578",
-        "#86efac",
-        "#300012",
-    ]
-    if len(TARGET_CONDITIONS) > len(palette_colors):
-        msg = (
-            f"The companion heatmap has {len(palette_colors)} distinct condition colours; "
-            f"{len(TARGET_CONDITIONS)} conditions would reuse one. Use "
-            f"--top-paired-conditions {len(palette_colors)} or fewer."
-        )
-        raise ValueError(msg)
+    validate_companion_heatmap_condition_count(len(TARGET_CONDITIONS))
     condition_palette = {
-        condition: palette_colors[index] for index, condition in enumerate(TARGET_CONDITIONS)
+        condition: COMPANION_HEATMAP_PALETTE_COLORS[index]
+        for index, condition in enumerate(TARGET_CONDITIONS)
     }
-    condition_palette["unknown"] = "#64748b"
     row_taxon_ids = matrix.index.tolist()
     condition_color_column = (
         "display_condition"
         if "display_condition" in taxa_metadata.columns
         else "dominant_condition"
     )
-    row_colors = taxa_metadata.loc[row_taxon_ids, condition_color_column].map(
-        lambda condition: condition_palette.get(condition, "#64748b")
-    )
+    row_conditions = taxa_metadata.loc[row_taxon_ids, condition_color_column]
+    unlisted_conditions = [
+        clean_text(condition) for condition in row_conditions if condition not in condition_palette
+    ]
+    if unlisted_conditions:
+        unique_unlisted = list(dict.fromkeys(unlisted_conditions))
+        msg = (
+            f"Companion heatmap row condition(s) {unique_unlisted} are not in "
+            f"TARGET_CONDITIONS {list(TARGET_CONDITIONS)}."
+        )
+        raise ValueError(msg)
+    row_colors = row_conditions.map(lambda condition: condition_palette[condition])
     row_colors.index = display_matrix.index
     row_colors.name = ""
 
@@ -1293,9 +1310,30 @@ def write_report(
     lines: list[str] = [
         "# Enrichment Infographic Follow-Up",
         "",
-        "Source figure: "
-        "https://github.com/CultureBotAI/bsdbng/blob/"
-        "enrichment-analysis-heatmap-cluster/data/derived/enrichment_infographic.png",
+        "Historical source figure: `data/derived/enrichment_infographic.png` in",
+        "`CultureBotAI/microbial-trait-profiling`. This is a historical repository-relative",
+        "reference, not a claim that the historical figure is present in the current checkout.",
+        "",
+        "## Report variants",
+        "",
+        "Paths below are relative to `trait-visualization/trait-profile-investigation/"
+        "enrichment-infographic-followup/`.",
+        "These saved runs are not interchangeable; retain their results and read each run's",
+        "condition-selection and heatmap-selection paragraphs before comparing them.",
+        "",
+        "- `README.md`: unprefixed report in this directory; its saved run uses infographic",
+        "  condition selection and infographic traits plus high-signal traits.",
+        "- `my_top3_README.md`: paired-condition and paired-trait run with `my_top3_`",
+        "  prefixed artifacts.",
+        "- `my_top3_conditions_relevant_traits_README.md`: paired-condition and paired-trait",
+        "  run with `my_top3_conditions_relevant_traits_` prefixed artifacts.",
+        "- `my-top3-enriched-traits/README.md`: paired-condition and paired-trait run in a",
+        "  separate output directory with unprefixed artifacts.",
+        "",
+        "The two prefixed reports and the subdirectory report preserve separately named",
+        "outputs of similar selections; they are not additional independent evidence.",
+        "The generator uses this common provenance format; run-specific selections and",
+        "artifact names are recorded below.",
         "",
         f"The target conditions for this run are selected from {target_condition_description}. "
         "The local follow-up uses the full "
@@ -1617,12 +1655,38 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def validate_companion_heatmap_row_conditions(
+    matrix: pd.DataFrame, taxa_metadata: pd.DataFrame
+) -> None:
+    """Refuse selected companion-heatmap rows whose condition is not in TARGET_CONDITIONS."""
+    row_taxon_ids = matrix.index.tolist()
+    condition_color_column = (
+        "display_condition"
+        if "display_condition" in taxa_metadata.columns
+        else "dominant_condition"
+    )
+    row_conditions = taxa_metadata.loc[row_taxon_ids, condition_color_column]
+    target_conditions = set(TARGET_CONDITIONS)
+    unlisted_conditions = [
+        clean_text(condition) for condition in row_conditions if condition not in target_conditions
+    ]
+    if unlisted_conditions:
+        unique_unlisted = list(dict.fromkeys(unlisted_conditions))
+        msg = (
+            f"Companion heatmap row condition(s) {unique_unlisted} are not in "
+            f"TARGET_CONDITIONS {list(TARGET_CONDITIONS)}."
+        )
+        raise ValueError(msg)
+
+
 def main() -> None:
     """Run the enrichment infographic follow-up analysis."""
     global CONDITION_RANKING_VALUES, TARGET_CONDITIONS
 
     args = parse_args()
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    validate_companion_heatmap_condition_count(len(TARGET_CONDITIONS))
+    if args.condition_source == "paired-top":
+        validate_companion_heatmap_condition_count(args.top_paired_conditions)
 
     experiments = load_experiments(args.full_dump_input)
     studies = load_studies(args.studies_input)
@@ -1644,7 +1708,7 @@ def main() -> None:
         )
         target_condition_description = (
             f"the top {len(TARGET_CONDITIONS)} paired-profile condition contrast rows from "
-            f"`{args.paired_condition_summary_input.relative_to(REPO_ROOT)}`"
+            f"`{args.paired_condition_summary_input.relative_to(REPO_ROOT).as_posix()}`"
         )
         condition_score_label = "paired absolute contrast load"
         condition_source_title = "Our Top Paired-Profile Conditions"
@@ -1675,7 +1739,7 @@ def main() -> None:
             )
             heatmap_trait_description = (
                 f"the top {len(preferred_traits)} paired-profile contrast traits from "
-                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT)}`"
+                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT).as_posix()}`"
             )
         else:
             heatmap_title = (
@@ -1685,7 +1749,8 @@ def main() -> None:
             )
             heatmap_trait_description = (
                 f"the top {len(preferred_traits)} paired-profile contrast traits from "
-                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT)}` plus high-signal "
+                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT).as_posix()}` "
+                "plus high-signal "
                 "target-condition traits selected with the original heatmap ranking logic"
             )
 
@@ -1693,14 +1758,6 @@ def main() -> None:
     dropped_targets = dropped_target_conditions(metadata, condition_depth)
     if dropped_targets:
         print(f"Target conditions too rare to summarize here: {dropped_targets}")
-    titles = write_target_title_table(
-        metadata,
-        experiments,
-        studies,
-        output_path(
-            args.output_dir, args.artifact_prefix, "outlier_condition_study_experiment_titles.tsv"
-        ),
-    )
     autism = summarize_autism_labels(metadata, experiments)
     profile_neighbors, crosscheck, centroid_neighbors = compute_profile_neighbors(
         values,
@@ -1720,6 +1777,16 @@ def main() -> None:
         preferred_traits,
         fill_with_high_signal_traits,
         balance_taxa_by_condition,
+    )
+    validate_companion_heatmap_row_conditions(organism_matrix, taxa_metadata)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    titles = write_target_title_table(
+        metadata,
+        experiments,
+        studies,
+        output_path(
+            args.output_dir, args.artifact_prefix, "outlier_condition_study_experiment_titles.tsv"
+        ),
     )
     display_matrix = save_traits_vs_organisms_heatmap(
         organism_matrix,

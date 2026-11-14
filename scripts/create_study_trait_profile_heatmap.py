@@ -829,29 +829,59 @@ def build_rendered_paired_enrichment_matrix(
     return display_matrix, display_metadata
 
 
+CELL_BORDER_LINEWIDTH = 0.25
+ACCESSIBLE_CATEGORY_PALETTE: tuple[str, ...] = (
+    "#005AB5",
+    "#D55E00",
+    "#117733",
+    "#E69F00",
+    "#56B4E9",
+    "#332288",
+    "#F0E442",
+    "#882255",
+    "#009E73",
+    "#CC79A7",
+    "#1111EE",
+    "#DDDD99",
+)
+PALETTE_ROTATIONS: dict[str, int] = {
+    "accessible": 0,
+    "body_site": 0,
+    "tab20": 0,
+    "condition": 2,
+    "Set3": 2,
+    "trait_category": 4,
+    "Set2": 4,
+}
+
+
 def palette_for_categories(
     categories: pd.Series,
-    palette_name: str,
+    palette_name: str = "accessible",
 ) -> dict[str, str | tuple[float, float, float]]:
-    """Build a stable palette for row or column annotation categories."""
+    """Build a stable, color-vision-accessible palette for row or column annotation categories."""
     ordered = [
         category for category in sorted(categories.unique()) if category not in {"Other", "unknown"}
     ]
+    offset = PALETTE_ROTATIONS.get(palette_name, 0)
+    rotated = ACCESSIBLE_CATEGORY_PALETTE[offset:] + ACCESSIBLE_CATEGORY_PALETTE[:offset]
     colors: dict[str, str | tuple[float, float, float]] = {}
     if ordered:
-        colors = dict(
-            zip(
-                ordered,
-                cast(
-                    list[tuple[float, float, float]],
-                    sns.color_palette(palette_name, n_colors=len(ordered)),
-                ),
-                strict=True,
+        if len(ordered) <= len(rotated):
+            selected_colors: list[str | tuple[float, float, float]] = list(rotated[: len(ordered)])
+        else:
+            extra = cast(
+                list[tuple[float, float, float]],
+                sns.color_palette("husl", n_colors=len(ordered) - len(rotated)),
             )
-        )
+            selected_colors = [*rotated, *extra]
+        colors = dict(zip(ordered, selected_colors, strict=True))
     colors["Other"] = "#b0b0b0"
     colors["unknown"] = "#e5e7eb"
     return colors
+
+
+build_palette = palette_for_categories
 
 
 def legend_handles(
@@ -877,9 +907,9 @@ def save_heatmap(
     display_to_trait_id = dict(zip(display_matrix.columns, trait_metadata.index, strict=True))
 
     direction_palette = {"inc": "#c0392b", "dec": "#2874a6"}
-    body_palette = palette_for_categories(display_metadata["body_site_group"], "tab20")
-    condition_palette = palette_for_categories(display_metadata["condition_group"], "Set3")
-    trait_palette = palette_for_categories(trait_metadata["display_category"], "Set2")
+    body_palette = palette_for_categories(display_metadata["body_site_group"], "body_site")
+    condition_palette = palette_for_categories(display_metadata["condition_group"], "condition")
+    trait_palette = palette_for_categories(trait_metadata["display_category"], "trait_category")
 
     row_colors = pd.DataFrame(
         {
@@ -918,7 +948,7 @@ def save_heatmap(
         col_cluster=True,
         row_colors=row_colors,
         col_colors=col_colors,
-        linewidths=0.05,
+        linewidths=CELL_BORDER_LINEWIDTH,
         linecolor="#e5e7eb",
         xticklabels=True,
         yticklabels=len(display_matrix) <= 120,
@@ -1010,9 +1040,9 @@ def save_paired_enrichment_heatmap(
     sns.set_theme(style="white")
     display_to_trait_id = dict(zip(display_matrix.columns, trait_metadata.index, strict=True))
 
-    body_palette = palette_for_categories(display_metadata["body_site_group"], "tab20")
-    condition_palette = palette_for_categories(display_metadata["condition_group"], "Set3")
-    trait_palette = palette_for_categories(trait_metadata["display_category"], "Set2")
+    body_palette = palette_for_categories(display_metadata["body_site_group"], "body_site")
+    condition_palette = palette_for_categories(display_metadata["condition_group"], "condition")
+    trait_palette = palette_for_categories(trait_metadata["display_category"], "trait_category")
 
     row_colors = pd.DataFrame(
         {
@@ -1047,7 +1077,7 @@ def save_paired_enrichment_heatmap(
         col_cluster=True,
         row_colors=row_colors,
         col_colors=col_colors,
-        linewidths=0.05,
+        linewidths=CELL_BORDER_LINEWIDTH,
         linecolor="#e5e7eb",
         xticklabels=True,
         yticklabels=len(display_matrix) <= 120,

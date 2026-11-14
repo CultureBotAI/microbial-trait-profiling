@@ -5,7 +5,7 @@ Addresses Issue #260:
 - Leave-Cluster-Out (LCO): Removes coccus + sphere simultaneously and measures shifts across 3 arms.
 - Three-Arm Sensitivity: Compares Paired Composition, Directional Sign-Test,
   and ORA Hypergeometric arms.
-- Evaluates the formal stability decision rule against Table 1 inter-row spacing.
+- Evaluates the named-removal comparison against the Table 1 minimum adjacent gap.
 """
 
 from __future__ import annotations

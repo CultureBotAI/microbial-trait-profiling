@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -425,6 +426,12 @@ def test_table_source_parent_output_refused(table_bundle: Bundle, location: str)
 
 @pytest.fixture
 def quadrant_bundle(bundle: Bundle) -> Bundle:
+    summary = bundle.root.parent / "derived" / "quadrant_summary.tsv"
+    summary.parent.mkdir()
+    summary.write_text(
+        "population\tn_comparisons\taxis\nall\t2\t1\nstool\t1\t0\n", encoding="utf-8"
+    )
+    bundle.record["input_files"] = [{"path": str(summary), **identity(summary)}]
     set_figure(
         bundle,
         "quadrant",
@@ -451,6 +458,23 @@ def test_quadrant_includes_every_population_comparison_and_axis(quadrant_bundle:
     assert result["figures"]["quadrant"]["marks"] == 3
 
 
+@pytest.mark.parametrize("population", ["all-axis", "stool"])
+def test_quadrant_coherent_thinning_refused(quadrant_bundle: Bundle, population: str) -> None:
+    page = quadrant_bundle.record["pages"][0]
+    detail = page["details"]["populations"]
+    removed = "all:s2/e1" if population == "all-axis" else "stool:s1/e1"
+    page["row_ids"].remove(removed)
+    page["mark_count"] -= 1
+    if population == "all-axis":
+        detail["all"].update(n_comparisons=1, axis=0)
+    else:
+        detail["stool"]["n_comparisons"] = 0
+    quadrant_bundle.seal()
+    with pytest.raises(ValueError, match=r"Quadrant|quadrant|population|coverage"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
 @pytest.mark.parametrize(
     "mutation", ["marks", "thin", "population", "swap", "missing", "negative", "fractional"]
 )
@@ -474,3 +498,276 @@ def test_quadrant_coverage_refused(quadrant_bundle: Bundle, mutation: str) -> No
     with pytest.raises(ValueError, match=r"Quadrant|quadrant|population|coverage"):
         quadrant_bundle.audit()
     assert not quadrant_bundle.output.exists()
+
+
+def quadrant_summary(bundle: Bundle) -> Path:
+    return Path(bundle.record["input_files"][0]["path"])
+
+
+def replace_quadrant_summary(bundle: Bundle, contents: str) -> Path:
+    path = quadrant_summary(bundle)
+    path.write_text(contents, encoding="utf-8")
+    bundle.record["input_files"][0] = {"path": str(path), **identity(path)}
+    bundle.seal()
+    return path
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "missing_inventory",
+        "empty_inventory",
+        "missing_file",
+        "missing_hash",
+        "wrong_hash",
+        "wrong_size",
+        "float_size",
+        "boolean_size",
+        "extra_identity_field",
+        "invalid_path",
+    ],
+)
+def test_quadrant_expected_counts_require_bound_summary(
+    quadrant_bundle: Bundle, mutation: str
+) -> None:
+    source = quadrant_summary(quadrant_bundle)
+    record = quadrant_bundle.record
+    entry = record["input_files"][0]
+    if mutation == "missing_inventory":
+        del record["input_files"]
+    elif mutation == "empty_inventory":
+        record["input_files"] = []
+    elif mutation == "missing_file":
+        source.unlink()
+    elif mutation == "missing_hash":
+        del entry["sha256"]
+    elif mutation == "wrong_hash":
+        entry["sha256"] = "0" * 64
+    elif mutation == "wrong_size":
+        entry["size_bytes"] += 1
+    elif mutation == "float_size":
+        # An equal-valued float would pass bare dictionary identity equality.
+        entry["size_bytes"] = float(entry["size_bytes"])
+    elif mutation == "boolean_size":
+        entry["size_bytes"] = True
+    elif mutation == "extra_identity_field":
+        entry["unbound"] = "extra"
+    else:
+        entry["path"] = None
+    quadrant_bundle.seal()
+    with pytest.raises((ValueError, FileNotFoundError), match=r"[Qq]uadrant|summary|identity|hash"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+@pytest.mark.parametrize(
+    "contents",
+    [
+        pytest.param(
+            "population\tn_comparisons\nall\t2\nall\t2\nstool\t1\n", id="duplicate-agreeing"
+        ),
+        pytest.param(
+            "population\tn_comparisons\nall\t2\nall\t9\nstool\t1\n", id="duplicate-conflicting"
+        ),
+        pytest.param("population\tn_comparisons\nstool\t1\n", id="missing-all"),
+        pytest.param("population\tn_comparisons\nall\t2\n", id="missing-stool"),
+        pytest.param(
+            "population\tn_comparisons\nall\t2\nstool\t1\nother\t0\n", id="unknown-population"
+        ),
+        pytest.param(
+            "population\tn_comparisons\tn_comparisons\nall\t2\t2\nstool\t1\t1\n",
+            id="duplicate-column",
+        ),
+        pytest.param("population\taxis\nall\t1\nstool\t0\n", id="missing-count-column"),
+        pytest.param("group\tn_comparisons\nall\t2\nstool\t1\n", id="missing-population-column"),
+        pytest.param("population\tn_comparisons\nall\t2\nstool\t1\textra\n", id="ragged-row"),
+        pytest.param("population\tn_comparisons\nall\t2\nstool\t-1\n", id="negative"),
+        pytest.param("population\tn_comparisons\nall\t2\nstool\t0.5\n", id="fractional"),
+        pytest.param("population\tn_comparisons\nall\t2\nstool\tNaN\n", id="nan"),
+        pytest.param("population\tn_comparisons\nall\t2\nstool\tinf\n", id="infinite"),
+        pytest.param("population\tn_comparisons\nall\t2\nstool\t\n", id="blank-count"),
+        pytest.param("population\tn_comparisons\nall\t2\nstool\tTrue\n", id="boolean-text"),
+        pytest.param("", id="empty-file"),
+    ],
+)
+def test_quadrant_summary_shape_refused(quadrant_bundle: Bundle, contents: str) -> None:
+    replace_quadrant_summary(quadrant_bundle, contents)
+    with pytest.raises(ValueError, match=r"[Qq]uadrant|summary|population|count|column|row"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+@pytest.mark.parametrize("all_count", [0, 2])
+def test_quadrant_accepts_zero_populations(quadrant_bundle: Bundle, all_count: int) -> None:
+    page = quadrant_bundle.record["pages"][0]
+    page["row_ids"] = ["all:s1/e1", "all:s2/e1"] if all_count else []
+    page["mark_count"] = all_count
+    page["details"]["populations"] = {
+        "all": {"n_comparisons": all_count, "axis": int(bool(all_count))},
+        "stool": {"n_comparisons": 0, "axis": 0},
+    }
+    replace_quadrant_summary(
+        quadrant_bundle,
+        f"population\tn_comparisons\taxis\nall\t{all_count}\t{int(bool(all_count))}\nstool\t0\t0\n",
+    )
+    result = quadrant_bundle.audit()
+    assert result["figures"]["quadrant"]["rows"] == all_count
+    assert result["figures"]["quadrant"]["marks"] == all_count
+
+
+def test_quadrant_redeclaration_cannot_swap_population_counts(quadrant_bundle: Bundle) -> None:
+    page = quadrant_bundle.record["pages"][0]
+    page["row_ids"][1] = "stool:s2/e1"
+    page["details"]["populations"] = {
+        "all": {"n_comparisons": 1, "axis": 0},
+        "stool": {"n_comparisons": 2, "axis": 1},
+    }
+    quadrant_bundle.seal()
+    with pytest.raises(ValueError, match=r"[Qq]uadrant|population|coverage"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+def test_quadrant_requires_one_complete_population_page(quadrant_bundle: Bundle) -> None:
+    second = deepcopy(quadrant_bundle.record["pages"][0])
+    second["page"] = 2
+    second["row_ids"] = ["all:s3/e1", "all:s4/e1", "stool:s3/e1"]
+    quadrant_bundle.record["pages"].append(second)
+    quadrant_bundle.record["rendering"]["page_count"] = 2
+    directory = quadrant_bundle.provenance.parent
+    for suffix in ("pdf", "svg", "png"):
+        target = directory / f"page-002.{suffix}"
+        target.write_bytes((directory / f"page-001.{suffix}").read_bytes())
+        quadrant_bundle.record["outputs"][target.name] = identity(target)
+    quadrant_bundle.seal()
+    with pytest.raises(ValueError, match=r"[Qq]uadrant|population|page"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+def quadrant_alias(bundle: Bundle) -> Path:
+    source = quadrant_summary(bundle)
+    alias = bundle.root.parent / "derived-alias" / source.name
+    alias.parent.mkdir()
+    alias.symlink_to(source)
+    bundle.record["input_files"].append({"path": str(alias), **identity(source)})
+    bundle.seal()
+    return alias
+
+
+def test_quadrant_accepts_logical_and_resolved_summary_aliases(quadrant_bundle: Bundle) -> None:
+    quadrant_alias(quadrant_bundle)
+    assert quadrant_bundle.audit()["figures"]["quadrant"]["rows"] == 3
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_quadrant_rejects_distinct_summary_sources(quadrant_bundle: Bundle, changed: bool) -> None:
+    source = quadrant_summary(quadrant_bundle)
+    other = quadrant_bundle.root.parent / "other-derived" / source.name
+    other.parent.mkdir()
+    raw = source.read_bytes()
+    other.write_bytes(raw.replace(b"all\t2", b"all\t9") if changed else raw)
+    quadrant_bundle.record["input_files"].append({"path": str(other), **identity(other)})
+    quadrant_bundle.seal()
+    with pytest.raises(ValueError, match=r"[Aa]mbiguous|[Cc]onflicting"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+def test_quadrant_alias_identity_conflict_refused(quadrant_bundle: Bundle) -> None:
+    quadrant_alias(quadrant_bundle)
+    quadrant_bundle.record["input_files"][-1]["sha256"] = "0" * 64
+    quadrant_bundle.seal()
+    with pytest.raises(ValueError, match=r"identity|hash|[Cc]onflicting"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+def test_quadrant_summary_alias_retarget_refused(
+    quadrant_bundle: Bundle, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    alias = quadrant_alias(quadrant_bundle)
+    other = quadrant_bundle.root.parent / "other-summary.tsv"
+    other.write_bytes(alias.read_bytes())
+    original = HELPER.Image.open
+
+    def open_image(*args: Any, **kwargs: Any) -> Any:
+        result = original(*args, **kwargs)
+        alias.unlink()
+        alias.symlink_to(other)
+        return result
+
+    monkeypatch.setattr(HELPER.Image, "open", open_image)
+    with pytest.raises(ValueError, match=r"target.*changed"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+def test_quadrant_summary_change_after_parse_refused(
+    quadrant_bundle: Bundle, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = quadrant_summary(quadrant_bundle)
+    original = HELPER.Image.open
+
+    def open_image(*args: Any, **kwargs: Any) -> Any:
+        result = original(*args, **kwargs)
+        source.write_bytes(source.read_bytes().replace(b"all\t2", b"all\t9"))
+        return result
+
+    monkeypatch.setattr(HELPER.Image, "open", open_image)
+    with pytest.raises(ValueError, match=r"identity|hash|changed"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+
+
+@pytest.mark.parametrize("location", ["direct", "logical_alias", "resolved_alias"])
+def test_quadrant_source_parent_output_refused(quadrant_bundle: Bundle, location: str) -> None:
+    source = quadrant_summary(quadrant_bundle)
+    protected = {source.parent}
+    if location == "logical_alias":
+        alias = quadrant_alias(quadrant_bundle)
+        protected.add(alias.parent)
+        quadrant_bundle.output = alias.parent / "audit-output"
+    elif location == "resolved_alias":
+        alias_root = quadrant_bundle.root.parent / "output-alias"
+        alias_root.symlink_to(source.parent, target_is_directory=True)
+        quadrant_bundle.output = alias_root / "audit-output"
+    else:
+        quadrant_bundle.output = source.parent / "audit-output"
+    before = {root: {path.name: path.read_bytes() for path in root.iterdir()} for root in protected}
+    with pytest.raises(ValueError, match=r"source|parent|disjoint"):
+        quadrant_bundle.audit()
+    assert not quadrant_bundle.output.exists()
+    assert {
+        root: {path.name: path.read_bytes() for path in root.iterdir()} for root in protected
+    } == before
+
+
+def test_quadrant_summary_parses_the_hashed_buffer(
+    quadrant_bundle: Bundle, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = quadrant_summary(quadrant_bundle).resolve(strict=True)
+    original_read = Path.read_bytes
+    original = original_read(source)
+    changed = original.replace(b"all\t2", b"all\t9")
+    assert len(original) == len(changed)
+    expected = identity(source)
+    calls = 0
+
+    def read_bytes(path: Path) -> bytes:
+        nonlocal calls
+        if path == source:
+            calls += 1
+            return changed if calls == 2 else original
+        return original_read(path)
+
+    monkeypatch.setattr(Path, "read_bytes", read_bytes)
+    snapshots: dict[Path, dict[str, Any]] = {}
+    targets: dict[Path, Path] = {}
+    counts = HELPER.expected_quadrant_counts(
+        quadrant_bundle.record, snapshots, targets, quadrant_bundle.output
+    )
+    assert counts == {"all": 2, "stool": 1}, "Parsed population differs from the hashed first read"
+    assert source in snapshots
+    assert snapshots[source] == expected
+    assert calls == 1

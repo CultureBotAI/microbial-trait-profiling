@@ -39,6 +39,7 @@ from bsdbng.trait_guilds import (
     TABLE1_TRAIT_COLORS,
     TABLE1_TRAIT_LABELS,
     TABLE1_TRAITS,
+    CorpusStats,
     Profile,
     column_term_id,
     drop_zero_total_pairs,
@@ -169,6 +170,88 @@ def test_qualified_columns_resolve_by_term_suffix(corpus: tuple[Path, Path]) -> 
     assert stats.mediadive_columns_excluded == 1
     assert stats.dropped_non_human == 2
     assert stats.dropped_unpaired == 1
+
+
+@pytest.mark.parametrize(
+    ("include_non_human", "has_mouse_profiles", "expected_profiles"),
+    [
+        pytest.param(False, False, 2, id="default-human"),
+        pytest.param(False, True, 2, id="default-mixed"),
+        pytest.param(True, True, 4, id="include-mixed"),
+        pytest.param(True, False, 0, id="refuse-human-with-mouse-metadata"),
+    ],
+)
+def test_table1_cli_requires_nonhuman_rows_when_explicitly_requested(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    include_non_human: bool,
+    has_mouse_profiles: bool,
+    expected_profiles: int,
+) -> None:
+    """The real parser/loader guard must precede reporting, identity and rendering."""
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    output = tmp_path / "output"
+    studies = ("human", "mouse") if has_mouse_profiles else ("human",)
+    _write_profiles(
+        profiles,
+        [
+            (study, f"{study}-1", direction, values)
+            for study in studies
+            for direction, values in (("inc", ANNOTATED_INC), ("dec", ANNOTATED_DEC))
+        ],
+    )
+    _write_experiments(
+        experiments,
+        [
+            ("human", "human-1", "Colitis", "Feces", "Homo sapiens"),
+            ("mouse", "mouse-1", "Colitis", "Feces", "Mus musculus"),
+        ],
+    )
+    before = (profiles.read_bytes(), experiments.read_bytes())
+    observed: list[CorpusStats] = []
+
+    class LoadedBoundary(Exception):
+        pass
+
+    def stop_after_loading(stats: CorpusStats, _vintage: str | None) -> None:
+        assert expected_profiles > 0, "Explicit non-human request crossed the loader guard"
+        assert stats.kept_profiles == expected_profiles
+        observed.append(stats)
+        raise LoadedBoundary
+
+    monkeypatch.setattr(table1_trait_maps, "write_stats_report", stop_after_loading)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1-trait-maps",
+            "--profile-input",
+            str(profiles),
+            "--experiments-input",
+            str(experiments),
+            "--full-dump-input",
+            str(tmp_path / "absent-dump.csv"),
+            "--output-dir",
+            str(output),
+            *(["--include-non-human"] if include_non_human else []),
+        ],
+    )
+    if expected_profiles == 0:
+        with pytest.raises(ValueError, match=r"no .*non-human.*all-host"):
+            table1_trait_maps.main()
+        assert observed == []
+    else:
+        with pytest.raises(LoadedBoundary):
+            table1_trait_maps.main()
+        assert len(observed) == 1
+    assert not output.exists()
+    assert (profiles.read_bytes(), experiments.read_bytes()) == before
+
+
+def test_table1_cli_help_states_the_all_host_input_requirement() -> None:
+    help_text = " ".join(table1_trait_maps.build_parser().format_help().split()).lower()
+    assert "--include-non-human" in help_text
+    assert "all-host profile table" in help_text
 
 
 def test_ambiguous_term_lookup_raises(tmp_path: Path) -> None:

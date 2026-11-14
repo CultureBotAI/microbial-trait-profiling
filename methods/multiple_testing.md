@@ -103,3 +103,61 @@ keep their provenance summary compact. The foundation does not run any arm or
 rewrite any existing result. Run its fixtures with `just test-multiple-testing`;
 `just workflow-check` checks the schema and policy; `just check-generated` checks
 the generated model against its authoritative schema.
+
+## Pre-testing selection rules and BH family padding in producer scripts
+
+Outside the additive sidecar engine, producer modules that compute native
+Benjamini-Hochberg (BH) q-values declare their pre-testing family membership
+and untestable-member padding explicitly:
+
+- **Native taxon influence (`src/mtp/native_taxon_influence.py`)**:
+  New runs use protocol `190-native-v3`, whose machine-carried composition
+  declaration names the selected-trait correction family and p=1 padding.
+  Already-written `190-native-v2` manifests retain their finite-test family
+  meaning and remain readable; the current producer refuses to execute v2.
+  The publication handoff reports `native_family_size` separately from
+  `native_tested_count`, using the recorded protocol to choose the denominator.
+  Historical v2 tables use `family_tests` even if they also have
+  `family_selected_traits`; legacy manifests without a version use the finite-test
+  count with an explicit legacy basis. V3 requires the selected-trait count.
+  - **Composition t-test family (`transformed`)**: Pre-testing eligibility
+    (`row["selected"]`) requires `profile_support >= minimum_profile_support`,
+    `profile_support <= max(2, int(len(keys) * maximum_profile_support_fraction))`,
+    and positive composition variance (`composition_variance > 0`). Every
+    selected trait (`selected_rows`, counted in `family_selected_traits`) remains
+    in the BH family passed to `adjust(...)`: selected traits that are untestable
+    in paired t-testing (`row["selected"] and row["p"] == ""`, e.g. fewer than
+    `minimum_pairs` or contrast SD $\le 10^{-8}$) are padded at `p = 1.0` inside
+    the correction vector and receive `q = 1.0` (`status = "untestable"`), while
+    `family_tests` records the count of selected traits with finite t-test
+    p-values and unselected traits (`status = "not_selected"`) stay outside the
+    family with `p = ""` and `q = ""` (#1334).
+  - **ORA hypergeometric tail families (`ora_cells`)**: Separate global BH
+    families are evaluated per tail (`enrichment` and `depletion`) across all
+    active profiles (`row_total > 0`) and retained traits (`base.columns`) before
+    filtering to the six Table 1 display traits. The `enrichment` family
+    (`enrichment_tests`) tests all positive profile-by-trait cells
+    (`profiles[key][trait] > 0`); the `depletion` family (`depletion_tests`)
+    tests all cells in active profiles, including zero-count cells.
+  - **Shared directional sign-test families (`correct_shared_comparisons`)**:
+    Grouped by `("scenario", "scope", "reference")` (composition comparisons) or
+    `("scenario", "scope", "background")` (ORA fold comparisons) and adjusted
+    separately per population (`before`, `after`, `before_matched`,
+    `after_matched`, `matched_change`) over the full declared panel
+    (`BH{len(family)}_directional_sign_test`), holding untestable members (`None`)
+    in the `len(family)` denominator while exporting `""` for their `q`.
+- **PD significant condition-taxon-trait network (`scripts/create_pd_significant_condition_taxon_trait_network.py`)**:
+  - **Condition-taxon McNemar/binomial family (`build_condition_taxon_tests`)**:
+    Pre-testing support eligibility (`passes_min_taxon_studies`, requiring
+    `reported_study_count >= MIN_TAXON_STUDIES`) defines the declared BH family
+    of size `bh_family_size = int(support.sum())` (distinct from `n_tests`, the
+    count of rows with finite p-values). Supported rows with zero discordant
+    studies (`p_value` is NaN) are held in the BH family via conservative
+    `fillna(1.0)` padding (`benjamini_hochberg(tests.loc[support, "p_value"].fillna(1.0))`)
+    while their exported `q_value` remains NaN (#1321, #1334).
+  - **Condition-trait Wilcoxon family (`build_condition_trait_tests`)**:
+    Pre-testing support eligibility (`passes_min_paired_studies`, requiring
+    `paired_study_count >= MIN_PAIRED_STUDIES`) similarly defines the declared BH
+    family of size `bh_family_size = int(support.sum())` and pads untestable
+    supported rows at `1.0` via `fillna(1.0)` while keeping their exported
+    `q_value` as NaN.

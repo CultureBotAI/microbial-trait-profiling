@@ -207,7 +207,9 @@ def run_post_arm(
     definition = _stage_definition()
     comparison_manifest = comparison / "comparison_run.json" if comparison.is_dir() else comparison
     comparison_digest = file_sha256(comparison_manifest)
-    sources = bind_recorded_hashes(open_verified_sources(comparison), comparison_digest)
+    sources = bind_recorded_hashes(
+        open_verified_sources(comparison, expected_sha256=comparison_digest), comparison_digest
+    )
     return _run_post_arm_from_sources(
         sources, comparison_digest, output, definition=definition, recorded_at=recorded_at
     )
@@ -341,7 +343,9 @@ def verify_post_arm(path: Path) -> PostArmMultiplicityRun:
     record = PostArmMultiplicityRun.model_validate_json(manifest.read_text(encoding="utf-8"))
     comparison = Path(record.comparison_manifest_path)
     comparison_digest = file_sha256(comparison)
-    sources = bind_recorded_hashes(open_verified_sources(comparison), comparison_digest)
+    sources = bind_recorded_hashes(
+        open_verified_sources(comparison, expected_sha256=comparison_digest), comparison_digest
+    )
     return _verify_post_arm_record(manifest, record, sources, definition)
 
 

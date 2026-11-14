@@ -167,9 +167,9 @@ no independent confirmation or new error-rate guarantee.
 ### Corrections needed before using the narrative
 
 1. **Verify the contrast, not just the host.** The current
-   [profile direction mapping](../src/bsdbng/study_trait_profiles.py) preserves
+   [profile direction mapping](../src/mtp/study_trait_profiles.py) preserves
    increased/decreased labels, and the
-   [shared loader](../src/bsdbng/trait_guilds.py) filters for human host and paired
+   [shared loader](../src/mtp/trait_guilds.py) filters for human host and paired
    signatures. Neither step verifies that each comparison is disease versus
    healthy control with a consistent orientation. Audit group definitions,
    intervention/time-point contrasts, disease-versus-disease comparisons, and
@@ -214,7 +214,7 @@ no independent confirmation or new error-rate guarantee.
    a remaining association is independent of taxonomy.
 
 The trait IDs above come from
-[TABLE1_TRAITS and its qualified-column notes](../src/bsdbng/trait_guilds.py).
+[TABLE1_TRAITS and its qualified-column notes](../src/mtp/trait_guilds.py).
 A search including ignored files under `data/` found the profile matrix and
 experiment tables, but not the upstream taxon-trait matrix or merged KG nodes
 and edges needed to complete the proposed source audit. Their semantics and

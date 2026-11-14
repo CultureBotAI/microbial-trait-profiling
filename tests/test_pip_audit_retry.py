@@ -322,7 +322,8 @@ def test_does_not_retry_non_network_service_or_source_errors(
         )
 
     monkeypatch.setattr(pypi_service_cls, "query", http_400_query)
-    with pytest.raises(service_error_cls):
+    http_diagnostic = io.StringIO()
+    assert (
         run_pip_audit.run_pip_audit(
             [
                 "-r",
@@ -337,10 +338,15 @@ def test_does_not_retry_non_network_service_or_source_errors(
             max_attempts=4,
             sleep_fn=sleeps.append,
             stdout=io.StringIO(),
-            stderr=io.StringIO(),
+            stderr=http_diagnostic,
         )
+        == run_pip_audit.NETWORK_FAILURE_EXIT_CODE
+    )
     assert http_400_attempts == 1
     assert sleeps == []
+    assert "NETWORK ERROR (not retried):" in http_diagnostic.getvalue()
+    assert "HTTPError" in http_diagnostic.getvalue()
+    assert "Traceback" not in http_diagnostic.getvalue()
 
     missing_req = tmp_path / "missing.txt"
     missing_stdout = io.StringIO()
@@ -432,7 +438,7 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
         return spec, []
 
     monkeypatch.setattr(pypi_service_cls, "query", clean_query)
-    cli_mod.VulnServiceConnectionError = interface_mod.ConnectionError
+    monkeypatch.setattr(cli_mod, "VulnServiceConnectionError", interface_mod.ConnectionError)
     exit_code = run_pip_audit.run_pip_audit(
         argv,
         max_attempts=2,
@@ -449,7 +455,7 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
         raise service_error_cls("Non-network failure")
 
     monkeypatch.setattr(pypi_service_cls, "query", exploding_query)
-    cli_mod.VulnServiceConnectionError = interface_mod.ConnectionError
+    monkeypatch.setattr(cli_mod, "VulnServiceConnectionError", interface_mod.ConnectionError)
     with pytest.raises(service_error_cls, match="Non-network failure"):
         run_pip_audit.run_pip_audit(
             argv,
@@ -460,8 +466,11 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
     assert cli_mod.VulnServiceConnectionError is interface_mod.ConnectionError
     assert cli_mod.VulnServiceConnectionError is vuln_conn_error_cls
 
-    # Also verify recovery when VulnServiceConnectionError was dirty prior to invocation.
-    cli_mod.VulnServiceConnectionError = Exception
+    # A valid caller-owned override must be restored, rather than replaced by a default.
+    class PreviousConnectionError(Exception):
+        """A prior binding that belongs to the caller."""
+
+    monkeypatch.setattr(cli_mod, "VulnServiceConnectionError", PreviousConnectionError)
     with pytest.raises(service_error_cls, match="Non-network failure"):
         run_pip_audit.run_pip_audit(
             argv,
@@ -469,7 +478,7 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
             stdout=io.StringIO(),
             stderr=io.StringIO(),
         )
-    assert cli_mod.VulnServiceConnectionError is interface_mod.ConnectionError
+    assert cli_mod.VulnServiceConnectionError is PreviousConnectionError
 
 
 @pytest.mark.parametrize(

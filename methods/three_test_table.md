@@ -201,9 +201,15 @@ Missing original record identifiers remain unresolved.
 
 `METPO:1000603` means anaerobic; `METPO:1000607` means obligately anaerobic.
 The anaerobe guild combines both. Preserve qualified trait IDs; never substitute
-one term for the other based on a display label. The historical six-trait delta-z
-script uses neither oxygen term; the retained expanded summary uses 1000603,
-whereas the obligately-anaerobic plate uses 1000607.
+one term for the other based on a display label. Recorded and verified
+`three_test_table` and `delta_z_derived` outputs keep the KG node label
+`facultatively aerobic` because readers compare labels with the core; they do not
+record member arrays themselves, nor do `three_test_table` or `delta_z_derived`
+parse `trait_member_ids_json` during statistical computation, though downstream
+consumers can read `trait_member_ids_json` from the core's `feature_metadata`
+when resolving policy membership (#1246, #1250, #1259, #1261). The historical
+six-trait delta-z script uses neither oxygen term; the retained expanded summary
+uses 1000603, whereas the obligately-anaerobic plate uses 1000607.
 
 ## Execution and provenance
 
@@ -324,6 +330,20 @@ count reader for both header and row parsing. Gzip inputs retain their compresse
 byte identity. Final path, alias-target and hash checks remain mandatory before
 publication. For the comparison manifest and `count_profiles`, restoring a
 transiently replaced file cannot authorize different parsed bytes.
+
+The core and arm manifest verifiers also hash the exact byte buffer they parse
+when an expected SHA-256 is supplied. Comparison verification supplies each
+parent's recorded hash, and standalone arm verification supplies its core hash.
+A shared-core traversal reconciles the arm's core hash to the already verified
+core snapshot without repeating scientific core validation. The comparison
+verifier checks an optional expected hash for both path and buffered reads; the
+completed-table reader, multiplicity generation/replay, three-test generation
+and study-split input adapter forward their existing comparison hashes. All
+manifest-location, inventory, population, direction and final live-path checks
+remain in force. Arm and comparison producers record the hashes captured before
+verification and refuse parent changes before publishing successful manifests.
+These bindings do not change the scientific tables or historical manifest schema;
+they are snapshot checks, not a filesystem transaction or a claim of authorship.
 
 `just test-three-test-table` covers synthetic contracts. The separate
 `test-three-test-off-reproduction` recipe requires a completed, verified historical

@@ -7,28 +7,28 @@ SCFA concentrations, antibiotic exposure, diet, transit. This module takes stock
 what is recorded, without acquiring new data:
 
 * **Per study**, which kinds of measured evidence the export's curated text mentions
-  (condition, group names and definition, description, matching and confounder
-  fields, title, keywords), and which sequencing modality the study used. A mention
-  is a pointer to the source paper, not data: the export carries no sample-level
-  values, and "not mentioned" never means "not measured". Evidence kinds that share
-  a vocabulary are counted apart rather than lumped: a short-chain fatty acid by
-  name, an enzyme or gene named after one, and untargeted metabolomics are three
-  different kinds of evidence, and a steroid ester that happens to be called an
-  acetate is none of them.
-* **Marker-split candidates**: every experiment whose condition or group fields name
-  a marker of one of those evidence types, each classified as a split on the
-  marker's measured value, an administered intervention, or a contrast that merely
-  carries the marker's name. Only the first kind links a signature to a measurement,
-  and even then it is part of the same BugSigDB corpus and not independent of it.
+  (condition, group names and definition, description, matching and confounder fields,
+  title, keywords) and which modality it used. Mentions are pointers, not sample-level
+  data; SCFA metabolites, SCFA enzymes/genes, and untargeted metabolomics are counted
+  apart, and steroid esters called acetates are excluded.
+* **Marker-split candidates**: every experiment whose condition or group fields name a
+  marker, classified as a measured-value split, an administered intervention, or a
+  non-measured contrast; all are inside the same BugSigDB corpus and not independent
+  of the discovery analyses.
 * **Inferred-function traits**: KG-Microbe trait columns whose labels concern SCFA
   production or fermentation. They are annotations, not measurements, and share
   their taxa with every other trait.
 * **An external cohort collection** (Sun et al. 2024, 36 Chinese fecal metagenome
   studies plus two the authors recruited): candidate overlaps with the discovery
   corpus, decided by normalised publication-title similarity at
-  :data:`TITLE_AGREEMENT` and nothing else, for confirmation before any
-  "independent" claim. A source study with no publication title in the external
-  table is reported as not assessable rather than guessed at from its authors.
+  :data:`TITLE_AGREEMENT` (untitled source studies are reported as not assessable).
+
+Both study-level and experiment-level summaries report two nested human
+evidence universes (#744): all `Homo sapiens` rows in `full_dump.csv`
+(1,080 human studies across all sequencing modalities — including ITS,
+PCR, 18S, or untyped rows — and pairing states) alongside the
+discovery-eligible paired human 16S/WMS subset (959 studies in
+`study_trait_profiles_wide.tsv`, #742).
 """
 
 from __future__ import annotations
@@ -470,7 +470,12 @@ def find_mentions(
 def evidence_rows(
     studies: Mapping[str, StudyRecord], discovery: set[str]
 ) -> list[dict[str, object]]:
-    """The per-study evidence-availability matrix for human studies."""
+    """One wide row per human study in `full_dump.csv` (all 1,080 `Homo sapiens`
+    export studies across all sequencing modalities, including ITS, PCR, 18S or
+    untyped and unpaired studies), with `in_discovery_corpus` flagging
+    membership in the 959-study paired human 16S/WMS discovery corpus (#742,
+    #744).
+    """
     rows: list[dict[str, object]] = []
     for study_id, record in sorted(studies.items()):
         # A study whose experiments span hosts is kept; the host set is reported.
@@ -501,7 +506,12 @@ def evidence_rows(
 
 
 def summary_rows(rows: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
-    """Studies mentioning each evidence type, overall and within the discovery corpus."""
+    """One count row per evidence type, reporting both `human_studies` /
+    `human_studies_mentioning` over all `Homo sapiens` export studies (1,080
+    across all modalities and pairing states) and `discovery_studies` /
+    `discovery_studies_mentioning` over the paired human 16S/WMS discovery
+    corpus (959 studies, #742, #744).
+    """
     summary: list[dict[str, object]] = []
     discovery = [row for row in rows if row["in_discovery_corpus"]]
     for name in [*EVIDENCE_TYPES, "metagenomic_reads_possible"]:
@@ -620,7 +630,10 @@ def marker_split_candidates(
     """Every experiment naming a marker, with how its groups were actually cut.
 
     Candidates that are not measured splits are kept in the table with the reason,
-    so the inventory can be audited rather than only counted.
+    so the inventory can be audited rather than only counted. `in_discovery_corpus`
+    flags paired human 16S/WMS experiments in `study_trait_profiles_wide.tsv`
+    (#742), whereas whole-export human rows also include non-16S/WMS (e.g. ITS,
+    PCR, 18S, untyped) and unpaired human experiments (#744).
     """
     seen: dict[tuple[str, str], dict[str, object]] = {}
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
@@ -661,7 +674,12 @@ def marker_split_candidates(
 
 
 def _classification_counts(markers: Sequence[Mapping[str, object]]) -> dict[str, dict[str, int]]:
-    """Candidate counts per classification, overall and for human and discovery subsets."""
+    """Per-classification counts for `validation_evidence_provenance.json`,
+    separating all export experiments (`experiments`), all `Homo sapiens`
+    export experiments across every sequencing modality and pairing state
+    (`human`), and paired human 16S/WMS discovery-corpus experiments
+    (`in_discovery_corpus`, #742, #744).
+    """
     counts: dict[str, dict[str, int]] = {}
     for row in markers:
         bucket = counts.setdefault(

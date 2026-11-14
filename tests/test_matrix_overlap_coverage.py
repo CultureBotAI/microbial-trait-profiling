@@ -12,14 +12,18 @@ import pytest
 from mtp.matrix_overlap_coverage import (
     METHODS_NOTE_RELATIVE_PATH,
     SCRIPT_RELATIVE_PATH,
+    STOOL_BODY_SITE,
     TRAIT_LISTS_RELATIVE_PATH,
+    _is_parkinsons_stool_row,
     compute_matrix_trait_overlap,
     compute_parkinsons_stool_overlap,
     compute_tier12_coverage_and_cascade,
+    is_stool_body_site,
     load_declared_traits,
     main,
     run_matrix_overlap_coverage,
     validate_durable_output_dir,
+    validate_stool_body_site,
 )
 from mtp.paths import REPO_ROOT, file_sha256
 
@@ -988,3 +992,91 @@ def test_validate_durable_output_dir_refuses_temporary_paths(
     assert resolved.name == "out"
     durable = validate_durable_output_dir(REPO_ROOT / "derived" / "matrix_overlap_coverage")
     assert durable.name == "matrix_overlap_coverage"
+
+
+def test_parkinsons_stool_predicate_accepts_literal_feces_and_refuses_variants() -> None:
+    """Stool selection uses the shared literal 'Feces' predicate and refuses variants (#1157)."""
+    assert STOOL_BODY_SITE == "Feces"
+    assert is_stool_body_site("Feces") is True
+    assert is_stool_body_site("feces") is False
+    assert is_stool_body_site(" Feces ") is False
+    assert validate_stool_body_site("Feces") is True
+    assert validate_stool_body_site("Feces,Blood") is False
+    assert validate_stool_body_site("Oral") is False
+    assert _is_parkinsons_stool_row("Parkinson's disease", "Feces") is True
+    assert _is_parkinsons_stool_row("Parkinson's disease", "Feces,Blood") is False
+    assert _is_parkinsons_stool_row("Parkinson's disease", "Oral") is False
+    for variant in ("feces", "FECES", " Feces", "Feces ", " Feces ", " feces "):
+        msg_val = ""
+        try:
+            validate_stool_body_site(variant)
+        except ValueError as exc:
+            msg_val = str(exc)
+        assert "Feces" in msg_val, f"Expected ValueError from validate_stool_body_site({variant!r})"
+        msg_row = ""
+        try:
+            _is_parkinsons_stool_row("Parkinson's disease", variant)
+        except ValueError as exc:
+            msg_row = str(exc)
+        assert "Feces" in msg_row, f"Expected ValueError from _is_parkinsons_stool_row({variant!r})"
+
+
+def test_cascade_and_pd_overlap_refuse_case_or_whitespace_feces_variants() -> None:
+    """Cascade stool counting and PD overlap refuse non-canonical 'feces' variants (#1157)."""
+    matrix, columns = _synthetic_matrix_and_columns()
+    bad_experiments = pd.DataFrame(
+        [
+            {
+                "study_id": "bsdb:1",
+                "experiment_id": "bsdb:1-1",
+                "host_species": "Homo sapiens",
+                "sequencing_type": "16S",
+                "condition": "Parkinson's disease",
+                "body_site": "feces",
+            }
+        ]
+    )
+    taxa = pd.DataFrame(
+        [
+            {
+                "study_id": "bsdb:1",
+                "experiment_id": "bsdb:1-1",
+                "direction": "increased",
+                "taxon_id": "NCBITaxon:10",
+                "taxon_name": "GenusA",
+                "taxonomic_rank": "genus",
+            },
+            {
+                "study_id": "bsdb:1",
+                "experiment_id": "bsdb:1-1",
+                "direction": "decreased",
+                "taxon_id": "NCBITaxon:11",
+                "taxon_name": "GenusA sp1",
+                "taxonomic_rank": "species",
+            },
+        ]
+    )
+    keys = pd.DataFrame(
+        [
+            {"study_id": "bsdb:1", "experiment_id": "bsdb:1-1", "inc_dec": "inc"},
+            {"study_id": "bsdb:1", "experiment_id": "bsdb:1-1", "inc_dec": "dec"},
+        ]
+    )
+    with pytest.raises(ValueError, match="Feces"):
+        compute_tier12_coverage_and_cascade(
+            matrix=matrix,
+            columns=columns,
+            tier12_experiments=bad_experiments,
+            tier12_taxa=taxa,
+            tier12_profile_keys=keys,
+            source_experiments=bad_experiments,
+            source_taxa=taxa,
+        )
+    with pytest.raises(ValueError, match="Feces"):
+        compute_parkinsons_stool_overlap(
+            tier12_experiments=bad_experiments,
+            tier12_taxa=taxa,
+            tier12_profile_keys=keys,
+            source_experiments=bad_experiments,
+            source_taxa=taxa,
+        )

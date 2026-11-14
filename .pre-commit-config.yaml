@@ -83,7 +83,6 @@ repos:
     hooks:
       - id: bandit
         args: [-c, pyproject.toml]
-        additional_dependencies: ["bandit[toml]"]
   - repo: local
     hooks:
       - id: deptry

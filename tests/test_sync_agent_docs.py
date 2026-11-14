@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any, SupportsIndex
@@ -919,3 +920,51 @@ def test_contributor_docs_agree_on_package_paths_and_check_before_commit() -> No
     assert "1,245 studies in pinned v1.3.1" not in readme
     assert "parse into per-study YAML for the pinned BugSigDB release (~22s)" in readme
     assert "load study YAMLs into MongoDB (~45s; for the pinned BugSigDB release)" in readme
+
+    for name, doc in (
+        ("AGENTS.md", agents),
+        (".github/copilot-instructions.md", copilot),
+        ("CONTRIBUTING.md", contributing),
+    ):
+        flat = " ".join(doc.split())
+        assert "Do not use `gh issue develop`" in flat, (
+            f"{name} missing gh issue develop prohibition"
+        )
+        assert re.search(r"(?<!Do not )(?<!do not )\b[Uu]se `gh issue develop`", flat) is None, (
+            f"{name} permits gh issue develop"
+        )
+        assert "gh pr view N --json closingIssuesReferences" in flat, (
+            f"{name} missing closingIssuesReferences command"
+        )
+        assert "which lists issues only, never PRs, or the PR's Development sidebar" in flat, (
+            f"{name} missing closingIssuesReferences issues-only scope"
+        )
+        assert (
+            "a link that comes only from a closing keyword goes away once the keyword is removed "
+            "from the PR body"
+        ) in flat, f"{name} missing closing-keyword removal rule"
+        assert (
+            "whereas a Development-sidebar or branch link persists and must be removed in the "
+            "PR's Development sidebar in the web UI (no `gh` subcommand does this, and only a "
+            "linked branch can be unlinked through the GraphQL API, so an agent must ask a "
+            "maintainer)"
+        ) in flat, f"{name} missing Development-sidebar removal rule"
+        assert (
+            "A closing keyword in a commit message (and so, by default, in the squash message) "
+            "also closes "
+            "the issue on merge, appears in neither check, and is not removed by editing the PR "
+            'body: write `Refs #<number>` in commits, and never a negated keyword such as "does '
+            'not close #<number>" (which still closes).'
+        ) in flat, f"{name} missing commit-message and negated-keyword rule"
+        assert "Remove any link to an issue the PR only partly addresses." in flat, (
+            f"{name} missing remove-partial-link rule"
+        )
+        assert "Keep any link" not in flat, f"{name} reverses remove-partial-link rule"
+        for sentence in re.split(r"(?<=[.!?])\s+", flat):
+            if ("sidebar" in sentence or "branch link" in sentence) and "goes away" in sentence:
+                assert "only from a closing keyword goes away" in sentence, (
+                    f"{name} claims sidebar/branch link goes away: {sentence!r}"
+                )
+                assert "whereas" in sentence, (
+                    f"{name} claims sidebar/branch link goes away: {sentence!r}"
+                )

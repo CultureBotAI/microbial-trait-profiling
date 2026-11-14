@@ -15,14 +15,18 @@ import pytest
 
 import bsdbng
 import mtp
+from mtp.export_audit import (
+    bound_names,
+    cross_module_uses,
+    declared_exports,
+    export_omissions,
+    function_arguments,
+    import_origin,
+    module_name,
+    public_definitions,
+    source_inventory,
+)
 from mtp.paths import REPO_ROOT
-
-_EXPORT_AUDIT = runpy.run_path(str(REPO_ROOT / "scripts/adhoc/issue937_audit_exports.py"))
-cross_module_uses = _EXPORT_AUDIT["cross_module_uses"]
-export_omissions = _EXPORT_AUDIT["export_omissions"]
-public_definitions = _EXPORT_AUDIT["public_definitions"]
-source_inventory = _EXPORT_AUDIT["source_inventory"]
-declared_exports = _EXPORT_AUDIT["declared_exports"]
 
 
 def _get_submodule_names(package_name: str) -> list[str]:
@@ -558,6 +562,184 @@ def test_datamodel_classes_identical() -> None:
         b_cls = getattr(b_dm, model_name)
         m_cls = getattr(m_dm, model_name)
         assert b_cls is m_cls, f"Datamodel class {model_name} should be identical"
+
+
+def test_export_audit_module_and_legacy_entrypoints_agree() -> None:
+    """Permanent mtp.export_audit, shim, and adhoc script expose identical helpers (#1039)."""
+    canonical = importlib.import_module("mtp.export_audit")
+    legacy = importlib.import_module("bsdbng.export_audit")
+    script_ns = runpy.run_path(str(REPO_ROOT / "scripts/adhoc/issue937_audit_exports.py"))
+    assert canonical is legacy
+    for helper_name, helper_fn in (
+        ("bound_names", bound_names),
+        ("cross_module_uses", cross_module_uses),
+        ("declared_exports", declared_exports),
+        ("export_omissions", export_omissions),
+        ("function_arguments", function_arguments),
+        ("import_origin", import_origin),
+        ("module_name", module_name),
+        ("public_definitions", public_definitions),
+        ("source_inventory", source_inventory),
+    ):
+        assert getattr(canonical, helper_name) is helper_fn
+        assert script_ns[helper_name] is helper_fn
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "__all__ = ['a']\n__all__ += ['b']",
+        "__all__ = ['a']\n__all__ *= 2",
+        "__all__ = ['a']\n__all__.append('b')",
+        "__all__ = ['a']\n__all__.extend(['b'])",
+        "__all__ = ['a']\n__all__.insert(0, 'b')",
+        "__all__ = ['a']\n__all__.remove('a')",
+        "__all__ = ['a']\n__all__.pop()",
+        "__all__ = ['a']\n__all__.clear()",
+        "__all__ = ['a']\n__all__.sort()",
+        "__all__ = ['a']\n__all__.reverse()",
+        "__all__ = ['a']\nlist.extend(__all__, ['b'])",
+        "__all__ = ['a']\n__all__[0] = 'b'",
+        "__all__ = ['a']\n__all__[:] = ['b']",
+        "__all__ = ['a']\n__all__[0], other = 'b', 1",
+        "__all__ = ['a']\ndel __all__",
+        "__all__ = ['a']\ndel __all__[0]",
+        "__all__ = alias = ['a']",
+        "__all__, other = ['a'], ['b']",
+        "(__all__ := ['a'])",
+        "if flag:\n    __all__ = ['a']",
+        "__all__ = ['a']\nif flag:\n    __all__ = ['b']",
+        "try:\n    __all__ = ['a']\nexcept Exception:\n    __all__ = []",
+        "with manager() as __all__:\n    pass",
+        "for __all__ in [['a']]:\n    pass",
+        "__all__ = ['a']\ndef mutate():\n    global __all__\n    __all__ = ['b']",
+    ],
+)
+def test_declared_exports_rejects_all_mutations_and_non_top_level_bindings(source: str) -> None:
+    """Any in-place mutation or conditional/nested binding of __all__ must fail closed (#1039)."""
+    tree = ast.parse(source)
+    with pytest.raises(AssertionError, match="mutates or conditionally binds __all__"):
+        declared_exports(tree, "mtp.fixture")
+
+
+def test_public_definitions_discovers_nested_module_bindings_and_ignores_guards() -> None:
+    """Module-level compound blocks bind public names, while static guards do not (#1039)."""
+    tree = ast.parse(
+        "from typing import TYPE_CHECKING\n"
+        "import typing\n"
+        "top_scalar = 1\n"
+        "if condition:\n"
+        "    if_var = 1\n"
+        "    def if_func():\n"
+        "        local_only = 2\n"
+        "        return local_only\n"
+        "else:\n"
+        "    else_var = 2\n"
+        "    class ElseClass:\n"
+        "        class_attr = 3\n"
+        "try:\n"
+        "    try_var = 1\n"
+        "except RuntimeError as exc_only:\n"
+        "    except_var = 2\n"
+        "else:\n"
+        "    try_else_var = 3\n"
+        "finally:\n"
+        "    finally_var = 4\n"
+        "with context() as with_var:\n"
+        "    with_body_var = 5\n"
+        "for loop_var in items:\n"
+        "    for_body_var = 6\n"
+        "else:\n"
+        "    for_else_var = 7\n"
+        "while running:\n"
+        "    while_body_var = 8\n"
+        "match subject:\n"
+        "    case [match_item, *match_rest]:\n"
+        "        match_body_var = 9\n"
+        "    case {'key': match_val, **match_kw}:\n"
+        "        pass\n"
+        "if (walrus_var := compute()):\n"
+        "    pass\n"
+        "_ = [comp_walrus := item for item in items]\n"
+        "_ = lambda: (lambda_walrus := 1)\n"
+        "if TYPE_CHECKING:\n"
+        "    type_only_a = 1\n"
+        "else:\n"
+        "    runtime_from_tc_else = 1\n"
+        "if typing.TYPE_CHECKING:\n"
+        "    type_only_b = 1\n"
+        "if not TYPE_CHECKING:\n"
+        "    runtime_from_not_tc = 1\n"
+        "else:\n"
+        "    type_only_c = 1\n"
+        "if __name__ == '__main__':\n"
+        "    main_only_a = 1\n"
+        "else:\n"
+        "    runtime_from_main_else = 1\n"
+        "if '__main__' != __name__:\n"
+        "    runtime_from_not_main = 1\n"
+        "else:\n"
+        "    main_only_b = 1\n"
+        "_private_nested = 1\n"
+    )
+    assert public_definitions(tree) == {
+        "ElseClass",
+        "comp_walrus",
+        "else_var",
+        "except_var",
+        "finally_var",
+        "for_body_var",
+        "for_else_var",
+        "if_func",
+        "if_var",
+        "loop_var",
+        "match_body_var",
+        "match_item",
+        "match_kw",
+        "match_rest",
+        "match_val",
+        "runtime_from_main_else",
+        "runtime_from_not_main",
+        "runtime_from_not_tc",
+        "runtime_from_tc_else",
+        "top_scalar",
+        "try_else_var",
+        "try_var",
+        "walrus_var",
+        "while_body_var",
+        "with_body_var",
+        "with_var",
+    }
+
+
+def test_export_omissions_detects_nested_public_definitions_and_reexports() -> None:
+    """Cross-module use of conditionally defined or re-exported symbols is audited (#1039)."""
+    sources = {
+        "mtp.origin": "shared = 1\n__all__ = ['shared']",
+        "mtp.fixture": (
+            "from typing import TYPE_CHECKING\n"
+            "if TYPE_CHECKING:\n"
+            "    from .origin import shared as type_only_reexport\n"
+            "if enable_reexport:\n"
+            "    from .origin import shared as conditional_reexport\n"
+            "try:\n"
+            "    nested_value = 1\n"
+            "except RuntimeError:\n"
+            "    nested_value = 0\n"
+            "__all__ = []\n"
+        ),
+        "mtp.consumer": (
+            "from mtp.fixture import conditional_reexport, nested_value, type_only_reexport\n"
+        ),
+    }
+    assert export_omissions(sources, set()) == {
+        "mtp.fixture": ["conditional_reexport", "nested_value"]
+    }
+    sources["mtp.fixture"] = sources["mtp.fixture"].replace(
+        "__all__ = []",
+        "__all__ = ['conditional_reexport', 'nested_value']",
+    )
+    assert export_omissions(sources, set()) == {}
 
 
 if __name__ == "__main__":

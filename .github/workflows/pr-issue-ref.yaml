@@ -1,0 +1,22 @@
+name: PR Issue Reference
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+jobs:
+  issue-reference:
+    name: Check PR body issue reference
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Validate PR body issue reference
+        run: python3 scripts/check_pr_issue_reference.py --event-path "${GITHUB_EVENT_PATH}"

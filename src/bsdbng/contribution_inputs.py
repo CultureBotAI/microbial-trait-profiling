@@ -8,6 +8,7 @@ from mtp.contribution_inputs import (
     Assertion,
     Base,
     Graph,
+    InputTraitPolicyResolution,
     Key,
     Pair,
     count,
@@ -16,6 +17,8 @@ from mtp.contribution_inputs import (
     load_base,
     load_graph,
     main,
+    resolve_inputs_trait_key_policy,
+    resolve_inputs_trait_key_policy_record,
     rows,
     verify_kg,
 )
@@ -25,6 +28,7 @@ __all__ = [
     "Assertion",
     "Base",
     "Graph",
+    "InputTraitPolicyResolution",
     "Key",
     "Pair",
     "count",
@@ -33,6 +37,8 @@ __all__ = [
     "load_base",
     "load_graph",
     "main",
+    "resolve_inputs_trait_key_policy",
+    "resolve_inputs_trait_key_policy_record",
     "rows",
     "verify_kg",
 ]

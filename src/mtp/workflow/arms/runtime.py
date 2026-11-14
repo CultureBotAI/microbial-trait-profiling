@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import importlib.metadata
 import json
 import os
@@ -493,7 +494,8 @@ def execute_arm(
         if output.is_relative_to(repository / directory):
             raise ValueError(f"Rerun output overlaps source directory: {output}")
     profile: ProfileKind = "ora_profiles" if arm == "ilyas" else "count_profiles"
-    bundle = open_core_bundle(manifest, profile)
+    core_manifest_sha256 = sha256_file(manifest)
+    bundle = open_core_bundle(manifest, profile, expected_sha256=core_manifest_sha256)
     preflight_consumer_outputs(bundle, output / "arm_run.json", output_directory=output)
     commit, dirty = repository_state(repository)
     context = ArmContext(
@@ -550,7 +552,7 @@ def execute_arm(
         started_at=datetime.now(UTC),
         manifest_path=str(output / "arm_run.json"),
         core_manifest_path=str(manifest),
-        core_manifest_sha256=sha256_file(manifest),
+        core_manifest_sha256=core_manifest_sha256,
         core_run_id=bundle.run.run_id,
         profile_product=profile,
         contrast_population=bundle.run.contrast_population,
@@ -641,7 +643,7 @@ def execute_arm(
                 _save(record)
         if sha256_file(manifest) != record.core_manifest_sha256:
             raise ValueError("Upstream core manifest changed during rerun")
-        verify_core_run(manifest)
+        verify_core_run(manifest, expected_sha256=record.core_manifest_sha256)
         for item in record.prepared_inputs:
             _check_snapshot(item, exact=True)
         for completed_step in record.steps or []:
@@ -660,21 +662,37 @@ def execute_arm(
     return record
 
 
-def verify_arm(path: Path) -> ArmRun:
+def verify_arm(path: Path, *, expected_sha256: str | None = None) -> ArmRun:
     """Reconcile completed stage evidence, immutable core inputs and final output bytes."""
-    record = _read_arm_record(path)
-    core = verify_core_run(Path(record.core_manifest_path))
+    record = _read_arm_record(path, expected_sha256=expected_sha256)
+    core = verify_core_run(
+        Path(record.core_manifest_path), expected_sha256=record.core_manifest_sha256
+    )
     return _verify_arm_record(path.resolve(), record, core)
 
 
-def _verify_arm_with_core(path: Path, core: WorkflowRun) -> ArmRun:
+def _verify_arm_with_core(
+    path: Path,
+    core: WorkflowRun,
+    *,
+    core_manifest_sha256: str,
+    expected_sha256: str | None = None,
+) -> ArmRun:
     """Check an arm against the already verified core of this comparison traversal."""
-    return _verify_arm_record(path.resolve(), _read_arm_record(path), core)
+    record = _read_arm_record(path, expected_sha256=expected_sha256)
+    if Path(record.core_manifest_path).resolve() != Path(core.manifest_path).resolve():
+        raise ValueError("Core manifest differs from the verified core")
+    if record.core_manifest_sha256 != core_manifest_sha256:
+        raise ValueError("Core manifest SHA-256 differs from the verified core")
+    return _verify_arm_record(path.resolve(), record, core)
 
 
-def _read_arm_record(path: Path) -> ArmRun:
+def _read_arm_record(path: Path, *, expected_sha256: str | None = None) -> ArmRun:
     path = path.resolve()
-    record = ArmRun.model_validate_json(path.read_text(encoding="utf-8"))
+    raw = path.read_bytes()
+    if expected_sha256 is not None and hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError("Arm manifest SHA-256 mismatch")
+    record = ArmRun.model_validate_json(raw)
     if record.status != ExecutionStatus.completed or not record.ended_at or record.error:
         raise ValueError("Arm rerun is not a completed successful execution")
     if Path(record.manifest_path) != path:

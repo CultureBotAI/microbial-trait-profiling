@@ -16,6 +16,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import sys
 import tarfile
@@ -26,30 +27,81 @@ from typing import Any
 REPOSITORY = Path(__file__).resolve().parents[2]
 NAMESPACE = Path("/fixture/trait-policy-44897c6")
 MATRIX_SOURCE = "src/mtp/taxa_trait_matrix.py"
-EXPECTED_MAIN_COMMIT = "".join(
-    ("4489", "7c6f", "bf06", "9ca8", "52e5", "1a79", "b451", "d935", "9016", "b66b")
+COMMITTED_FIXTURE = (
+    REPOSITORY / "tests" / "fixtures" / "trait_key_policy" / "historical_union_core.tar.gz"
 )
-EXPECTED_MAIN_MATRIX_SHA256 = "".join(
-    (
-        "0517",
-        "bd05",
-        "a844",
-        "81b4",
-        "9a65",
-        "1891",
-        "72ff",
-        "c2e5",
-        "b66f",
-        "5aa7",
-        "6b61",
-        "45d5",
-        "e666",
-        "d5c0",
-        "24f6",
-        "d12b",
-    )
+EXPECTED_MAIN_REFERENCE = "44897c6"
+
+
+def _read_bundle_json(bundle: Path, member: str) -> dict[str, Any]:
+    if bundle.is_dir():
+        loaded = json.loads((bundle / member).read_text(encoding="utf-8"))
+    else:
+        with tarfile.open(bundle, mode="r:gz") as tar:
+            extracted = tar.extractfile(member)
+            if extracted is None:
+                raise ValueError(f"Missing {member} in {bundle}")
+            loaded = json.loads(extracted.read().decode("utf-8"))
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{member} in {bundle} must be a JSON object")
+    return loaded
+
+
+def load_audited_producer_pins(
+    fixture: Path = COMMITTED_FIXTURE,
+) -> tuple[str, str, int]:
+    """Load and cross-check audited producer pins from the committed union-core bundle (#1258)."""
+    generation = _read_bundle_json(fixture, "generation.json")
+    run_record = _read_bundle_json(fixture, "core/run.json")
+    producer_commit = generation.get("producer_commit")
+    if (
+        not isinstance(producer_commit, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", producer_commit)
+        or not producer_commit.startswith(EXPECTED_MAIN_REFERENCE)
+    ):
+        raise ValueError(
+            "Audited generation.json producer_commit must be a 40-hex SHA "
+            f"starting with {EXPECTED_MAIN_REFERENCE}"
+        )
+    if run_record.get("git_commit") != producer_commit:
+        raise ValueError(
+            "Audited core/run.json git_commit differs from generation.json producer_commit"
+        )
+    matrix_inv = generation.get("producer_matrix_inventory")
+    if not isinstance(matrix_inv, dict) or matrix_inv.get("path") != MATRIX_SOURCE:
+        raise ValueError(f"Audited producer_matrix_inventory must target {MATRIX_SOURCE}")
+    matrix_sha256 = matrix_inv.get("sha256")
+    matrix_size = matrix_inv.get("size_bytes")
+    if (
+        not isinstance(matrix_sha256, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", matrix_sha256)
+        or not isinstance(matrix_size, int)
+        or isinstance(matrix_size, bool)
+        or matrix_size <= 0
+    ):
+        raise ValueError("Audited producer_matrix_inventory has invalid sha256 or size_bytes")
+    code_inventory = run_record.get("code_inventory")
+    if not isinstance(code_inventory, list):
+        raise ValueError("Audited core/run.json is missing code_inventory")
+    matching_entries = [
+        item
+        for item in code_inventory
+        if isinstance(item, dict) and item.get("path") == MATRIX_SOURCE
+    ]
+    if len(matching_entries) != 1 or (
+        matching_entries[0].get("sha256") != matrix_sha256
+        or matching_entries[0].get("size_bytes") != matrix_size
+    ):
+        raise ValueError(
+            "Audited core/run.json code_inventory disagrees with "
+            "generation.json producer_matrix_inventory"
+        )
+    return producer_commit, matrix_sha256, matrix_size
+
+
+EXPECTED_MAIN_COMMIT, EXPECTED_MAIN_MATRIX_SHA256, EXPECTED_MAIN_MATRIX_SIZE = (
+    load_audited_producer_pins(COMMITTED_FIXTURE)
 )
-EXPECTED_MAIN_MATRIX_SIZE = 28555
 
 
 def digest(path: Path) -> str:

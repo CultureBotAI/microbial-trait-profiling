@@ -7,7 +7,7 @@
 - Summary JSON: [`data/derived/calibration/composition/composition_calibration_summary.json`](../data/derived/calibration/composition/composition_calibration_summary.json)  
 - Summary TSV: [`data/derived/calibration/composition/composition_calibration_summary.tsv`](../data/derived/calibration/composition/composition_calibration_summary.tsv)  
 - Per-Replicate TSV: [`data/derived/calibration/composition/composition_calibration_replicates.tsv`](../data/derived/calibration/composition/composition_calibration_replicates.tsv)  
-- Null p-values: `data/derived/calibration/composition/composition_null_pvalues.tsv.gz` (683 KB, not committed; regenerate with `just calibrate-composition`)  
+- Null p-values: `data/derived/calibration/composition/composition_null_pvalues.tsv.gz` (not committed; regenerate with `just calibrate-composition`)
 - Table 1 Calibration: [`data/derived/calibration/composition/table1_composition_calibration.tsv`](../data/derived/calibration/composition/table1_composition_calibration.tsv)  
 
 The numbers below retain the historical #263 benchmark described by these
@@ -24,6 +24,53 @@ primary inferential procedure. For the observed family size, use the execution's
 replicate's family size, use that replicate's `n_tests` in
 `composition_calibration_replicates.tsv`; do not pool tests across replicates.
 Bare p-values below are nominal diagnostics.
+
+## Diagnostic export schema contract (#1487)
+
+New exports identify their output layout with a top-level `export_schema_version`
+in the status or summary JSON. This identifies the documented columns and their
+meaning; it does not change the scientific protocol, certify calibration, or
+introduce another multiple-testing correction.
+
+| Producer | JSON carrying the marker | `export_schema_version` |
+|---|---|---|
+| `mtp.calibration` | `calibration_status.json` | `calibration-output-v1` |
+| `mtp.composition_calibration.composition` | `composition_calibration_summary.json` | `composition-calibration-output-v1` |
+| `mtp.log_ratio_sensitivity` | `sensitivity_status.json` | `log-ratio-sensitivity-output-v1` |
+
+The existing scientific `version` values remain `calibration-v3` and
+`log-ratio-sensitivity-v1`; the composition producer retains its method, stream,
+unit and seed identifiers. The marker is not added to TSV columns or to
+`calibration_flip_assignments.json`. The shared
+`calibration_flip_assignments.tsv` still has `seed`, `stream`, `unit`, `replicate`,
+`study_id`, `experiment_id` and `flipped`; its assignment order, RNG draws and
+companion JSON's `calibration-v3` version remain unchanged.
+
+The following table maps the diagnostic fields to the numerical quantities they
+describe. These fields were already emitted before the explicit schema marker;
+`output-v1` names that layout rather than recalculating its values.
+
+| Table or JSON field | Column contract and interpretation |
+|---|---|
+| `calibration_results.tsv`, per-test rows (`label != FAMILY`) | `p_value_diagnostics_role = calibration_diagnostic` and `p_value_diagnostics_correction = none (nominal)` describe `rejections_p`, `rejection_rate_p`, its `_ci_low`/`_ci_high`, `smallest_observed_p`, `attainable_p_below_alpha`, `attainable_p_above_alpha` and `exact_size_at_median_scored`. Rejections use nominal `p <= 0.05`; `replicates_tested` is the denominator. The separate `rejections_q` and `rejection_rate_q` columns use the procedure's corrected `q <= 0.05`. |
+| `calibration_results.tsv`, `FAMILY` rows | Both diagnostic-label cells are blank. Despite their names, `rejections_p` and `rejection_rate_p` count replicates with any corrected `q <= 0.05` and equal their `_q` counterparts; their intervals use the same family-event count. `mean_false_discovery_proportion` averages each replicate's false-call fraction, including zero when there are no calls. |
+| `calibration_replicates.tsv` | The same two diagnostic labels describe `null_tests_rejected_p`, the number of null tests with nominal `p <= 0.05`; `null_tests_evaluated` gives its denominator. `family_rejected_q` separately indicates whether that procedure/replicate has any corrected `q <= 0.05`. `calibration_status.json.p_value_diagnostics` states this distinction. |
+| `composition_null_pvalues.tsv.gz` | `null_p_value` is nominal, `null_t_statistic` is the simulated test statistic, and `replicate`/`trait` identify the cell. The two diagnostic labels have the same values above; `n_tests` is the full supplied trait family in that replicate. |
+| `composition_calibration_replicates.tsv` and `composition_calibration_summary.tsv` | `correction` remains `BH` or `BY`, never `none (nominal)`. Per-replicate `significant` counts corrected q-values at `threshold` across `n_tests`. Summary `mean_null_calls`, `max_null_calls`, `replicates_with_any_call`, `family_error` and its interval summarize those counts; `observed_calls` and `replicates_reaching_observed` compare them with the observed corrected count. These tables do not carry the nominal-p diagnostic-label columns. |
+| `table1_composition_calibration.tsv` and composition summary JSON | `observed_p` and `null_type_i_alpha_05` are nominal diagnostics; the latter is the fraction of null p-values at most 0.05. `observed_bh_q`/`observed_by_q` retain full-family corrections. `null_reps_reaching_observed` counts null absolute t-statistics at least the observed magnitude; `survives_null_calibration` retains the rule `observed_bh_q <= 0.05` and zero such replicates. The JSON's `p_value_diagnostics_role`, `p_value_diagnostics_correction` and `p_value_diagnostics` describe nominal fields, including `type_i_error_metrics` at each recorded `nominal_alpha`; they do not relabel the corrected q columns. |
+| `sensitivity_results.tsv` | `p_value` is nominal; `q_value` uses the row's `family`, `family_size` and `correction`. Eligibility counts, effect estimates, confidence intervals and `status` retain their meanings; undefined values remain blank. In `sensitivity_status.json`, `family_status` remains authoritative when one scenario contains multiple correction families. |
+| `population_sensitivity.tsv` and sensitivity status JSON | `baseline_p_value`/`restricted_p_value` are nominal, while `baseline_q_value`/`restricted_q_value` retain their separately recorded families and corrections. `detection_change` keeps the existing rule: “lost at correction” requires baseline q at most 0.05, restricted nominal p at most 0.05, and restricted q above 0.05. `population_detection_change_rule` states this rule; `estimate_agreement` describes the separate share/interval comparison. |
+
+The injection/criteria, eligibility and leave-out tables retain their existing
+columns and calculations; the export marker adds no tests, rows or rejection
+counters. Legacy JSON without `export_schema_version` remains readable by existing
+consumers, including integrated evidence. Absence means an unversioned historical
+layout, not an inferred `output-v1` marker; retain its recorded protocol, family
+metadata and provenance rather than rewriting it.
+
+This change does not regenerate or relabel the tracked composition calibration
+outputs or `data/analysis/cellulose_decr/*`. The cellulose summary table/JSON
+portion of #1487 remains open and is not covered by these three export contracts.
 
 ---
 

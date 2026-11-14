@@ -6,9 +6,12 @@ replications and are never pooled into one inferential p-value.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -25,12 +28,86 @@ from mtp.datamodel.multiple_testing_pydantic import (
 )
 from mtp.datamodel.workflow_pydantic import AnalysisBasis
 from mtp.multiple_testing import canonical_sha256, correct_family, verify_correction
+from mtp.paths import REPO_ROOT
 from mtp.trait_guilds import Profile
 from mtp.trait_screen import TESTED
 from mtp.workflow.coverage import feature_filter_id
 from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
 
 STATISTICS = (scanner.MEAN_DISTANCE, scanner.CORE)
+VERSION = "study-split-selection-v2"
+PROTOCOL_PATH = REPO_ROOT / "methods/study_split_selection_protocol.json"
+
+
+def _declaration(path: Path | None = None) -> dict[str, Any]:
+    """Validate the scope-only amendment against the byte-preserved historical protocol."""
+    path = PROTOCOL_PATH if path is None else path
+    declared: dict[str, Any] = json.loads(path.read_bytes())
+    amendment = declared.get("amends", {})
+    historical = path.with_name("study_split_selection_protocol_v1.json")
+    historical_bytes = historical.read_bytes()
+    if declared.get("protocol") != VERSION or amendment != {
+        "protocol": "study-split-selection-v1",
+        "path": "methods/study_split_selection_protocol_v1.json",
+        "sha256": hashlib.sha256(historical_bytes).hexdigest(),
+    }:
+        raise ValueError("Study-split v2 amendment does not bind its historical v1 protocol")
+    original = json.loads(historical_bytes)
+    if original.get("protocol") != "study-split-selection-v1":
+        raise ValueError("Study-split amendment names an invalid historical version")
+    changed = {
+        "protocol",
+        "issue",
+        "declared",
+        "primary_strain_rollup",
+        "sensitivity_strain_rollup",
+        "scope_reporting",
+    }
+    expected_fields = (set(original) - {"sensitivity_strain_rollup"}) | {
+        "amends",
+        "known_results",
+        "sensitivity_strain_rollups",
+        "absent_means",
+    }
+    if set(declared) != expected_fields:
+        raise ValueError("Study-split amendment has missing or undeclared fields")
+    if any(declared.get(key) != value for key, value in original.items() if key not in changed):
+        raise ValueError("Study-split scope amendment changes a historical statistical rule")
+    roles = (
+        declared.get("primary_strain_rollup"),
+        declared.get("sensitivity_strain_rollups"),
+        declared.get("absent_means"),
+        declared.get("scope_reporting"),
+    )
+    if roles != ("phenotype", ["off"], "off", "side_by_side"):
+        raise ValueError("Study-split v2 strain-rollup scope roles disagree with the amendment")
+    known = declared.get("known_results", {})
+    if (
+        known.get("declared_after_results") != ["off", "phenotype"]
+        or known.get("source")
+        != (
+            "methods/cellulose_decr_selection_scan_protocol_v2.json"
+            "#/amendments/0/known_when_amended"
+        )
+        or not known.get("limitations")
+    ):
+        raise ValueError("Study-split amendment omits the known-results disclosure")
+    return declared
+
+
+def _scope(strain_rollup: str | None) -> str:
+    declaration = _declaration()
+    scope = declaration["primary_strain_rollup"] if strain_rollup is None else strain_rollup
+    if scope not in [
+        declaration["primary_strain_rollup"],
+        *declaration["sensitivity_strain_rollups"],
+    ]:
+        raise ValueError(f"Undeclared study-split strain-rollup scope: {scope}")
+    return str(scope)
+
+
+def _scope_role(strain_rollup: str) -> str:
+    return "primary_phenotype" if _scope(strain_rollup) == "phenotype" else "declared_sensitivity"
 
 
 @dataclass(frozen=True)
@@ -139,7 +216,7 @@ def _training_selection(
     split: StudySplit,
     protocol: Protocol,
     *,
-    strain_rollup: str = "off",
+    strain_rollup: str | None = None,
 ) -> tuple[list[Candidate], str]:
     """Select on training studies only, without forced historical candidates."""
     if set(split.training) & set(split.testing):
@@ -149,7 +226,7 @@ def _training_selection(
         key=lambda p: (p.study_id, p.experiment_id, p.inc_dec),
     )
     scan_protocol = _scanner_protocol(protocol)
-    scope = strain_rollup
+    scope = _scope(strain_rollup)
     role = scanner.scope_role(scope, scan_protocol)
     inputs = scanner.ScanInputs(
         profiles,
@@ -194,7 +271,7 @@ def select_candidates(
     split: StudySplit,
     protocol: Protocol,
     *,
-    strain_rollup: str = "off",
+    strain_rollup: str | None = None,
 ) -> list[Candidate]:
     """Return the training-only candidates; execution also records the selection status."""
     candidates, _ = _training_selection(
@@ -223,9 +300,10 @@ def evaluate_candidates(
     protocol: Protocol,
     *,
     seed: int,
-    strain_rollup: str = "off",
+    strain_rollup: str | None = None,
 ) -> tuple[list[RawHypothesis], list[dict[str, Any]]]:
     """Test frozen selections with only held-out studies in observations and nulls."""
+    scope = _scope(strain_rollup)
     rows = []
     details = []
     identities = [candidate.identity(stat) for candidate in candidates for stat in STATISTICS]
@@ -237,7 +315,6 @@ def evaluate_candidates(
         summary: dict[str, Any] = {}
         if reason is None:
             scan_protocol = _scanner_protocol(protocol)
-            scope = strain_rollup
             role = scanner.scope_role(scope, scan_protocol)
             inputs = scanner.ScanInputs(
                 heldout,
@@ -344,7 +421,7 @@ def declare_family(
         for statistic in STATISTICS
     ]
     return HypothesisFamily(
-        family_id=f"study-split-selection-v1:split-{split.index:03}",
+        family_id=f"{VERSION}:split-{split.index:03}",
         analysis_id=analysis_id,
         analysis_basis_sha256=canonical_sha256(basis.model_dump(mode="json")),
         source_membership_sha256=canonical_sha256(asdict(split)),

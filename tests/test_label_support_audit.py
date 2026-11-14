@@ -1139,7 +1139,7 @@ def test_column_metadata_default_inventory_records_present_or_absent(
     output = tmp_path / "metadata-inventory"
     run_audit(inputs, output)
     provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
-    expected: dict[str, str | int] = (
+    expected: dict[str, str | int | list[str]] = (
         {
             "path": columns.name,
             "sha256": file_sha256(columns),
@@ -1148,7 +1148,11 @@ def test_column_metadata_default_inventory_records_present_or_absent(
         if present
         else {"path": columns.name, "status": "absent"}
     )
-    expected.update(selection="sibling_default", member_id_rows=int(present))
+    expected.update(
+        selection="sibling_default",
+        member_id_rows=int(present),
+        label_changed_trait_ids=[FAC] if present else [],
+    )
     assert provenance["inputs"]["column_metadata"] == expected
     assert_facultative_audit_label(
         output, "facultative (aerobe or anaerobe)" if present else "facultatively aerobic"
@@ -1226,6 +1230,7 @@ def test_column_metadata_cli_explicit_path_overrides_conflicting_sibling(
         "size_bytes": explicit.stat().st_size,
         "selection": "explicit",
         "member_id_rows": 1,
+        "label_changed_trait_ids": [FAC] if explicit_union else [],
     }
     assert provenance["inputs"]["column_metadata"]["sha256"] != file_sha256(sibling)
     assert_facultative_audit_label(
@@ -1304,6 +1309,7 @@ def test_column_metadata_records_source_member_rows_not_mapping_alias_count(
         "size_bytes": columns.stat().st_size,
         "selection": "sibling_default",
         "member_id_rows": expected_rows,
+        "label_changed_trait_ids": [FAC] if union_label else [],
     }
     assert_facultative_audit_label(
         output, "facultative (aerobe or anaerobe)" if union_label else "facultatively aerobic"

@@ -16,11 +16,11 @@ Inputs:
   - tests/test_contrast_orientation.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 19 killed mutants (rc=1, assertion,
-    PYTEST_ORIGIN_OK).
+  - stdout summary of CONTROL (rc=0) and 19 killed mutants (rc=1, matched
+    assertion marker, PYTEST_ORIGIN_OK).
 
-Issue: #1838, #1888, #1889, #1890, #1898, #1988, #1989, #1990
-Date: 2026-11-08
+Issue: #1838, #1888, #1889, #1890, #1898, #1988, #1989, #1990, #1991
+Date: 2026-11-10
 """
 
 from __future__ import annotations
@@ -320,7 +320,8 @@ def main() -> int:
             if not any(marker in out for marker in ASSERTION_MARKERS):
                 print(f"FAIL [{mutant.name}]: no assertion marker in output\n{out}")
                 return 1
-            print(f"KILLED {mutant.name}: rc=1 AssertionError PYTEST_ORIGIN_OK")
+            matched_marker = next(m for m in ASSERTION_MARKERS if m in out)
+            print(f"KILLED {mutant.name}: rc=1 {matched_marker} PYTEST_ORIGIN_OK")
 
     print(f"ALL {len(MUTANTS)} #1838 MUTANTS KILLED CLEANLY.")
     return 0

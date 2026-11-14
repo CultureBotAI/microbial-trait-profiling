@@ -21,8 +21,13 @@ additionally validates the local corpus.
 
 This is a provisional annotation influence diagnostic. The archived Rosalind
 discussion and separate review in [PR #192](https://github.com/CultureBotAI/microbial-trait-profiling/pull/192)
-motivate tests, not established contributors or mechanisms. Contrast eligibility
-and orientation remain subject to #188; feature semantics remain subject to #189.
+motivate tests, not established contributors or mechanisms. In the historical
+`190-v2` run, contrast eligibility and orientation were scoped to #188 and feature
+semantics to #189 prior to their subsequent tracker closures (#188 Closed 2026-10-11
+UTC; #189 Closed 2026-10-08 UTC; see the status checkpoint in
+[`methods/biological_interpretation_audit.md#status-checkpoint-2026-10-30`](biological_interpretation_audit.md#status-checkpoint-2026-10-30));
+closing them in the tracker does not retroactively recertify the historical `190-v2`
+outputs or establish biological validation.
 Increased/decreased here are curated signature labels, not verified disease/control
 labels. Neither taxon removal nor robustness establishes causation, oxygen exposure,
 pathway activity, SCFA production, or independent confirmation. Apply the shared
@@ -197,6 +202,12 @@ and population; retain the effect unit, all uncertainty/support fields, family i
 input hashes, missingness and ambiguity flags. The native extension supplies the pinned
 transformed-composition and ORA reruns. Its experiment-weighted t/BH statistics and
 profile-level ORA families remain distinct from the study-weighted sign-test BH6 fields;
-none substitutes for another. Matched-corpus analog scope (#210; not a reproduction of the published Table 1 baseline), native-owner review, the #188/#189
-prerequisites and review of resolved source semantics remain required before manuscript
-adoption or assigning mechanisms.
+none substitutes for another. As date-scoped above for #188 and #189 in the
+historical `190-v2` run (and in [the native rerun extension](table1_native_influence.md)
+for the historical `190-native-v1` snapshot), closing those tracker issues does
+not retroactively recertify either historical output set. Matched-corpus analog
+scope (#210; not a reproduction of the published Table 1 baseline), native-owner
+review, output-specific verification of contrast orientation and feature semantics
+for any `190-v2` or native outputs adopted in a manuscript, and review of resolved
+source semantics remain required before manuscript adoption or assigning
+mechanisms.

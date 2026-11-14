@@ -1,7 +1,7 @@
 # Paired log-ratio direction consistency for Table 1-trait pairs (matched-corpus analog)
 
 Run `just table1-compositional-stats`. The implementation is
-`src/bsdbng/trait_composition.py`. It writes `trait_log_ratio_stats.tsv`,
+`src/mtp/trait_composition.py`. It writes `trait_log_ratio_stats.tsv`,
 `trait_log_ratio_studies.tsv`, `trait_log_ratio_provenance.json`, and a readable
 `trait_log_ratio_report.md` to `data/derived/table1_composition/`.
 

@@ -18,6 +18,7 @@ from types import ModuleType, SimpleNamespace
 import pytest
 
 from mtp import integrated_evidence, provenance_paths
+from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.paths import file_sha256
 from mtp.workflow import comparison
 from mtp.workflow.arms import runtime
@@ -77,8 +78,17 @@ def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Inputs:
         for name, path in manifests.items()
         if name != "core"
     }
-    monkeypatch.setattr(comparison, "verify_core_run", lambda _path: core)
-    monkeypatch.setattr(comparison, "verify_arm", lambda path: arms[path])
+
+    def checked_core(path: Path, *, expected_sha256: str | None = None) -> WorkflowRun:
+        assert expected_sha256 == file_sha256(path)
+        return core
+
+    def checked_arm(path: Path, *, expected_sha256: str | None = None) -> SimpleNamespace:
+        assert expected_sha256 == file_sha256(path)
+        return arms[path]
+
+    monkeypatch.setattr(comparison, "verify_core_run", checked_core)
+    monkeypatch.setattr(comparison, "verify_arm", checked_arm)
     monkeypatch.setattr(comparison, "artifact_path", lambda _run, product: products[product])
     monkeypatch.setattr(
         comparison, "recorded_output", lambda arm, step, name: evidence[(arm.arm, step, name)]
@@ -573,7 +583,11 @@ def test_noel_custom_integrated_plan_checks_actual_full_screen_before_execution(
     monkeypatch.setattr(runtime, "_run_process", execute)
     monkeypatch.setattr(runtime, "_prepare_inputs", lambda *_args: [])
     monkeypatch.setattr(runtime, "_code_inventory", lambda _root: [])
-    monkeypatch.setattr(runtime, "verify_core_run", lambda _path: None)
+
+    def checked_final_core(path: Path, *, expected_sha256: str | None = None) -> None:
+        assert expected_sha256 == file_sha256(path)
+
+    monkeypatch.setattr(runtime, "verify_core_run", checked_final_core)
     monkeypatch.setattr(importlib.metadata, "distributions", lambda: ())
     if screen_outside:
         expected = producer_refusal(record, (inputs.products["ora_profiles"], screen), inputs.root)

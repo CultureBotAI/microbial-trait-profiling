@@ -57,9 +57,11 @@ experiment-weighted and study-weighted means and ranks remain labelled.
 
 The x trait is `METPO:1000608`. Recorded and verified tables in `delta_z_derived`
 and `three_test_table` keep the KG node label `facultatively aerobic` because
-readers compare labels with the core; they do not record member arrays themselves
-and instead read `trait_member_ids_json` from the core's `feature_metadata` when
-resolving policy membership (#1250, #1259). While human-facing renders in other
+readers compare labels with the core; they do not record member arrays themselves,
+nor do `three_test_table` or `delta_z_derived` parse `trait_member_ids_json`
+during statistical computation, though downstream consumers can read
+`trait_member_ids_json` from the core's `feature_metadata` when resolving policy
+membership (#1246, #1250, #1259, #1261). While human-facing renders in other
 modules apply `display_trait_label` to display `facultative (aerobe or anaerobe)`
 (#1138), no current renderer of `delta_z_derived` or `three_test_table` rows
 applies the display label yet (#1246, #1250). The y trait is
@@ -83,6 +85,13 @@ biological antagonism or coordinated physiological activity. See the
 Report these quantities for all supplied comparisons and for stool. Stool is
 the exact condition `experiments.body_site == "Feces"`; it is not inferred
 from `body_site_category`, a case-insensitive alias, or a condition name.
+Across `mtp.delta_z_derived.tables`, `mtp.cellulose_decr.analysis`,
+`mtp.matrix_overlap_coverage`, and `mtp.density_adjustment`, stool membership
+is defined by one shared literal predicate (`is_stool_body_site`, returning
+`True` only for `"Feces"`), with `validate_stool_body_site` refusing case or
+whitespace variants such as `"feces"` or `" Feces "` with a `ValueError` so
+non-canonical stool spellings are neither silently accepted nor silently folded
+into non-stool strata (#1157).
 The output includes both distinct study and comparison counts. A sign test
 with no discordant pairs and a correlation with a constant or insufficient
 vector have explicit untestable status and missing inferential values.

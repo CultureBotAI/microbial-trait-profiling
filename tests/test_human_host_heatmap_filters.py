@@ -406,7 +406,16 @@ def test_taxa_guild_reports_disjoint_row_losses_and_name_fallback(
     records = module.load_bugsigdb_taxa_records(taxa, full_dump)
     audit = capsys.readouterr().out
     assert "input=5 retained=2 dropped_outside_corpus=2 dropped_invalid_direction=1" in audit
+    assert "dropped_missing_from_dump=0" in audit
     assert "name_rank_fallback=1" in audit
+    assert records.attrs.get("audit_summary") == {
+        "input": 5,
+        "retained": 2,
+        "dropped_outside_corpus": 2,
+        "dropped_invalid_direction": 1,
+        "dropped_missing_from_dump": 0,
+        "name_rank_fallback": 1,
+    }
     assert records["direction"].tolist() == ["decreased", "increased"]
     assert records["taxon_name"].tolist() == ["Escherichia coli", "Roseburia"]
     assert records["taxonomic_rank"].tolist() == ["species", "genus"]
@@ -417,10 +426,103 @@ def test_taxa_guild_reports_zero_fallback_and_nonzero_filter_loss(
 ) -> None:
     module = load_script_module("create_taxa_guild_heatmap.py")
     full_dump, taxa = write_all_host_run(tmp_path)
-    module.load_bugsigdb_taxa_records(taxa, full_dump)
+    records = module.load_bugsigdb_taxa_records(taxa, full_dump)
     audit = capsys.readouterr().out
     assert "input=3 retained=1 dropped_outside_corpus=2 dropped_invalid_direction=0" in audit
+    assert "dropped_missing_from_dump=0" in audit
     assert "name_rank_fallback=0" in audit
+    assert records.attrs.get("audit_summary") == {
+        "input": 3,
+        "retained": 1,
+        "dropped_outside_corpus": 2,
+        "dropped_invalid_direction": 0,
+        "dropped_missing_from_dump": 0,
+        "name_rank_fallback": 0,
+    }
+
+
+def test_taxa_guild_separates_and_rejects_dump_absent_signatures(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Dump-absent signatures are counted separately and fail closed (#903)."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    full_dump, _ = write_all_host_run(tmp_path)
+    taxa = write_taxa_table(
+        tmp_path / "dump_absent.tsv",
+        [
+            ("study1", "1", "1", "decreased", "562", "old name", "genus"),
+            ("study1", "1", "1", "increased", "841", "Roseburia", "genus"),
+            ("study1", "1", "1", "unchanged", "562", "old name", "genus"),
+            ("study2", "1", "1", "increased", "573", "Klebsiella pneumoniae", "species"),
+            ("study99", "1", "1", "increased", "817", "Bacteroides fragilis", "species"),
+        ],
+    )
+    with pytest.raises(ValueError, match=r"missing from .*bsdb:study99-1-1"):
+        module.load_bugsigdb_taxa_records(taxa, full_dump)
+    audit = capsys.readouterr().out
+    assert (
+        "BugSigDB taxon-row audit: input=5 retained=2 "
+        "dropped_outside_corpus=1 dropped_invalid_direction=1 "
+        "dropped_missing_from_dump=1 name_rank_fallback=1"
+    ) in audit
+
+
+def test_taxa_guild_subset_mode_fails_when_rows_are_dropped_outside_corpus(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A disease_vs_comparison subset run fails if any row falls outside the corpus (#903)."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    arguments = write_guild_run(tmp_path)
+    full_dump_path = tmp_path / "full_dump.csv"
+    taxa_path = tmp_path / "bugsigdb_taxa.tsv"
+    mouse_row = dump_row("bsdb:study9/1/1", "increased", PARKINSONS, "Mus musculus", "16S", "562")
+    with full_dump_path.open("a", encoding="utf-8") as handle:
+        handle.write(",".join(mouse_row) + "\n")
+    with taxa_path.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "bsdb:study9\tbsdb:study9-1\tbsdb:study9-1-1\tincreased\t"
+            "NCBITaxon:562\tEscherichia coli\tspecies\n"
+        )
+
+    raw_records = module.load_bugsigdb_taxa_records(
+        taxa_path, full_dump_path, direction_basis="group_1_vs_group_0"
+    )
+    raw_audit = capsys.readouterr().out
+    expected_drop_fragment = (
+        "dropped_outside_corpus=1 dropped_invalid_direction=1 dropped_missing_from_dump=0"
+    )
+    assert expected_drop_fragment in raw_audit
+    assert len(raw_records) == 7
+
+    expected_subset_err = (
+        r"direction_basis='disease_vs_comparison' dropped 1 row\(s\) "
+        r"outside the Homo sapiens 16S or WMS corpus.*bsdb:study9-1-1"
+    )
+    with pytest.raises(ValueError, match=expected_subset_err):
+        module.load_bugsigdb_taxa_records(
+            taxa_path, full_dump_path, direction_basis="disease_vs_comparison"
+        )
+    subset_audit = capsys.readouterr().out
+    assert expected_drop_fragment in subset_audit
+
+    with pytest.raises(ValueError, match=expected_subset_err):
+        module.load_bugsigdb_taxa_summary(
+            taxa_path, "species", [], full_dump_path, direction_basis="disease_vs_comparison"
+        )
+    capsys.readouterr()
+
+    monkeypatch.setattr(sys, "argv", [*arguments, "--direction-basis", "disease_vs_comparison"])
+    with pytest.raises(ValueError, match=expected_subset_err):
+        module.main()
+    assert not (tmp_path / "matrix.tsv").exists()
+
+
+def test_taxa_guild_rejects_unknown_direction_basis(tmp_path: Path) -> None:
+    """Unknown direction_basis values fail closed in load_bugsigdb_taxa_records (#903)."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    full_dump_path, taxa_path = write_subset_run(tmp_path)
+    with pytest.raises(ValueError, match="Unknown direction_basis"):
+        module.load_bugsigdb_taxa_records(taxa_path, full_dump_path, direction_basis="invalid")
 
 
 def test_taxa_guild_fails_without_the_full_dump(tmp_path: Path) -> None:

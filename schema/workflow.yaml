@@ -77,7 +77,7 @@ classes:
       id:
         identifier: true
         required: true
-        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        pattern: '^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$'
         title: Id
         description: Identifier unique within its containing document.
       description:
@@ -131,7 +131,7 @@ classes:
       name:
         identifier: true
         required: true
-        pattern: ^[A-Za-z][A-Za-z0-9_]*$
+        pattern: '^[A-Za-z][A-Za-z0-9_]*(?![\s\S])$'
         title: Name
         description: Declared parameter identifier.
       default:
@@ -168,7 +168,7 @@ classes:
       id:
         identifier: true
         required: true
-        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        pattern: '^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$'
         title: Id
         description: Identifier unique within its containing document.
       operation:
@@ -208,7 +208,7 @@ classes:
       id:
         identifier: true
         required: true
-        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        pattern: '^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$'
         title: Id
         description: Identifier unique within its containing document.
       version:
@@ -248,7 +248,7 @@ classes:
         title: Path
       sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Sha256
         description: Lowercase SHA-256 of file bytes or the canonical collection inventory.
       size_bytes:
@@ -311,7 +311,7 @@ classes:
         title: Requested path
       sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Sha256
         description: Lowercase SHA-256 of file bytes or the canonical collection inventory.
       size_bytes:
@@ -417,7 +417,7 @@ classes:
         title: Direction basis
         description: Direction semantics of selected Study signatures and all products derived from them.
       trait_key_policy:
-        pattern: ^(raw_object_v1|facultative_union_v1)$
+        pattern: '^(raw_object_v1|facultative_union_v1)(?![\s\S])$'
         title: Trait key policy
         description: Versioned trait identity rule, bound to the resolved parameter and matrix/catalog producers. Absent historical values require an audited producer inventory; no current-policy default applies.
       definition:
@@ -450,22 +450,22 @@ classes:
         description: Source location of the workflow specification at execution time.
       spec_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Spec sha256
         description: SHA-256 of the exact source specification bytes.
       definition_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Definition sha256
         description: SHA-256 of the canonical embedded validated workflow definition.
       execution_fingerprint:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Execution fingerprint
         description: Deterministic hash of contracts, inputs, code, environment, and resolved values.
       code_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Code sha256
         description: SHA-256 of the complete recorded code inventory.
       code_inventory:
@@ -477,7 +477,7 @@ classes:
         description: Source and schema files, including untracked code, used to identify implementation.
       lock_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Lock sha256
         description: SHA-256 of the dependency lockfile used for this attempt.
       git_commit:
@@ -539,7 +539,7 @@ classes:
         description: Explicit path to the verified producing run manifest.
       run_manifest_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Run manifest sha256
         description: SHA-256 of the producing run manifest consumed by the analysis.
       consumer:
@@ -577,12 +577,12 @@ classes:
         description: Path to reconciled annotation coverage under the actual consumer feature filter.
       feature_filter_id:
         required: true
-        pattern: '^sha256:[0-9a-f]{64}$'
+        pattern: '^sha256:[0-9a-f]{64}(?![\s\S])$'
         title: Feature filter id
         description: SHA-256 identity of the exact ordered retained analysis features.
       coverage_scope:
         required: true
-        pattern: '^input_cohort_before_analysis_specific_exclusions$'
+        pattern: '^input_cohort_before_analysis_specific_exclusions(?![\s\S])$'
         title: Coverage scope
         description: Coverage describes the input cohort before analysis-specific eligibility exclusions.
       outputs:
@@ -607,7 +607,7 @@ classes:
         description: Location of the historical source whose claims are being preserved.
       source_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Source sha256
         description: SHA-256 of the historical source bytes at import time.
       imported_at:
@@ -617,7 +617,7 @@ classes:
         description: UTC timestamp of legacy import, not the unknown historical execution time.
       verification_status:
         required: true
-        pattern: ^imported_unverified$
+        pattern: '^imported_unverified(?![\s\S])$'
         title: Verification status
         description: Explicitly unverified historical execution; byte integrity alone is insufficient.
       claims_json:
@@ -646,7 +646,7 @@ classes:
       sha256:
         title: Sha256
         description: File digest or canonical collection inventory digest.
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         required: true
       size_bytes:
         title: Size bytes
@@ -673,7 +673,7 @@ classes:
       archive_version:
         title: Archive version
         description: Version of the retention and verification contract.
-        pattern: ^1$
+        pattern: '^1(?![\s\S])$'
         required: true
       created_at:
         title: Created at
@@ -715,7 +715,7 @@ classes:
         description: File or directory snapshot.
       sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Sha256
         description: File checksum or canonical inventory checksum.
       size_bytes:
@@ -737,7 +737,7 @@ classes:
     attributes:
       id:
         required: true
-        pattern: ^[A-Za-z][A-Za-z0-9_.-]*$
+        pattern: '^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$'
         title: Id
         description: Unique stage identifier within the arm.
       argv:
@@ -811,7 +811,7 @@ classes:
         description: Unique attempt identifier.
       arm:
         required: true
-        pattern: ^(ilyas|noel|jed)$
+        pattern: '^(ilyas|noel|jed)(?![\s\S])$'
         title: Arm
         description: Owner of the declared standard analysis suite.
       contrast_population:
@@ -830,7 +830,7 @@ classes:
         description: Whether this execution received an explicit provenance root; new runs record true or false without a root locator. Absent historical values mean unrecorded, not false.
       scope:
         required: true
-        pattern: ^standard_analysis_calibration_and_optional_figures$
+        pattern: '^standard_analysis_calibration_and_optional_figures(?![\s\S])$'
         title: Scope
         description: Explicit scope; historical PD and presentation investigations are separate.
       status:
@@ -857,7 +857,7 @@ classes:
         description: Verified upstream run manifest.
       core_manifest_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Core manifest sha256
         description: Upstream manifest checksum before execution.
       core_run_id:
@@ -866,12 +866,12 @@ classes:
         description: Upstream execution identity.
       profile_product:
         required: true
-        pattern: ^(count_profiles|ora_profiles)$
+        pattern: '^(count_profiles|ora_profiles)(?![\s\S])$'
         title: Profile product
         description: Scientific count unit used by the primary analysis.
       plan_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Plan sha256
         description: Canonical checksum of the complete ordered command definitions.
       git_commit:
@@ -940,7 +940,7 @@ classes:
       id:
         identifier: true
         required: true
-        pattern: ^[A-Za-z][A-Za-z0-9_:.-]*$
+        pattern: '^[A-Za-z][A-Za-z0-9_:.-]*(?![\s\S])$'
         title: Id
         description: Stable analysis specification identifier shared by production, calibration, and sensitivity evaluations.
       estimand:
@@ -1026,12 +1026,12 @@ classes:
         description: Unique analysis basis identifier.
       feature_catalog_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Feature catalog sha256
         description: SHA-256 of the authoritative trait feature catalog.
       feature_filter_id:
         required: true
-        pattern: '^sha256:[0-9a-f]{64}$'
+        pattern: '^sha256:[0-9a-f]{64}(?![\s\S])$'
         title: Feature filter id
         description: SHA-256 identity of the exact ordered retained analysis features.
       retained_feature_count:
@@ -1042,7 +1042,7 @@ classes:
         description: Number of retained qualified trait features in the analysis family.
       profile_unit:
         required: true
-        pattern: ^(count_profiles|ora_profiles)$
+        pattern: '^(count_profiles|ora_profiles)(?![\s\S])$'
         title: Profile unit
         description: Underlying profile representation unit.
       aggregation_policy:
@@ -1258,7 +1258,7 @@ classes:
         description: Verified upstream core run manifest path.
       core_manifest_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Core manifest sha256
         description: SHA-256 of the verified upstream core run manifest.
       core_run_id:
@@ -1271,7 +1271,7 @@ classes:
         description: Verified Noel ArmRun manifest path.
       noel_manifest_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Noel manifest sha256
         description: SHA-256 of the verified Noel ArmRun manifest.
       jed_manifest_path:
@@ -1280,7 +1280,7 @@ classes:
         description: Verified Jed ArmRun manifest path.
       jed_manifest_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Jed manifest sha256
         description: SHA-256 of the verified Jed ArmRun manifest.
       ilyas_manifest_path:
@@ -1289,7 +1289,7 @@ classes:
         description: Verified Ilyas ArmRun manifest path.
       ilyas_manifest_sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Ilyas manifest sha256
         description: SHA-256 of the verified Ilyas ArmRun manifest.
       git_commit:

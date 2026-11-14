@@ -2,8 +2,8 @@
   "protocol": "calibration-v3",
   "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/182",
   "declared_before_first_run": false,
-  "declared_by": "calibration-v1 was drafted by a coding agent (Claude Code) before any calibration result was computed. calibration-v2 was amended after review (#293) with the v1 results in hand. calibration-v3 repairs the guild population mismatch identified in #730. The amendments array records what changed, why, and what was already known when each change was made. Nothing here should be read as predeclared except where an amendment says it is unchanged from v1.",
-  "scope": "procedures owned by this repository's directional-consistency framework. The composition arm's and the enrichment arm's native procedures are not evaluated here; their adapters belong to their owners (#182 assigns them), and the assertion-level urn of #131 is a separate model question.",
+  "declared_by": "calibration-v1 was drafted by a coding agent (Claude Code) before any calibration result was computed. calibration-v2 was amended after review (#293) with the v1 results in hand. calibration-v3 repairs the guild population mismatch identified in #730, and its scope and not_covered declarations were amended in #568 to record the three ORA background/urn definitions and the separate arm-calibration harnesses (#550, #551). The amendments array records what changed, why, and what was already known when each change was made. Nothing here should be read as predeclared except where an amendment says it is unchanged from v1.",
+  "scope": "procedures owned by this repository's directional-consistency framework (src/mtp/calibration.py). As amended in #568, the enrichment arm's production hypergeometric procedure draws distinct reported taxa against the all-host taxa_trait_matrix.tsv background (M = 5,829 BugSigDB-reported taxa, including 645 non-human-only and 862 non-paired-human taxa; src/mtp/three_test_table/ora.py, calibrated separately in src/mtp/ora_calibration/ under #551), whereas the historical #131 assertion-count urn (106,993,585 assertions across 4,517 testable profiles) is retained only in the Table 1 native influence ORA reruns (src/mtp/native_taxon_influence.py, methods/table1_native_influence.md) and the harmonized baseline in methods/three_arm_statistics.md defines a proposed paired-human assertion-weighted background; the composition arm's native transformed procedure is calibrated separately in src/mtp/composition_calibration/ (#550).",
   "eligibility": {
     "id": "whole_pair_nonzero_retained_totals_v1",
     "rule": "Fraction signs, screened fraction signs and guild McNemar exclude the entire experiment pair when either retained annotation total is zero. Log-ratio tests additionally require positive counts for both named traits on both sides.",
@@ -168,12 +168,20 @@
     "every reported number comes from a run whose seed, completed replicate count and input digests are recorded in calibration_status.json"
   ],
   "not_covered": [
-    "the enrichment arm's hypergeometric urn (#131) and the composition arm's native transform (owners' adapters)",
+    "the enrichment arm's hypergeometric procedures — production distinct-taxon urn over taxa_trait_matrix.tsv (M = 5,829 all-host taxa, including 645 non-human-only and 862 non-paired-human taxa; calibrated separately in src/mtp/ora_calibration/, #551), historical #131 assertion-count urn retained in the Table 1 native influence reruns (106,993,585 assertions across 4,517 testable profiles; methods/table1_native_influence.md), and proposed harmonized-baseline paired-human assertion-weighted background (methods/three_arm_statistics.md) — and the composition arm's native transformed procedure (calibrated separately in src/mtp/composition_calibration/, #550)",
     "the aggregated profile-support rule of #177, whose code is not on main",
     "any claim that a calibrated procedure makes its biological interpretation valid",
     "dependence between studies (shared cohorts, reused datasets, overlapping populations): a flip of whole studies treats studies as independent, so no criterion here can detect inflation from cohort-level dependence (#182 'study/cohort blocks', #360)"
   ],
   "amendments": [
+    {
+      "date": "2026-11-08",
+      "protocol": "calibration-v3",
+      "change": "Amended scope and not_covered[0] to distinguish the three ORA background/urn definitions and record the separate arm-calibration harnesses (#550, #551) without changing the directional acceptance rules, eligibility policy, or replicate budget.",
+      "reason": "Issue #568 showed that scope and not_covered[0] still carried the initial #182 owner-adapter and #131 assertion-level urn wording after production ORA switched to the distinct-taxon urn over taxa_trait_matrix.tsv (M = 5,829 BugSigDB-reported taxa across all hosts, including 645 non-human-only and 862 non-paired-human taxa; src/mtp/three_test_table/ora.py, calibrated in src/mtp/ora_calibration/ under #551), while the historical #131 assertion-count urn (106,993,585 assertions across 4,517 testable profiles) is retained only in the Table 1 native influence ORA reruns (src/mtp/native_taxon_influence.py, methods/table1_native_influence.md), the harmonized baseline in methods/three_arm_statistics.md defines a proposed paired-human assertion-weighted background, and the composition arm is calibrated in src/mtp/composition_calibration/ (#550).",
+      "known_when_amended": "The completed calibration-v3 full-budget run (58b2ce84), the production distinct-taxon ORA implementation and calibration harness (#551, #558), the paired composition calibration harness (#550), and the Table 1 native influence ORA reruns (#190).",
+      "unchanged": "Every directional procedure, eligibility policy, seed 182, null and injection design, deterministic flip-assignment stream, replicate budget, acceptance criterion, and tolerance."
+    },
     {
       "date": "2026-10-19",
       "protocol": "calibration-v3",

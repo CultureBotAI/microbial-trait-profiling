@@ -10,6 +10,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Group linkml and linkml-runtime into a single PR (#1318, #1043).
+    groups:
+      linkml:
+        patterns:
+          - "linkml"
+          - "linkml-runtime"
     ignore:
       # Both are pinned to match a hook rev in .pre-commit-config.yaml, which
       # the uv ecosystem does not bump. Bump them by hand, together with the

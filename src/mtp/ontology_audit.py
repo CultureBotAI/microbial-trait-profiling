@@ -34,6 +34,7 @@ from mtp.density_adjustment import (
     load_non_media_profile_matrix,
     regress_out_pc1,
 )
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 DEFAULT_PAIRS_OUT = DEFAULT_OUTPUT_DIR / "ontology_redundancy_pairs.tsv"
 DEFAULT_REDUNDANCY_SUMMARY_OUT = DEFAULT_OUTPUT_DIR / "ontology_redundancy_summary.tsv"
@@ -226,6 +227,8 @@ def build_redundant_pairs_table(
     profiles_df: pd.DataFrame,
     columns_path: Path = DEFAULT_COLUMNS_PATH,
     clusters: list[RedundancyCluster] | None = None,
+    *,
+    use_display_labels: bool = True,
 ) -> pd.DataFrame:
     """Build a detailed tabular report of redundant pairs across the trait universe.
 
@@ -246,7 +249,25 @@ def build_redundant_pairs_table(
         else:
             raise FileNotFoundError(f"Columns file not found: {columns_path} (or {gz_candidate})")
     cols_df = pd.read_csv(columns_path, sep="\t")
-    col_label_map = dict(zip(cols_df["column_id"], cols_df["column_label"], strict=False))
+    if use_display_labels:
+        members = read_recorded_member_ids(columns_path)
+        col_label_map = {
+            str(column_id): display_trait_label(
+                str(column_id),
+                str(column_label),
+                members.get(str(column_id)),
+            )
+            for column_id, column_label in zip(
+                cols_df["column_id"], cols_df["column_label"], strict=False
+            )
+        }
+    else:
+        col_label_map = {
+            str(column_id): str(column_label)
+            for column_id, column_label in zip(
+                cols_df["column_id"], cols_df["column_label"], strict=False
+            )
+        }
 
     pairs_rows: list[dict[str, Any]] = []
 
@@ -385,8 +406,10 @@ def run_ontology_redundancy_audit(
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     clusters = CANONICAL_REDUNDANCY_CLUSTERS
 
-    # 1. Generate redundant pairs table
-    df_pairs = build_redundant_pairs_table(profiles_df, columns_path, clusters)
+    # 1. Generate redundant pairs table (recorded TSV keeps KG labels per #1250)
+    df_pairs = build_redundant_pairs_table(
+        profiles_df, columns_path, clusters, use_display_labels=False
+    )
     pairs_out = output_dir / "ontology_redundancy_pairs.tsv"
     df_pairs.to_csv(pairs_out, sep="\t", index=False)
 

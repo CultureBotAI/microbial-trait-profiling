@@ -19,7 +19,11 @@ its consumed-file paths. It also normalizes the recorded interpreter path,
 which the workflow fingerprint explicitly excludes. No scientific TSV/YAML or
 step publication is changed. `generation.json` records every location
 transformation, both source-identity hashes, the original and copied manifest
-hashes, the exact helper hash, and the verified producer identity. The original
+hashes, the exact helper hash, and the verified producer identity. The hash
+records the helper as it generated the fixture; CI checks only its form, not
+the current file (#1146), and `scripts/adhoc/issue1134_audit_fixture_hashes.py`
+still binds `generation.helper_sha256` to the current generator file, so run
+that audit right after a regeneration, not on its own. The original
 generation remains unchanged in durable development storage.
 
 Regenerate from the repository with a clean historical checkout and two fresh
