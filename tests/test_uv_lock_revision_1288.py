@@ -136,7 +136,15 @@ def test_committed_uv_lock_has_revision_5_and_upload_times() -> None:
     assert summary["version"] == 1
     assert summary["revision"] == 5
     assert summary["registry_packages"] >= 200
-    assert summary["checked_artifacts"] == 2772
+    # A dependency update may legitimately add or remove distribution artifacts.
+    # Derive the expected count from the lock, while validating every upload-time.
+    lock_data = tomllib.loads((REPO_ROOT / "uv.lock").read_text(encoding="utf-8"))
+    expected_artifacts = sum(
+        int("sdist" in package) + len(package.get("wheels", []))
+        for package in lock_data["package"]
+        if "registry" in package.get("source", {})
+    )
+    assert summary["checked_artifacts"] == expected_artifacts
     assert summary["missing_upload_time"] == 0
 
 
