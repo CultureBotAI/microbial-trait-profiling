@@ -61,6 +61,7 @@ def test_table1_maps_methods_names_canonical_producer_module() -> None:
     text = METHODS_PATH.read_text(encoding="utf-8")
     normalized = " ".join(text.split())
     assert (REPO_ROOT / "src/mtp/table1_trait_maps.py").is_file()
+    assert (REPO_ROOT / "src/mtp/guild_maps.py").is_file()
     assert (
         "Produced by `src/mtp/table1_trait_maps.py`, driven by `just table1-trait-maps`"
         in normalized
@@ -68,6 +69,9 @@ def test_table1_maps_methods_names_canonical_producer_module() -> None:
     assert (
         "are produced by `src/mtp/table1_trait_maps.py`, driven deterministically by "
         "`just table1-trait-maps`" in normalized
+    )
+    assert "with `src/mtp/guild_maps.py` rather than duplicating them" in normalized, (
+        "#2345: the shared-helper sentence must name the canonical guild-map module"
     )
     assert "src/bsdbng/table1_trait_maps.py" not in text
     assert "src/bsdbng/guild_maps.py" not in text
