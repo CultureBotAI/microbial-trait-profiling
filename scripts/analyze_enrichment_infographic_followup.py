@@ -1632,6 +1632,30 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def validate_companion_heatmap_row_conditions(
+    matrix: pd.DataFrame, taxa_metadata: pd.DataFrame
+) -> None:
+    """Refuse selected companion-heatmap rows whose condition is not in TARGET_CONDITIONS."""
+    row_taxon_ids = matrix.index.tolist()
+    condition_color_column = (
+        "display_condition"
+        if "display_condition" in taxa_metadata.columns
+        else "dominant_condition"
+    )
+    row_conditions = taxa_metadata.loc[row_taxon_ids, condition_color_column]
+    target_conditions = set(TARGET_CONDITIONS)
+    unlisted_conditions = [
+        clean_text(condition) for condition in row_conditions if condition not in target_conditions
+    ]
+    if unlisted_conditions:
+        unique_unlisted = list(dict.fromkeys(unlisted_conditions))
+        msg = (
+            f"Companion heatmap row condition(s) {unique_unlisted} are not in "
+            f"TARGET_CONDITIONS {list(TARGET_CONDITIONS)}."
+        )
+        raise ValueError(msg)
+
+
 def main() -> None:
     """Run the enrichment infographic follow-up analysis."""
     global CONDITION_RANKING_VALUES, TARGET_CONDITIONS
@@ -1640,7 +1664,6 @@ def main() -> None:
     validate_companion_heatmap_condition_count(len(TARGET_CONDITIONS))
     if args.condition_source == "paired-top":
         validate_companion_heatmap_condition_count(args.top_paired_conditions)
-    args.output_dir.mkdir(parents=True, exist_ok=True)
 
     experiments = load_experiments(args.full_dump_input)
     studies = load_studies(args.studies_input)
@@ -1711,14 +1734,6 @@ def main() -> None:
     dropped_targets = dropped_target_conditions(metadata, condition_depth)
     if dropped_targets:
         print(f"Target conditions too rare to summarize here: {dropped_targets}")
-    titles = write_target_title_table(
-        metadata,
-        experiments,
-        studies,
-        output_path(
-            args.output_dir, args.artifact_prefix, "outlier_condition_study_experiment_titles.tsv"
-        ),
-    )
     autism = summarize_autism_labels(metadata, experiments)
     profile_neighbors, crosscheck, centroid_neighbors = compute_profile_neighbors(
         values,
@@ -1738,6 +1753,16 @@ def main() -> None:
         preferred_traits,
         fill_with_high_signal_traits,
         balance_taxa_by_condition,
+    )
+    validate_companion_heatmap_row_conditions(organism_matrix, taxa_metadata)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    titles = write_target_title_table(
+        metadata,
+        experiments,
+        studies,
+        output_path(
+            args.output_dir, args.artifact_prefix, "outlier_condition_study_experiment_titles.tsv"
+        ),
     )
     display_matrix = save_traits_vs_organisms_heatmap(
         organism_matrix,
