@@ -153,9 +153,18 @@ def test_rendered_legends_name_the_profile_direction_basis(
         heatmap.plt.close(figure)
 
 
-@pytest.mark.parametrize("arguments", [[], ["--direction-basis", "unknown"]])
+@pytest.mark.parametrize(
+    ("arguments", "expected_error_fragment"),
+    [
+        ([], "the following arguments are required: --direction-basis"),
+        (["--direction-basis", "unknown"], "invalid choice: 'unknown'"),
+    ],
+)
 def test_cli_requires_a_known_direction_basis_before_reading_inputs(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], arguments: list[str]
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    arguments: list[str],
+    expected_error_fragment: str,
 ) -> None:
     def reject_input_read(*_args: object) -> None:
         raise AssertionError("CLI must reject an absent/invalid basis before reading inputs")
@@ -165,7 +174,10 @@ def test_cli_requires_a_known_direction_basis_before_reading_inputs(
     with pytest.raises(SystemExit) as error:
         heatmap.main()
     assert error.value.code == 2
-    assert "--direction-basis" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "--direction-basis" in err
+    assert expected_error_fragment in err
+    assert "unrecognized arguments" not in err
 
 
 def test_paired_export_preserves_the_count_input_identity(tmp_path: Path) -> None:
