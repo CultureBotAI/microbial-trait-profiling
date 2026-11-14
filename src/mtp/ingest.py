@@ -15,6 +15,13 @@ from mtp.paths import DERIVED_DATA_DIR, RAW_DATA_DIR, STUDY_DATA_DIR
 
 REQUIRED_EXPORTS = ("studies.csv", "experiments.csv", "signatures.csv")
 _MAX_INFO_EXAMPLES = 5
+_STUDY_INFO_REASON_TEMPLATES = (
+    "non-numeric publication year dropped",
+    "non-numeric PMID dropped",
+    "DOI normalized from URL",
+    "unrecognized DOI format dropped",
+    "non-HTTP URL dropped",
+)
 
 
 def _format_info_example(entry: dict[str, str]) -> str:
@@ -31,24 +38,37 @@ def _summarize_ingest_log(
     *,
     max_examples: int = _MAX_INFO_EXAMPLES,
 ) -> list[dict[str, str]]:
-    """Keep all non-info entries verbatim and collapse repeated info entries by (entity, reason)."""
+    """Keep non-info entries verbatim and group info by entity and canonical reason.
+
+    Study normalization details remain in the examples, including for singleton groups.
+    Raw log entries are not changed, so verbose logs retain their original records.
+    """
     if max_examples < 1:
         raise ValueError("max_examples must be at least 1")
 
     summarized: list[dict[str, str]] = []
-    info_groups: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
+    info_groups: dict[tuple[str, str, bool], list[dict[str, str]]] = defaultdict(list)
 
     for entry in log:
         if entry.get("level") == "info":
-            key = (entry.get("entity", ""), entry.get("reason", ""))
+            entity = entry.get("entity", "")
+            reason = entry.get("reason", "")
+            template, separator, _ = reason.partition(": ")
+            study_detail = (
+                entity == "study" and bool(separator) and template in _STUDY_INFO_REASON_TEMPLATES
+            )
+            # The flag keeps a bare, unrecognized reason separate from a template group.
+            key = (entity, template if study_detail else reason, study_detail)
             info_groups[key].append(entry)
         else:
             summarized.append(entry)
 
-    for (entity, reason), group in info_groups.items():
+    for (entity, reason, study_detail), group in info_groups.items():
         examples: list[str] = []
         for item in group:
             label = _format_info_example(item)
+            if label and study_detail:
+                label = f"{label}: {item['reason'].partition(': ')[2]}"
             if label and label not in examples and len(examples) < max_examples:
                 examples.append(label)
         summary_entry: dict[str, str] = {

@@ -84,6 +84,16 @@ DIRECTION_TO_INC_DEC = {"increased": "inc", "decreased": "dec"}
 INC_DEC_TO_DIRECTION = {"inc": "increased", "dec": "decreased"}
 MATRIX_METADATA_COLUMNS = ["taxon_id", "taxon_name", "taxonomic_rank"]
 PREFERRED_HEATMAP_RANKS = {"genus", "species", "strain"}
+COMPANION_HEATMAP_PALETTE_COLORS: tuple[str, ...] = (
+    "#c2410c",
+    "#60a5fa",
+    "#eab308",
+    "#3b0764",
+    "#7f1d1d",
+    "#ab7578",
+    "#86efac",
+    "#300012",
+)
 METAPHLAN_RANK_MAP = {
     "k__": "superkingdom",
     "p__": "phylum",
@@ -94,6 +104,18 @@ METAPHLAN_RANK_MAP = {
     "s__": "species",
     "t__": "strain",
 }
+
+
+def validate_companion_heatmap_condition_count(condition_count: int) -> None:
+    """Refuse condition counts that exceed the distinct companion-heatmap palette size."""
+    max_conditions = len(COMPANION_HEATMAP_PALETTE_COLORS)
+    if condition_count > max_conditions:
+        msg = (
+            f"The companion heatmap has {max_conditions} distinct condition colours; "
+            f"{condition_count} conditions would reuse one. Use "
+            f"--top-paired-conditions {max_conditions} or fewer."
+        )
+        raise ValueError(msg)
 
 
 def clean_text(value: object) -> str:
@@ -1134,36 +1156,29 @@ def save_traits_vs_organisms_heatmap(
         trait_metadata.loc[trait_id, "heatmap_label"] for trait_id in display_matrix.columns
     ]
 
-    palette_colors = [
-        "#c2410c",
-        "#60a5fa",
-        "#eab308",
-        "#3b0764",
-        "#7f1d1d",
-        "#ab7578",
-        "#86efac",
-        "#300012",
-    ]
-    if len(TARGET_CONDITIONS) > len(palette_colors):
-        msg = (
-            f"The companion heatmap has {len(palette_colors)} distinct condition colours; "
-            f"{len(TARGET_CONDITIONS)} conditions would reuse one. Use "
-            f"--top-paired-conditions {len(palette_colors)} or fewer."
-        )
-        raise ValueError(msg)
+    validate_companion_heatmap_condition_count(len(TARGET_CONDITIONS))
     condition_palette = {
-        condition: palette_colors[index] for index, condition in enumerate(TARGET_CONDITIONS)
+        condition: COMPANION_HEATMAP_PALETTE_COLORS[index]
+        for index, condition in enumerate(TARGET_CONDITIONS)
     }
-    condition_palette["unknown"] = "#64748b"
     row_taxon_ids = matrix.index.tolist()
     condition_color_column = (
         "display_condition"
         if "display_condition" in taxa_metadata.columns
         else "dominant_condition"
     )
-    row_colors = taxa_metadata.loc[row_taxon_ids, condition_color_column].map(
-        lambda condition: condition_palette.get(condition, "#64748b")
-    )
+    row_conditions = taxa_metadata.loc[row_taxon_ids, condition_color_column]
+    unlisted_conditions = [
+        clean_text(condition) for condition in row_conditions if condition not in condition_palette
+    ]
+    if unlisted_conditions:
+        unique_unlisted = list(dict.fromkeys(unlisted_conditions))
+        msg = (
+            f"Companion heatmap row condition(s) {unique_unlisted} are not in "
+            f"TARGET_CONDITIONS {list(TARGET_CONDITIONS)}."
+        )
+        raise ValueError(msg)
+    row_colors = row_conditions.map(lambda condition: condition_palette[condition])
     row_colors.index = display_matrix.index
     row_colors.name = ""
 
@@ -1640,12 +1655,38 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def validate_companion_heatmap_row_conditions(
+    matrix: pd.DataFrame, taxa_metadata: pd.DataFrame
+) -> None:
+    """Refuse selected companion-heatmap rows whose condition is not in TARGET_CONDITIONS."""
+    row_taxon_ids = matrix.index.tolist()
+    condition_color_column = (
+        "display_condition"
+        if "display_condition" in taxa_metadata.columns
+        else "dominant_condition"
+    )
+    row_conditions = taxa_metadata.loc[row_taxon_ids, condition_color_column]
+    target_conditions = set(TARGET_CONDITIONS)
+    unlisted_conditions = [
+        clean_text(condition) for condition in row_conditions if condition not in target_conditions
+    ]
+    if unlisted_conditions:
+        unique_unlisted = list(dict.fromkeys(unlisted_conditions))
+        msg = (
+            f"Companion heatmap row condition(s) {unique_unlisted} are not in "
+            f"TARGET_CONDITIONS {list(TARGET_CONDITIONS)}."
+        )
+        raise ValueError(msg)
+
+
 def main() -> None:
     """Run the enrichment infographic follow-up analysis."""
     global CONDITION_RANKING_VALUES, TARGET_CONDITIONS
 
     args = parse_args()
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    validate_companion_heatmap_condition_count(len(TARGET_CONDITIONS))
+    if args.condition_source == "paired-top":
+        validate_companion_heatmap_condition_count(args.top_paired_conditions)
 
     experiments = load_experiments(args.full_dump_input)
     studies = load_studies(args.studies_input)
@@ -1717,14 +1758,6 @@ def main() -> None:
     dropped_targets = dropped_target_conditions(metadata, condition_depth)
     if dropped_targets:
         print(f"Target conditions too rare to summarize here: {dropped_targets}")
-    titles = write_target_title_table(
-        metadata,
-        experiments,
-        studies,
-        output_path(
-            args.output_dir, args.artifact_prefix, "outlier_condition_study_experiment_titles.tsv"
-        ),
-    )
     autism = summarize_autism_labels(metadata, experiments)
     profile_neighbors, crosscheck, centroid_neighbors = compute_profile_neighbors(
         values,
@@ -1744,6 +1777,16 @@ def main() -> None:
         preferred_traits,
         fill_with_high_signal_traits,
         balance_taxa_by_condition,
+    )
+    validate_companion_heatmap_row_conditions(organism_matrix, taxa_metadata)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    titles = write_target_title_table(
+        metadata,
+        experiments,
+        studies,
+        output_path(
+            args.output_dir, args.artifact_prefix, "outlier_condition_study_experiment_titles.tsv"
+        ),
     )
     display_matrix = save_traits_vs_organisms_heatmap(
         organism_matrix,

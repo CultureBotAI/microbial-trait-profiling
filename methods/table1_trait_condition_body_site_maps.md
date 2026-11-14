@@ -8,7 +8,7 @@ Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
 `table1_traits_focus_feces.png`, `table1_traits_focus_feces_other.png`,
 `table1_traits_focus_cervical.png`, and `table1_traits_focus_oral.png`, and
 `table1_traits_direction_shift.png`. Produced by
-`src/bsdbng/table1_trait_maps.py`, driven by `just table1-trait-maps`. How this
+`src/mtp/table1_trait_maps.py`, driven by `just table1-trait-maps`. How this
 analysis differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
@@ -400,10 +400,10 @@ all use the six Table 1 traits through `TRAIT_ORDER`, explicitly or by default.
 
 All statistics use scipy (binomtest, false_discovery_control, spearmanr) rather
 than hand-rolled implementations. The six figures and their six backing tables
-are produced by `src/bsdbng/table1_trait_maps.py`, driven deterministically by
+are produced by `src/mtp/table1_trait_maps.py`, driven deterministically by
 `just table1-trait-maps`, which shares its zero-total pair exclusion, matrix
 construction, masking, row clustering, and table writing with
-`src/bsdbng/guild_maps.py` rather than duplicating them. The BugSigDB export
+`src/mtp/guild_maps.py` rather than duplicating them. The BugSigDB export
 timestamp is read from the dump's leading comment line and recorded in every
 output table. PNG export runs through kaleido
 1.x, which drives a headless Chrome. For a reproducible figure run, run

@@ -285,6 +285,59 @@ def test_alias_candidate_does_not_inherit_suggested_target_ancestry(tmp_path: Pa
 
 
 @pytest.mark.parametrize(
+    ("taxon_num", "canonical_id"),
+    [
+        ("541000", "NCBITaxon:216572"),
+        ("81850", "NCBITaxon:33958"),
+        ("508215", "NCBITaxon:32207"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("parent_id", "expected_group"),
+    [
+        ("12908", "unclassified_sequences"),
+        ("2787823", "unclassified_sequences"),
+        ("2759", "eukaryota"),
+        ("10239", "viruses"),
+    ],
+)
+def test_alias_desynchronization_precedes_non_bacterial_groups(
+    tmp_path: Path,
+    taxon_num: str,
+    canonical_id: str,
+    parent_id: str,
+    expected_group: str,
+) -> None:
+    """Explicit alias TaxIDs beat non-bacterial group branches on wrongly rooted edges (#2207)."""
+    taxon_id = f"NCBITaxon:{taxon_num}"
+    taxonomy = coverage.CoverageTaxonomy(
+        write_edges(
+            tmp_path / "misrooted-alias.tsv",
+            [(taxon_num, parent_id), (parent_id, "1")],
+        )
+    )
+    state = taxonomy.classify(taxon_id)
+    assert state == coverage.TaxonomyState(
+        expected_group, "resolved_root", (f"NCBITaxon:{parent_id}",)
+    )
+    category, remediation = coverage.diagnose_zero_trait_taxon(
+        taxon_id, "Alias candidate", "family", state
+    )
+    assert category == "NCBI TaxID Desynchronization"
+    assert remediation == f"Review possible alias before transferring traits: {canonical_id}"
+
+
+@pytest.mark.parametrize("taxon_num", ["541000", "81850", "508215"])
+def test_bin_slash_precedes_alias_desynchronization(taxon_num: str) -> None:
+    """Slash bin names still precede explicit alias TaxID desynchronization (#2207)."""
+    state = coverage.TaxonomyState("eukaryota", "resolved_root", ("NCBITaxon:2759",))
+    category, _ = coverage.diagnose_zero_trait_taxon(
+        f"NCBITaxon:{taxon_num}", "Alias / composite", "species", state
+    )
+    assert category == "Ambiguous Taxon / Bin Slash"
+
+
+@pytest.mark.parametrize(
     "name",
     [
         "unclassified sequences",
