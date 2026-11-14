@@ -176,7 +176,7 @@ class SourceArtifact(ConfiguredBaseModel):
 
     @field_validator('sha256')
     def pattern_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -217,7 +217,7 @@ class HypothesisDefinition(ConfiguredBaseModel):
 
     @field_validator('eligibility_sha256')
     def pattern_eligibility_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -256,7 +256,7 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
 
     @field_validator('analysis_basis_sha256')
     def pattern_analysis_basis_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -269,7 +269,7 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
 
     @field_validator('source_membership_sha256')
     def pattern_source_membership_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -282,7 +282,7 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
 
     @field_validator('strain_rollup')
     def pattern_strain_rollup(cls, v):
-        pattern=re.compile(r"^(off|phenotype)$")
+        pattern=re.compile(r"^(off|phenotype)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -295,7 +295,7 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
 
     @field_validator('feature_filter_id')
     def pattern_feature_filter_id(cls, v):
-        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -335,7 +335,7 @@ class HypothesisFamily(HypothesisFamilyMetadata):
 
     @field_validator('analysis_basis_sha256')
     def pattern_analysis_basis_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -348,7 +348,7 @@ class HypothesisFamily(HypothesisFamilyMetadata):
 
     @field_validator('source_membership_sha256')
     def pattern_source_membership_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -361,7 +361,7 @@ class HypothesisFamily(HypothesisFamilyMetadata):
 
     @field_validator('strain_rollup')
     def pattern_strain_rollup(cls, v):
-        pattern=re.compile(r"^(off|phenotype)$")
+        pattern=re.compile(r"^(off|phenotype)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -374,7 +374,7 @@ class HypothesisFamily(HypothesisFamilyMetadata):
 
     @field_validator('feature_filter_id')
     def pattern_feature_filter_id(cls, v):
-        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -401,7 +401,7 @@ class RawHypothesis(ConfiguredBaseModel):
 
     @field_validator('status')
     def pattern_status(cls, v):
-        pattern=re.compile(r"^(tested|untestable)$")
+        pattern=re.compile(r"^(tested|untestable)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -434,7 +434,7 @@ class AdjustedHypothesis(RawHypothesis):
 
     @field_validator('status')
     def pattern_status(cls, v):
-        pattern=re.compile(r"^(tested|untestable)$")
+        pattern=re.compile(r"^(tested|untestable)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -473,7 +473,7 @@ class CorrectionRun(ConfiguredBaseModel):
 
     @field_validator('code_sha256')
     def pattern_code_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -486,7 +486,7 @@ class CorrectionRun(ConfiguredBaseModel):
 
     @field_validator('policy_sha256')
     def pattern_policy_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -499,7 +499,7 @@ class CorrectionRun(ConfiguredBaseModel):
 
     @field_validator('family_sha256')
     def pattern_family_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -512,7 +512,7 @@ class CorrectionRun(ConfiguredBaseModel):
 
     @field_validator('input_sha256')
     def pattern_input_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -525,7 +525,7 @@ class CorrectionRun(ConfiguredBaseModel):
 
     @field_validator('output_sha256')
     def pattern_output_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -538,7 +538,7 @@ class CorrectionRun(ConfiguredBaseModel):
 
     @field_validator('run_sha256')
     def pattern_run_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -573,7 +573,7 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
 
     @field_validator('policy_sha256')
     def pattern_policy_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -586,7 +586,7 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
 
     @field_validator('family_sha256')
     def pattern_family_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -599,7 +599,7 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
 
     @field_validator('input_sha256')
     def pattern_input_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -612,7 +612,7 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
 
     @field_validator('output_sha256')
     def pattern_output_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -651,7 +651,7 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
 
     @field_validator('version')
     def pattern_version(cls, v):
-        pattern=re.compile(r"^1\.2\.0$")
+        pattern=re.compile(r"^1\.2\.0(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -664,7 +664,7 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
 
     @field_validator('comparison_manifest_sha256')
     def pattern_comparison_manifest_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -677,7 +677,7 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
 
     @field_validator('strain_rollup')
     def pattern_strain_rollup(cls, v):
-        pattern=re.compile(r"^(off|phenotype)$")
+        pattern=re.compile(r"^(off|phenotype)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -690,7 +690,7 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
 
     @field_validator('code_sha256')
     def pattern_code_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):

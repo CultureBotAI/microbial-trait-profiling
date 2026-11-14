@@ -435,3 +435,166 @@ def test_select_traits_retains_required_paired_traits_above_max_support_cap() ->
 
     assert set(heatmap.REQUIRED_PAIRED_TRAITS).issubset(selected_ids)
     assert "METPO:1000615" in selected_meta.index
+
+
+def _srgb_to_cie_lab(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
+    def _linearize(channel: float) -> float:
+        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+    r_lin, g_lin, b_lin = _linearize(rgb[0]), _linearize(rgb[1]), _linearize(rgb[2])
+    x_val = (r_lin * 0.4124564 + g_lin * 0.3575761 + b_lin * 0.1804375) / 0.95047
+    y_val = (r_lin * 0.2126729 + g_lin * 0.7151522 + b_lin * 0.0721750) / 1.00000
+    z_val = (r_lin * 0.0193339 + g_lin * 0.1191920 + b_lin * 0.9503041) / 1.08883
+
+    def _f(val: float) -> float:
+        return val ** (1.0 / 3.0) if val > 0.008856 else (7.787 * val) + (16.0 / 116.0)
+
+    fx, fy, fz = _f(x_val), _f(y_val), _f(z_val)
+    return (116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz))
+
+
+def _simulate_cvd_srgb(
+    rgb: tuple[float, float, float],
+    matrix: tuple[
+        tuple[float, float, float],
+        tuple[float, float, float],
+        tuple[float, float, float],
+    ],
+) -> tuple[float, float, float]:
+    channels = [
+        max(
+            0.0,
+            min(
+                1.0,
+                sum(weight * channel for weight, channel in zip(row, rgb, strict=True)),
+            ),
+        )
+        for row in matrix
+    ]
+    return (channels[0], channels[1], channels[2])
+
+
+_DEUTERANOPIA_MATRIX = (
+    (0.367322, 0.860646, -0.227968),
+    (0.280085, 0.672501, 0.047413),
+    (-0.011820, 0.042940, 0.968881),
+)
+_PROTANOPIA_MATRIX = (
+    (0.152286, 1.052583, -0.204868),
+    (0.114503, 0.786281, 0.099216),
+    (-0.003882, -0.048116, 1.051998),
+)
+
+
+@pytest.mark.parametrize("paired", [False, True])
+def test_rendered_heatmaps_enforce_minimum_cell_border_linewidth(
+    tmp_path: Path, paired: bool
+) -> None:
+    """Both rendered heatmaps use cell border linewidths >= 0.25 pt (#946)."""
+    matrix = pd.DataFrame(
+        [[0.7, -0.3, 0.1], [-0.2, 0.8, -0.4], [0.3, -0.6, 0.9]],
+        index=["a", "b", "c"],
+        columns=["Trait A", "Trait B", "Trait C"],
+    )
+    metadata = pd.DataFrame(
+        {
+            "inc_dec": ["inc", "dec", "dec"],
+            "body_site_group": ["Feces", "Mouth", "Saliva"],
+            "condition_group": ["Condition A", "Condition B", "Condition C"],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame(
+        {"display_category": ["Shape", "Shape", "Metabolism"]},
+        index=["METPO:1", "METPO:2", "METPO:3"],
+    )
+    assert getattr(heatmap, "CELL_BORDER_LINEWIDTH", 0.0) >= 0.25
+    with (
+        patch.object(heatmap.plt.Figure, "savefig", autospec=True) as savefig,
+        patch.object(heatmap.plt, "close"),
+    ):
+        draw = heatmap.save_paired_enrichment_heatmap if paired else heatmap.save_heatmap
+        draw(matrix, metadata, traits, tmp_path / "heatmap.png", 3, 3, "group_1_vs_group_0")
+    figure = savefig.call_args.args[0]
+    try:
+        figure.canvas.draw()
+        meshes = [
+            mesh
+            for axis in figure.axes
+            if axis.get_xlabel() == "Trait"
+            for mesh in axis.collections
+            if isinstance(mesh, QuadMesh)
+        ]
+        assert len(meshes) == 1
+        linewidths = np.asarray(meshes[0].get_linewidth(), dtype=float)
+        assert linewidths.size >= 1
+        assert float(linewidths.min()) >= 0.25
+    finally:
+        heatmap.plt.close(figure)
+
+
+@pytest.mark.parametrize(
+    "palette_name",
+    ["body_site", "condition", "trait_category", "tab20", "Set3", "Set2"],
+)
+def test_palette_for_categories_enforces_accessible_pairwise_color_separation(
+    palette_name: str,
+) -> None:
+    """Annotation palettes maintain RGB, CIE Lab, and CVD separation (#946)."""
+    import math
+
+    from matplotlib.colors import to_rgb
+
+    categories = pd.Series([*(f"Category {idx}" for idx in range(1, 9)), "Other", "unknown"])
+    palette = heatmap.palette_for_categories(categories, palette_name)
+    assert hasattr(heatmap, "build_palette")
+    assert heatmap.build_palette(categories, palette_name) == palette
+    assert set(palette) == set(categories)
+    assert palette["Other"] == "#b0b0b0"
+    assert palette["unknown"] == "#e5e7eb"
+
+    items = list(palette.items())
+    for idx_a in range(len(items)):
+        label_a, color_a = items[idx_a]
+        rgb_a = to_rgb(color_a)
+        lab_a = _srgb_to_cie_lab(rgb_a)
+        deut_a = _srgb_to_cie_lab(_simulate_cvd_srgb(rgb_a, _DEUTERANOPIA_MATRIX))
+        prot_a = _srgb_to_cie_lab(_simulate_cvd_srgb(rgb_a, _PROTANOPIA_MATRIX))
+        for idx_b in range(idx_a + 1, len(items)):
+            label_b, color_b = items[idx_b]
+            rgb_b = to_rgb(color_b)
+            lab_b = _srgb_to_cie_lab(rgb_b)
+            deut_b = _srgb_to_cie_lab(_simulate_cvd_srgb(rgb_b, _DEUTERANOPIA_MATRIX))
+            prot_b = _srgb_to_cie_lab(_simulate_cvd_srgb(rgb_b, _PROTANOPIA_MATRIX))
+
+            rgb_dist = math.dist(rgb_a, rgb_b)
+            lab_dist = math.dist(lab_a, lab_b)
+            deut_dist = math.dist(deut_a, deut_b)
+            prot_dist = math.dist(prot_a, prot_b)
+
+            assert rgb_dist >= 0.20, (
+                f"{palette_name}: {label_a} ({color_a}) vs {label_b} ({color_b}) "
+                f"sRGB distance {rgb_dist:.3f} < 0.20"
+            )
+            assert lab_dist >= 18.0, (
+                f"{palette_name}: {label_a} ({color_a}) vs {label_b} ({color_b}) "
+                f"Lab deltaE {lab_dist:.1f} < 18.0"
+            )
+            assert deut_dist >= 12.0, (
+                f"{palette_name}: {label_a} ({color_a}) vs {label_b} ({color_b}) "
+                f"deuteranopia deltaE {deut_dist:.1f} < 12.0"
+            )
+            assert prot_dist >= 12.0, (
+                f"{palette_name}: {label_a} ({color_a}) vs {label_b} ({color_b}) "
+                f"protanopia deltaE {prot_dist:.1f} < 12.0"
+            )
+
+
+def test_annotation_track_palettes_use_distinct_rotations() -> None:
+    """Body site, condition, and trait tracks start at distinct accessible colors (#946)."""
+    categories = pd.Series(["Alpha", "Beta", "Gamma", "Delta"])
+    body = heatmap.palette_for_categories(categories, "body_site")
+    condition = heatmap.palette_for_categories(categories, "condition")
+    trait = heatmap.palette_for_categories(categories, "trait_category")
+
+    assert len({body["Alpha"], condition["Alpha"], trait["Alpha"]}) == 3

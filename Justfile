@@ -975,7 +975,7 @@ security:
 	uv run python scripts/run_pip_audit.py -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
 
-# Audit locked packages selected for Linux x86_64 / Python 3.11, on any host.
+# Audit locked packages selected for Linux x86_64 / Python 3.11.5, on any host.
 security-linux:
 	audit_tmp="$(mktemp -d)" && \
 	trap 'rm -rf "$audit_tmp"' EXIT && \
@@ -983,7 +983,7 @@ security-linux:
 	  --format requirements-txt --no-emit-project --no-emit-workspace \
 	  --output-file "$audit_tmp/requirements.txt" && \
 	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
-	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
+	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11.5 --no-deps \
 	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
 	uv run --locked --group qa python scripts/run_pip_audit.py -r "$audit_tmp/requirements-linux.txt" \
 	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
@@ -1014,6 +1014,11 @@ check: check-generated check-agent-docs lint typecheck test check-schema workflo
 
 download:
 	just timed download "uv run python -c 'from mtp.download import download_exports; download_exports()'"
+
+# Fallback when BugSigDB upstream CSV exports are unreachable: unpack bsdbng-raw-data-*.tar.gz
+# from a GitHub release into data/raw/ and record release provenance (#92).
+download-from-release tag="latest":
+	uv run python -m mtp.download --from-release "{{tag}}"
 
 ingest:
 	just timed ingest "uv run python -c 'from mtp.ingest import ingest; ingest()'"

@@ -144,6 +144,10 @@ def test_b5_read_status_binds_sensitivity_and_coverage_input_hashes(tmp_path: Pa
         "experiments_sha256": "2" * 64,
         "full_dump_sha256": "3" * 64,
     }
+    expected_sens = {
+        "profile_sha256": expected["profile_sha256"],
+        "experiments_sha256": expected["experiments_sha256"],
+    }
     sens_file = tmp_path / "sensitivity_status.json"
     sens_file.write_text(
         json.dumps(
@@ -161,7 +165,7 @@ def test_b5_read_status_binds_sensitivity_and_coverage_input_hashes(tmp_path: Pa
         sens_file,
         "sensitivity_status",
         "#183",
-        expected_input_sha256=expected,
+        expected_input_sha256=expected_sens,
     )
     assert "unreadable #183" in status_bad.default
     assert status_bad.source is not None
@@ -175,6 +179,7 @@ def test_b5_read_status_binds_sensitivity_and_coverage_input_hashes(tmp_path: Pa
                 "inputs": {
                     "profile_sha256": "1" * 64,
                     "experiments_sha256": "2" * 64,
+                    "full_dump_sha256": "3" * 64,
                 },
             }
         ),

@@ -400,7 +400,7 @@ def test_conclusions_keep_bh_statuses_labels_and_survivor_membership(
     assert "facultative union (fixture)" not in survivors
 
 
-def test_declared_trait_list_keeps_the_existing_section6_guard(
+def test_declared_trait_list_renders_computed_section6_conclusions(
     tmp_path: Path, audit_script: ModuleType
 ) -> None:
     density, ontology = synthetic_results()
@@ -408,12 +408,8 @@ def test_declared_trait_list_keeps_the_existing_section6_guard(
         tuple(effect.trait_id for effect in density["table1_effects"]), "fixture.txt", "a" * 64
     )
     conclusions = _conclusions(audit_script, tmp_path, density, ontology, declared)
-    assert conclusions == (
-        "-" * 80
-        + "\nNot written for a declared trait list; section 3 reports each listed\n"
-        + "trait's computed effects.\n"
-        + "=" * 80
-    )
+    assert conclusions == _conclusions(audit_script, tmp_path, density, ontology, None)
+    assert "Not written for a declared trait list" not in conclusions
 
 
 def test_consolidated_report_pluralizes_singular_and_plural_counts(

@@ -249,7 +249,7 @@ class Study(NamedThing):
                                               'entries use DOIs or PMC IDs (e.g. '
                                               'bsdb:PMC11017998).',
                                'name': 'id',
-                               'pattern': '^bsdb:.+$'}},
+                               'pattern': '^bsdb:.+(?![\\s\\S])$'}},
          'title': 'Study',
          'tree_root': True})
 
@@ -268,7 +268,7 @@ class Study(NamedThing):
 
     @field_validator('doi')
     def pattern_doi(cls, v):
-        pattern=re.compile(r"^10\..+$")
+        pattern=re.compile(r"^10\..+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -281,7 +281,7 @@ class Study(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^bsdb:.+$")
+        pattern=re.compile(r"^bsdb:.+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -302,7 +302,7 @@ class Experiment(NamedThing):
          'slot_usage': {'id': {'description': 'BugSigDB experiment identifier, e.g. '
                                               'bsdb:10202341-1.',
                                'name': 'id',
-                               'pattern': '^bsdb:.+-[0-9]+$'}},
+                               'pattern': '^bsdb:.+-[0-9]+(?![\\s\\S])$'}},
          'title': 'Experiment'})
 
     experiment_name: Optional[str] = Field(default=None, title="Experiment Name", description="""Label for the experiment.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Experiment']} })
@@ -339,7 +339,7 @@ class Experiment(NamedThing):
 
     @field_validator('body_site_ontology_id')
     def pattern_body_site_ontology_id(cls, v):
-        pattern=re.compile(r"^UBERON:[0-9]+$")
+        pattern=re.compile(r"^UBERON:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -352,7 +352,7 @@ class Experiment(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^bsdb:.+-[0-9]+$")
+        pattern=re.compile(r"^bsdb:.+-[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -374,7 +374,7 @@ class Signature(NamedThing):
                         'id': {'description': 'BugSigDB signature identifier, e.g. '
                                               'bsdb:10202341-1-1.',
                                'name': 'id',
-                               'pattern': '^bsdb:.+-[0-9]+-[0-9]+$'}},
+                               'pattern': '^bsdb:.+-[0-9]+-[0-9]+(?![\\s\\S])$'}},
          'title': 'Signature'})
 
     direction: DirectionEnum = Field(default=..., title="Direction", description="""Reported direction of abundance change for taxa in the signature.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signature']} })
@@ -385,7 +385,7 @@ class Signature(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^bsdb:.+-[0-9]+-[0-9]+$")
+        pattern=re.compile(r"^bsdb:.+-[0-9]+-[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -405,7 +405,7 @@ class Taxon(NamedThing):
          'id_prefixes': ['NCBITaxon'],
          'slot_usage': {'id': {'description': 'NCBITaxon CURIE, e.g. NCBITaxon:9606.',
                                'name': 'id',
-                               'pattern': '^NCBITaxon:[0-9]+$',
+                               'pattern': '^NCBITaxon:[0-9]+(?![\\s\\S])$',
                                'recommended': True,
                                'required': False},
                         'taxon_name': {'name': 'taxon_name', 'required': True},
@@ -420,7 +420,7 @@ class Taxon(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^NCBITaxon:[0-9]+$")
+        pattern=re.compile(r"^NCBITaxon:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -482,7 +482,7 @@ class Phenotype(ConfiguredBaseModel):
 
     @field_validator('phenotype_id')
     def pattern_phenotype_id(cls, v):
-        pattern=re.compile(r"^METPO:[0-9]+$")
+        pattern=re.compile(r"^METPO:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -532,7 +532,7 @@ class TaxonTraitMatrixRow(ConfiguredBaseModel):
 
     @field_validator('taxon_id')
     def pattern_taxon_id(cls, v):
-        pattern=re.compile(r"^NCBITaxon:[0-9]+$")
+        pattern=re.compile(r"^NCBITaxon:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):

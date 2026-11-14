@@ -44,7 +44,7 @@ PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 # Taken from each profile's own experiment in the profile metadata table (#555, #688).
 PROFILE_LABEL_COLUMNS = ["condition", "body_site", "location", "host_species"]
 MISSING_TITLE = "(title missing from the pinned study table)"
-TARGET_CONDITIONS = (
+TARGET_CONDITIONS: tuple[str, ...] = (
     "Thalassemia",
     "Sleep Disorder",
     "Head and neck squamous cell carcinoma",
@@ -117,6 +117,8 @@ def compact_label(value: object, max_length: int = 44) -> str:
 
 def format_optional_float(value: object, digits: int = 2) -> str:
     """Format optional numeric values for Markdown tables."""
+    if not isinstance(value, (int, float, str)):
+        return ""
     try:
         number = float(value)
     except (TypeError, ValueError):
@@ -572,7 +574,7 @@ def compute_condition_centroids(
         if norm <= 0:
             continue
         centroid = centroid / norm
-        centroids[condition] = centroid.astype("float32")
+        centroids[str(condition)] = centroid.astype("float32")
         records.append(
             {
                 "condition": condition,
@@ -1086,7 +1088,7 @@ def build_traits_vs_organisms_heatmap(
 
         taxa_metadata = ranked_taxa.loc[selected_taxa].copy()
         taxa_metadata["display_condition"] = [
-            display_conditions.get(taxon_id, clean_text(row["dominant_condition"]))
+            display_conditions.get(str(taxon_id), clean_text(row["dominant_condition"]))
             for taxon_id, row in taxa_metadata.iterrows()
         ]
     else:
@@ -1110,7 +1112,7 @@ def display_taxon_label(taxon_id: str, taxa_metadata: pd.DataFrame) -> str:
     name = clean_text(row["taxon_name"])
     if name.startswith("taxon_"):
         name = taxon_id
-    label = f"{name} ({int(row['target_profile_count'])} profiles)"
+    label = f"{name} ({int(clean_text(row['target_profile_count']))} profiles)"
     return compact_label(label, 64)
 
 
@@ -1293,9 +1295,30 @@ def write_report(
     lines: list[str] = [
         "# Enrichment Infographic Follow-Up",
         "",
-        "Source figure: "
-        "https://github.com/CultureBotAI/bsdbng/blob/"
-        "enrichment-analysis-heatmap-cluster/data/derived/enrichment_infographic.png",
+        "Historical source figure: `data/derived/enrichment_infographic.png` in",
+        "`CultureBotAI/microbial-trait-profiling`. This is a historical repository-relative",
+        "reference, not a claim that the historical figure is present in the current checkout.",
+        "",
+        "## Report variants",
+        "",
+        "Paths below are relative to `trait-visualization/trait-profile-investigation/"
+        "enrichment-infographic-followup/`.",
+        "These saved runs are not interchangeable; retain their results and read each run's",
+        "condition-selection and heatmap-selection paragraphs before comparing them.",
+        "",
+        "- `README.md`: unprefixed report in this directory; its saved run uses infographic",
+        "  condition selection and infographic traits plus high-signal traits.",
+        "- `my_top3_README.md`: paired-condition and paired-trait run with `my_top3_`",
+        "  prefixed artifacts.",
+        "- `my_top3_conditions_relevant_traits_README.md`: paired-condition and paired-trait",
+        "  run with `my_top3_conditions_relevant_traits_` prefixed artifacts.",
+        "- `my-top3-enriched-traits/README.md`: paired-condition and paired-trait run in a",
+        "  separate output directory with unprefixed artifacts.",
+        "",
+        "The two prefixed reports and the subdirectory report preserve separately named",
+        "outputs of similar selections; they are not additional independent evidence.",
+        "The generator uses this common provenance format; run-specific selections and",
+        "artifact names are recorded below.",
         "",
         f"The target conditions for this run are selected from {target_condition_description}. "
         "The local follow-up uses the full "
@@ -1644,7 +1667,7 @@ def main() -> None:
         )
         target_condition_description = (
             f"the top {len(TARGET_CONDITIONS)} paired-profile condition contrast rows from "
-            f"`{args.paired_condition_summary_input.relative_to(REPO_ROOT)}`"
+            f"`{args.paired_condition_summary_input.relative_to(REPO_ROOT).as_posix()}`"
         )
         condition_score_label = "paired absolute contrast load"
         condition_source_title = "Our Top Paired-Profile Conditions"
@@ -1675,7 +1698,7 @@ def main() -> None:
             )
             heatmap_trait_description = (
                 f"the top {len(preferred_traits)} paired-profile contrast traits from "
-                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT)}`"
+                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT).as_posix()}`"
             )
         else:
             heatmap_title = (
@@ -1685,7 +1708,8 @@ def main() -> None:
             )
             heatmap_trait_description = (
                 f"the top {len(preferred_traits)} paired-profile contrast traits from "
-                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT)}` plus high-signal "
+                f"`{args.paired_trait_stats_input.relative_to(REPO_ROOT).as_posix()}` "
+                "plus high-signal "
                 "target-condition traits selected with the original heatmap ranking logic"
             )
 

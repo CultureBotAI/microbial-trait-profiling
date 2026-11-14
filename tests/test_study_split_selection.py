@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -19,6 +20,50 @@ from mtp.cellulose_decr.study_split import (
 )
 from mtp.trait_guilds import Profile
 from mtp.workflow.coverage import feature_filter_id
+
+
+@pytest.mark.parametrize("scope", [None, "phenotype", "off"])
+def test_protocol_primary_is_used_for_training_and_heldout_inputs(
+    monkeypatch: pytest.MonkeyPatch, scope: str | None
+) -> None:
+    profiles, taxa, matrix, counts = corpus()
+    partition = make_splits(profiles.study_id.tolist(), splits=1, seed=3)[0]
+    seen: list[tuple[str, str]] = []
+    select = scanner.select
+    evaluate = scanner.evaluate
+
+    def watch_select(inputs: scanner.ScanInputs, *args: Any, **kwargs: Any) -> Any:
+        seen.append((inputs.strain_rollup, inputs.strain_rollup_role))
+        return select(inputs, *args, **kwargs)
+
+    def watch_evaluate(inputs: scanner.ScanInputs, *args: Any, **kwargs: Any) -> Any:
+        seen.append((inputs.strain_rollup, inputs.strain_rollup_role))
+        return evaluate(inputs, *args, **kwargs)
+
+    monkeypatch.setattr(scanner, "select", watch_select)
+    monkeypatch.setattr(scanner, "evaluate", watch_evaluate)
+    options: dict[str, Any] = {} if scope is None else {"strain_rollup": scope}
+    protocol = Protocol(min_studies=1, permutations=3)
+    selected = select_candidates(
+        profiles, taxa, matrix, counts, ("trait", "other"), partition, protocol, **options
+    )
+    heldout, heldout_taxa = partition_frames(profiles, taxa, partition.testing)
+    evaluate_candidates(selected, heldout, heldout_taxa, matrix, protocol, seed=1, **options)
+    expected = ("off", scanner.SENSITIVITY) if scope == "off" else ("phenotype", scanner.PRIMARY)
+    assert len(seen) >= 2
+    assert set(seen) == {expected}
+
+
+def test_unknown_scope_is_refused_even_without_candidates() -> None:
+    profiles, taxa, matrix, _ = corpus()
+    refused = False
+    try:
+        evaluate_candidates(
+            [], profiles, taxa, matrix, Protocol(permutations=3), seed=1, strain_rollup="full"
+        )
+    except ValueError as error:
+        refused = "scope" in str(error).lower()
+    assert refused, "Unknown scopes must not bypass validation through an empty selection"
 
 
 def corpus(

@@ -184,6 +184,15 @@ def test_protocol_holds_the_declared_rule() -> None:
     assert protocol.side_by_side
 
 
+def test_methods_dates_distinguish_the_907_correction_from_the_amendments() -> None:
+    methods = (PROTOCOL_PATH.parent / "cellulose_decr_selection_scan.md").read_text(
+        encoding="utf-8"
+    )
+    assert "(This paragraph was corrected on 2026-10-23, #907;" in methods
+    assert "The first two amendments were made on 2026-10-22," in methods
+    assert "The third was made on 2026-10-25," in methods
+
+
 def test_v2_amends_v1_after_both_scopes_results_and_leaves_v1_as_recorded() -> None:
     """v2 is one amendment on top of v1 (#1050). The v1 file stays byte-identical, so the
     records written under it on 2026-10-23 still verify against it, and it still reads as
@@ -1076,6 +1085,30 @@ def test_a_core_without_a_scope_follows_the_declared_absent_means(cores: dict[st
     assert core_scope(run, declared) == ("off", "recorded")
 
 
+def test_historical_scope_parameter_readers_follow_their_absent_defaults() -> None:
+    """Exercise parameter readers on a committed record; this does not verify its core."""
+    from mtp.datamodel.workflow_pydantic import WorkflowRun
+    from mtp.workflow.operations import run_strain_rollup
+
+    path = (
+        Path(__file__).parents[1]
+        / "tests/fixtures/trait_key_policy/historical_raw_core/core/run.json"
+    )
+    recorded = WorkflowRun.model_validate_json(path.read_text(encoding="utf-8"))
+    legacy = recorded.model_copy(
+        update={
+            "parameters": [
+                item for item in recorded.parameters or [] if item.name != "strain_rollup"
+            ]
+        }
+    )
+    protocol = load_protocol()
+    assert run_strain_rollup(legacy) == "off"
+    assert core_scope(legacy, protocol) == ("off", "absent_means")
+    declared = dataclasses.replace(protocol, scope_absent="phenotype")
+    assert core_scope(legacy, declared) == ("phenotype", "absent_means")
+
+
 # --------------------------------------------------------------------------- both scopes (#1050)
 
 
@@ -1770,6 +1803,63 @@ def test_z_ranks_put_more_overlap_first() -> None:
     assert row[f"{CORE}_{ALL_TRIPLES}_z_rank_min"] == int((core_z > lead_core).sum()) + 1
 
 
+@pytest.mark.parametrize(
+    "undefined_statistic", [MEAN_DISTANCE, CORE], ids=["mean-distance", "core"]
+)
+def test_undefined_z_uses_its_own_denominator_without_dropping_tested_p_values(
+    undefined_statistic: str,
+) -> None:
+    triples = pd.DataFrame(
+        {
+            "trait_id": [TRAIT_ID] * 3,
+            "condition_a": [PD, "Asthma", "Obesity"],
+            "condition_b": [HIV, "Condition B1", "Condition B2"],
+            "condition_c": [CRC, "Condition C1", "Condition C2"],
+            "n_a": [3] * 3,
+            "n_b": [3] * 3,
+            "n_c": [3] * 3,
+            "shared_studies": [0] * 3,
+            "three_way_core": [2, 3, 0],
+            "three_way_union": [8, 8, 9],
+            MEAN_DISTANCE: [0.4, 0.3, 0.6],
+            "u6_expected_mean_distance": [0.5] * 3,
+            "u6_z_mean_distance": [
+                -1.0,
+                -2.0,
+                np.nan if undefined_statistic == MEAN_DISTANCE else 1.0,
+            ],
+            "u6_p_mean_distance": [0.2, 0.1, 0.8],
+            "u6_expected_core": [1.0, 1.0, 0.0],
+            "u6_z_core": [1.0, 2.0, np.nan if undefined_statistic == CORE else -1.0],
+            "u6_p_core": [0.2, 0.1, 0.8],
+            "test_status": [TESTED] * 3,
+            "is_lead_triple": [True, False, False],
+        }
+    )
+    before = triples.copy(deep=True)
+    lead, histogram, quantiles = lead_and_distribution(triples, [TRAIT_ID], 5)
+    assert len(lead) == 1
+    row = lead.iloc[0]
+    for statistic in (MEAN_DISTANCE, CORE):
+        denominator = 2 if statistic == undefined_statistic else 3
+        for reference_set in (ALL_TRIPLES, DISJOINT):
+            prefix = f"{statistic}_{reference_set}"
+            assert row[f"{prefix}_z_triples"] == denominator
+            assert row[f"{prefix}_z_rank_min"] == 2
+            assert row[f"{prefix}_z_rank_max"] == 2
+            assert row[f"{prefix}_z_share_at_most"] == 2 / denominator
+            assert row[f"{prefix}_triples"] == 3
+            assert row[f"{prefix}_rank_min"] == 2
+            assert row[f"{prefix}_rank_max"] == 2
+            assert row[f"{prefix}_share_at_most"] == 2 / 3
+            counts = histogram[
+                histogram["statistic"].eq(statistic) & histogram["reference_set"].eq(reference_set)
+            ]["triples"]
+            assert counts.tolist() == [2, 0, 0, 1, 0]
+            assert quantiles[TRAIT_ID][statistic][reference_set]["triples"] == 3
+    pd.testing.assert_frame_equal(triples, before)
+
+
 def test_evaluate_flags_explicit_outcomes() -> None:
     """A missing condition, shared studies, an empty set and an undefined null are each
     flagged on the held-out side (#854)."""
@@ -2067,6 +2157,21 @@ def test_scan_inputs_have_no_default_population_or_scope() -> None:
         if field.default is dataclasses.MISSING and field.default_factory is dataclasses.MISSING
     }
     assert {"contrast_population", "strain_rollup", "strain_rollup_role"} <= required
+
+
+@pytest.mark.parametrize("missing", ["contrast_population", "strain_rollup", "strain_rollup_role"])
+def test_scan_inputs_constructor_refuses_each_omitted_population_or_scope(missing: str) -> None:
+    inputs = _inputs(
+        [("bsdb:1", "experiment:1", PD, FECES, ["t0"], ["t1"])],
+        _matrix(2, {TRAIT_ID: [0]}),
+    )
+    payload: dict[str, Any] = {
+        field.name: getattr(inputs, field.name) for field in dataclasses.fields(ScanInputs)
+    }
+    assert ScanInputs(**payload).studies == frozenset({"bsdb:1"})
+    del payload[missing]
+    with pytest.raises(TypeError, match=missing):
+        ScanInputs(**payload)
 
 
 def test_load_inputs_checks_the_stated_population_and_scope(cores: dict[str, Path]) -> None:

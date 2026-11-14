@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from functools import lru_cache
 from itertools import combinations
 from pathlib import Path
@@ -248,6 +248,20 @@ def taxonomic_counts(
     return dict(counts), records
 
 
+def _hhi_resolved(resolved: Mapping[str, int], resolved_total: int) -> float:
+    """Reduce resolved shares in canonical taxon-key order."""
+    return sum((resolved[k] / resolved_total) ** 2 for k in sorted(resolved))
+
+
+def _weighted_overlap(
+    left: Mapping[str, int], right: Mapping[str, int], shared: Iterable[str]
+) -> float:
+    """Reduce shared normalized counts in canonical taxon-key order."""
+    return sum(
+        min(left[k] / sum(left.values()), right[k] / sum(right.values())) for k in sorted(shared)
+    )
+
+
 def concentration(
     counts: dict[tuple[str, str, str], Counter[str]], traits: list[str]
 ) -> list[Record]:
@@ -270,7 +284,7 @@ def concentration(
                         "resolved_total": resolved_total,
                         "unresolved_total": total - resolved_total,
                         "resolved_taxa": len(resolved),
-                        "hhi_resolved": sum((v / resolved_total) ** 2 for v in resolved.values())
+                        "hhi_resolved": _hhi_resolved(resolved, resolved_total)
                         if resolved_total
                         else "",
                         "largest_share_resolved": max(resolved.values()) / resolved_total
@@ -304,10 +318,7 @@ def overlap(counts: dict[tuple[str, str, str], Counter[str]], traits: list[str])
                         "shared_taxa": len(shared),
                         "union_taxa": len(union),
                         "jaccard": len(shared) / len(union) if union else "",
-                        "weighted_overlap": sum(
-                            min(left[k] / sum(left.values()), right[k] / sum(right.values()))
-                            for k in shared
-                        )
+                        "weighted_overlap": _weighted_overlap(left, right, shared)
                         if left and right
                         else "",
                         "status": "resolved_subset_only" if left and right else "untestable",

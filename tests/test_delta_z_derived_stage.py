@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import shutil
 import tempfile
@@ -671,6 +672,139 @@ def test_empty_existing_parent_oracle_kills_false_ownership(
     monkeypatch.setattr(stage, "_create_parents", claim_existing)
     with pytest.raises(AssertionError, match=r"^pre-existing empty ancestor was removed(?:\n|$)"):
         _assert_failed_run_preserves_empty_existing_parent(tmp_path, monkeypatch, nested=nested)
+
+
+@pytest.mark.parametrize(
+    ("removal", "interrupted"),
+    [("rmdir", False), ("rmtree", False), ("rmdir", True)],
+    ids=["rmdir", "rmtree", "interrupted-rmdir"],
+)
+def test_failed_cleanup_preserves_publication_exception_and_note(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    removal: str,
+    interrupted: bool,
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    existing = tmp_path / "existing_empty"
+    existing.mkdir()
+    before = existing.stat()
+    output = existing / "new" / "nested" / "output"
+    primary: BaseException = (
+        KeyboardInterrupt("injected publication interruption")
+        if interrupted
+        else OSError("injected publication failure")
+    )
+    original_message = str(primary)
+    primary.add_note("original diagnostic before cleanup")
+    cleanup = PermissionError(errno.EACCES, "injected cleanup refusal")
+    staged: list[Path] = []
+    staged_bytes: dict[str, bytes] = {}
+    attempted: list[Path] = []
+    original_rmdir, original_rmtree = Path.rmdir, shutil.rmtree
+
+    def fail_publish(source: Path, destination: Path) -> None:
+        assert destination == output
+        staged.append(source)
+        staged_bytes.update({path.name: path.read_bytes() for path in source.iterdir()})
+        raise primary
+
+    def fail_rmdir(path: Path) -> None:
+        if path == output.parent:
+            attempted.append(path)
+            raise cleanup
+        original_rmdir(path)
+
+    def fail_rmtree(path: Path | str, *args: Any, **kwargs: Any) -> None:
+        if staged and Path(path) == staged[0]:
+            attempted.append(Path(path))
+            raise cleanup
+        original_rmtree(path, *args, **kwargs)
+
+    # Restore removal hooks before assertions and TemporaryDirectory teardown.
+    with monkeypatch.context() as patch:
+        patch.setattr(stage, "_publish_directory", fail_publish)
+        if removal == "rmdir":
+            patch.setattr(Path, "rmdir", fail_rmdir)
+        else:
+            patch.setattr(shutil, "rmtree", fail_rmtree)
+        with pytest.raises(BaseException, match=r"injected (publication|cleanup)") as caught:
+            run(parent, output)
+
+    assert caught.value is primary, "cleanup replaced the publication exception"
+    assert str(caught.value) == original_message
+    notes = getattr(caught.value, "__notes__", [])
+    assert len(notes) == 2, "cleanup diagnostic was not appended"
+    assert notes[0] == "original diagnostic before cleanup"
+    assert "cleanup" in notes[1].lower()
+    assert type(cleanup).__name__ in notes[1]
+    assert str(cleanup) in notes[1]
+    assert len(staged) == 1
+    assert attempted == [output.parent if removal == "rmdir" else staged[0]]
+    assert not output.exists()
+    assert (existing.stat().st_dev, existing.stat().st_ino) == (before.st_dev, before.st_ino)
+    assert {path.name for path in existing.iterdir()} == {"new"}
+    if removal == "rmtree":
+        assert {path.name for path in output.parent.iterdir()} == {staged[0].name}
+        assert {path.name: path.read_bytes() for path in staged[0].iterdir()} == staged_bytes
+    else:
+        assert not staged[0].exists()
+        assert not list(output.parent.iterdir())
+
+
+def test_failed_cleanup_preserves_partial_parent_creation_exception(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    existing = tmp_path / "existing_empty"
+    existing.mkdir()
+    before = existing.stat()
+    created = existing / "new"
+    output = created / "nested" / "output"
+    primary = OSError("injected parent creation failure")
+    primary.add_note("original mkdir diagnostic")
+    cleanup = OSError(errno.EIO, "injected cleanup I/O failure")
+    original_mkdir, original_rmdir = Path.mkdir, Path.rmdir
+    mkdir_attempts: list[Path] = []
+    cleanup_attempts: list[Path] = []
+
+    def fail_mkdir(
+        path: Path, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+    ) -> None:
+        if path == output.parent:
+            assert created.is_dir()
+            mkdir_attempts.append(path)
+            raise primary
+        original_mkdir(path, mode=mode, parents=parents, exist_ok=exist_ok)
+
+    def fail_rmdir(path: Path) -> None:
+        if path == created:
+            cleanup_attempts.append(path)
+            raise cleanup
+        original_rmdir(path)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "mkdir", fail_mkdir)
+        patch.setattr(Path, "rmdir", fail_rmdir)
+        with pytest.raises(BaseException, match=r"injected (parent creation|cleanup)") as caught:
+            run(parent, output)
+
+    assert caught.value is primary, "cleanup replaced the parent creation exception"
+    assert str(caught.value) == "injected parent creation failure"
+    notes = getattr(caught.value, "__notes__", [])
+    assert len(notes) == 2, "cleanup diagnostic was not appended"
+    assert notes[0] == "original mkdir diagnostic"
+    assert "cleanup" in notes[1].lower()
+    assert type(cleanup).__name__ in notes[1]
+    assert str(cleanup) in notes[1]
+    assert mkdir_attempts == [output.parent]
+    assert cleanup_attempts == [created]
+    assert not output.exists()
+    assert not output.parent.exists()
+    assert created.is_dir()
+    assert not list(created.iterdir())
+    assert (existing.stat().st_dev, existing.stat().st_ino) == (before.st_dev, before.st_ino)
+    assert {path.name for path in existing.iterdir()} == {"new"}
 
 
 def test_staging_mkdir_failure_removes_new_ancestors_without_touching_siblings(

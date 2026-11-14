@@ -5440,6 +5440,14 @@
         "BY"
       ],
       "reason": "Shared correction implementation, not a scientific family. Hypothesis selection and family identity belong to registered caller entries."
+    },
+    {
+      "path": "src/mtp/influence_noel.py",
+      "function": "check_noel_baseline",
+      "procedures": [
+        "BY"
+      ],
+      "reason": "Recompute-and-compare BY-six from the verified Noel shared_fraction baseline p-values for mt-supp-influence-extension-baseline-loso (#1029); verification only, not a new reported scientific family. Noel stores BH-six, not BY-six."
     }
   ],
   "literal_procedure_counts": [
@@ -5618,6 +5626,13 @@
       "function": "lineage_effects",
       "counts": {
         "BH": 1,
+        "BY": 1
+      }
+    },
+    {
+      "path": "src/mtp/influence_noel.py",
+      "function": "check_noel_baseline",
+      "counts": {
         "BY": 1
       }
     },

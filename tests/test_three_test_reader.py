@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import tempfile
 from collections.abc import Iterator
@@ -70,10 +71,15 @@ class ParentBundle:
 
 
 def parsed_fixture_sources(
-    sources: VerifiedSources, path: Path, *, manifest_bytes: bytes | None = None
+    sources: VerifiedSources,
+    path: Path,
+    *,
+    manifest_bytes: bytes | None = None,
+    expected_sha256: str | None = None,
 ) -> VerifiedSources:
     """Stub upstream execution while really parsing the captured comparison bytes."""
     raw = path.read_bytes() if manifest_bytes is None else manifest_bytes
+    assert expected_sha256 == hashlib.sha256(raw).hexdigest()
     return replace(sources, comparison=ComparisonRun.model_validate_json(raw))
 
 
@@ -95,10 +101,19 @@ def parent_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ParentBund
     for name, arm in sources.arms.items():
         arm.id = f"fixture-{name}"
         arm.git_commit = "a" * 40
-    monkeypatch.setattr(stage, "open_verified_sources", lambda _path: sources)
 
-    def parsed_sources(path: Path, *, manifest_bytes: bytes | None = None) -> VerifiedSources:
-        return parsed_fixture_sources(sources, path, manifest_bytes=manifest_bytes)
+    def stage_sources(path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        assert expected_sha256 == file_sha256(path)
+        return sources
+
+    monkeypatch.setattr(stage, "open_verified_sources", stage_sources)
+
+    def parsed_sources(
+        path: Path, *, manifest_bytes: bytes | None = None, expected_sha256: str | None = None
+    ) -> VerifiedSources:
+        return parsed_fixture_sources(
+            sources, path, manifest_bytes=manifest_bytes, expected_sha256=expected_sha256
+        )
 
     monkeypatch.setattr(reader, "open_verified_sources", parsed_sources)
     repository_root = tmp_path / "producer"
@@ -350,10 +365,19 @@ def test_recheck_detects_changes_after_loading(parent_bundle: ParentBundle) -> N
 def test_late_input_mutation_during_verification_is_rejected(
     parent_bundle: ParentBundle, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def mutate(_comparison: Path, *, manifest_bytes: bytes | None = None) -> VerifiedSources:
+    def mutate(
+        _comparison: Path,
+        *,
+        manifest_bytes: bytes | None = None,
+        expected_sha256: str | None = None,
+    ) -> VerifiedSources:
         parent_bundle.manifest.write_text("{}\n", encoding="utf-8")
-        raw = _comparison.read_bytes() if manifest_bytes is None else manifest_bytes
-        return replace(parent_bundle.sources, comparison=ComparisonRun.model_validate_json(raw))
+        return parsed_fixture_sources(
+            parent_bundle.sources,
+            _comparison,
+            manifest_bytes=manifest_bytes,
+            expected_sha256=expected_sha256,
+        )
 
     monkeypatch.setattr(reader, "open_verified_sources", mutate)
     with pytest.raises(ValueError, match=r"manifest|changed|pin"):
@@ -611,13 +635,20 @@ def test_comparison_verification_parses_captured_bytes_during_restored_swap(
         supplied.parent.mkdir()
         supplied.symlink_to(target)
     observed: list[bytes | None] = []
+    observed_hashes: list[str | None] = []
 
-    def swapped(path: Path, *, manifest_bytes: bytes | None = None) -> VerifiedSources:
+    def swapped(
+        path: Path, *, manifest_bytes: bytes | None = None, expected_sha256: str | None = None
+    ) -> VerifiedSources:
         observed.append(manifest_bytes)
+        observed_hashes.append(expected_sha256)
         target.write_bytes(transient)
         try:
             return parsed_fixture_sources(
-                parent_bundle.sources, path, manifest_bytes=manifest_bytes
+                parent_bundle.sources,
+                path,
+                manifest_bytes=manifest_bytes,
+                expected_sha256=expected_sha256,
             )
         finally:
             target.write_bytes(original)
@@ -630,6 +661,7 @@ def test_comparison_verification_parses_captured_bytes_during_restored_swap(
     # A dropped keyword still returns a valid model but carries the transient false flag.
     assert loaded.sources.comparison.git_dirty is False
     assert observed == [original]
+    assert observed_hashes == [hashlib.sha256(original).hexdigest()]
     assert supplied in loaded.snapshots
     assert loaded.resolved_targets[supplied] == target
     reader.recheck_completed_table(loaded)

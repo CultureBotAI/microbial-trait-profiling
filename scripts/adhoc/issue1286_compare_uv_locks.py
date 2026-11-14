@@ -11,12 +11,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import sys
 import tomllib
 from collections.abc import Sequence
 from copy import deepcopy
 from difflib import unified_diff
 from pathlib import Path
 from typing import Any
+
+from mtp.provenance_paths import PortablePaths, assert_portable_text
 
 
 def identity(raw: bytes) -> dict[str, str | int]:
@@ -65,8 +69,32 @@ def package_versions(record: dict[str, Any]) -> dict[str, list[str | None]]:
     return result
 
 
-def compare_locks(before: Path, after: Path) -> dict[str, Any]:
-    """Hash and parse the same input buffers; report every non-format difference."""
+def compare_locks(
+    before: Path,
+    after: Path,
+    *,
+    output: Path | None = None,
+    provenance_root: Path | None = None,
+) -> dict[str, Any]:
+    """Hash and parse the same input buffers; report every non-format difference.
+
+    ``path_basis`` is computed relative to ``output`` when given, or to an
+    in-memory ``audit.json`` under ``provenance_root`` (or under the common
+    parent of ``before`` and ``after``) when ``output`` is omitted. Callers
+    that persist the returned dictionary must pass the destination file as
+    ``output`` so ``path_basis`` describes the written record.
+    """
+    record_path = (
+        output
+        if output is not None
+        else (
+            provenance_root.resolve()
+            if provenance_root is not None
+            else Path(os.path.commonpath([before.resolve().parent, after.resolve().parent]))
+        )
+        / "audit.json"
+    )
+    portable = PortablePaths.create(record_path, [before, after], root=provenance_root)
     snapshots: dict[str, dict[str, Any]] = {}
     normalized_text: dict[str, str] = {}
     versions: dict[str, dict[str, list[str | None]]] = {}
@@ -80,7 +108,7 @@ def compare_locks(before: Path, after: Path) -> dict[str, Any]:
         text = json.dumps(normalized, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
         normalized_text[role] = text
         snapshots[role] = {
-            "path": str(path.resolve()),
+            "path": portable.encode(path),
             **identity(raw),
             "normalized_sha256": identity(text.encode("utf-8"))["sha256"],
         }
@@ -98,9 +126,10 @@ def compare_locks(before: Path, after: Path) -> dict[str, Any]:
             tofile="after.normalized.json",
         )
     )
-    return {
+    result = {
         "version": "uv-lock-audit-v1",
         "verification_scope": "Parsed lock comparison only; no resolution or security verification",
+        "path_basis": portable.declaration,
         **snapshots,
         "substantive_equal": not diff,
         "package_version_changes": changes,
@@ -108,6 +137,8 @@ def compare_locks(before: Path, after: Path) -> dict[str, Any]:
         "normalized_diff": diff,
         "helper": identity(Path(__file__).read_bytes()),
     }
+    assert_portable_text(json.dumps(result, ensure_ascii=False, allow_nan=False))
+    return result
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -115,14 +146,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--before", type=Path, required=True)
     parser.add_argument("--after", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--provenance-root", type=Path, default=None)
     args = parser.parse_args(argv)
-    result = compare_locks(args.before, args.after)
+    if args.output.is_symlink() or args.output.exists():
+        raise FileExistsError("Output report already exists; choose a fresh --output path")
+    result = compare_locks(
+        args.before,
+        args.after,
+        output=args.output,
+        provenance_root=args.provenance_root,
+    )
     content = json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    assert_portable_text(content)
     # Exclusive creation also refuses existing or dangling symlinks.
-    with args.output.open("x", encoding="utf-8") as handle:
-        handle.write(content)
+    try:
+        with args.output.open("x", encoding="utf-8") as handle:
+            handle.write(content)
+    except FileExistsError:
+        raise FileExistsError(
+            "Output report already exists; choose a fresh --output path"
+        ) from None
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (ValueError, FileExistsError) as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(2) from None
