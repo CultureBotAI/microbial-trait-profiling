@@ -181,14 +181,235 @@ def declared_exports(tree: ast.Module, module: str) -> set[str] | None:
     return set(values)
 
 
-def _is_type_checking_expr(expr: ast.expr) -> bool:
-    """Return True for TYPE_CHECKING or typing.TYPE_CHECKING."""
-    return (isinstance(expr, ast.Name) and expr.id == "TYPE_CHECKING") or (
+def _alias_assignment_targets(stmt: ast.AST) -> Sequence[ast.expr]:
+    """Assignment-like targets relevant to alias rebinding or namespace mutation."""
+    if isinstance(stmt, ast.Assign):
+        return stmt.targets
+    if isinstance(stmt, (ast.AnnAssign, ast.AugAssign, ast.For, ast.AsyncFor)):
+        return [stmt.target]
+    if isinstance(stmt, ast.Delete):
+        return stmt.targets
+    if isinstance(stmt, (ast.With, ast.AsyncWith)):
+        return [item.optional_vars for item in stmt.items if item.optional_vars is not None]
+    return []
+
+
+def _alias_mutated_roots(target: ast.expr) -> set[str]:
+    """Collect namespace mutations even inside unpacked or starred targets."""
+    if isinstance(target, (ast.Tuple, ast.List)):
+        return {name for item in target.elts for name in _alias_mutated_roots(item)}
+    if isinstance(target, ast.Starred):
+        return _alias_mutated_roots(target.value)
+    if isinstance(target, (ast.Attribute, ast.Subscript)):
+        root = _root_target_name(target)
+        return {root} if root is not None else set()
+    return set()
+
+
+def _module_alias_bindings(stmt: ast.stmt) -> list[str]:
+    """Names a module statement can bind, delete, or mutate, excluding nested scopes."""
+    names: set[str] = set()
+    if isinstance(stmt, (ast.Import, ast.ImportFrom)):
+        # Keep duplicate bindings within one import ambiguous, too.
+        return [alias.asname or alias.name.split(".")[0] for alias in stmt.names]
+    elif isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        names.add(stmt.name)
+    elif isinstance(stmt, (ast.Try, ast.TryStar)):
+        names.update(handler.name for handler in stmt.handlers if handler.name is not None)
+    elif isinstance(stmt, ast.Match):
+        for case in stmt.cases:
+            names.update(_pattern_bound_names(case.pattern))
+    for target in _alias_assignment_targets(stmt):
+        names.update(bound_names(target))
+        names.update(_alias_mutated_roots(target))
+    for expr_node in _iter_statement_expr_nodes(stmt, include_lambda_defaults=True):
+        if isinstance(expr_node, ast.NamedExpr):
+            names.add(expr_node.target.id)
+    return list(names)
+
+
+def _references_typing_namespace(node: ast.AST, typing_names: set[str]) -> bool:
+    """Find imported namespace references, including expression wrappers.
+
+    This deliberately overapproximates expressions rather than inferring values or
+    following assignments to other names. A bare rebinding target is not a read.
+    """
+    return any(
+        isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load) and child.id in typing_names
+        for child in ast.walk(node)
+    )
+
+
+def _typing_call_imports(
+    statements: Sequence[ast.stmt], candidates: Mapping[str, tuple[str, int]]
+) -> dict[str, int]:
+    """Imports whose names have no competing binding in any lexical scope.
+
+    The narrow call exceptions require stronger provenance than module guards:
+    a local parameter or class member may shadow a module alias at a call site.
+    Overcounting non-import bindings is harmless; only a sole import qualifies.
+    """
+    bindings: dict[str, int] = defaultdict(int)
+    for statement in statements:
+        for node in ast.walk(statement):
+            if isinstance(node, ast.stmt):
+                for name in _module_alias_bindings(node):
+                    bindings[name] += 1
+            if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+                bindings[node.id] += 1
+            elif isinstance(node, ast.arg):
+                bindings[node.arg] += 1
+            elif isinstance(node, (ast.Global, ast.Nonlocal)):
+                for name in node.names:
+                    bindings[name] += 1
+    return {
+        name: origin[1]
+        for name, origin in candidates.items()
+        if origin[0] == "typing" and bindings[name] == 1
+    }
+
+
+def _call_exposes_typing_namespace(
+    node: ast.Call, typing_names: set[str], call_imports: Mapping[str, int]
+) -> bool:
+    """Any argument or unknown callable reaching typing can mutate shared state.
+
+    Check every positional, starred and keyword expression without resolving a
+    signature or naming mutators. Only verified cast calls and literal-name-only
+    TypeVar calls have a narrow compatibility exception for their callable lookup.
+    Other TypeVar forms may invoke user callbacks. Nested calls and independent
+    writes are still checked by the enclosing AST walk.
+    """
+    if any(_references_typing_namespace(argument, typing_names) for argument in node.args) or any(
+        _references_typing_namespace(keyword.value, typing_names) for keyword in node.keywords
+    ):
+        return True
+    func = node.func
+    if (
+        isinstance(func, ast.Attribute)
+        and isinstance(func.value, ast.Name)
+        and func.value.id in call_imports
+        and call_imports[func.value.id] < node.lineno
+        and (
+            func.attr == "cast"
+            or (
+                func.attr == "TypeVar"
+                and len(node.args) == 1
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+                and not node.keywords
+            )
+        )
+    ):
+        return False
+    return _references_typing_namespace(func, typing_names)
+
+
+def _type_checking_aliases(statements: Sequence[ast.stmt]) -> dict[str, tuple[str, int]]:
+    """Resolve stable, unconditional module imports; ambiguous aliases remain runtime-possible.
+
+    Imports must precede the guard. Other module bindings (even later ones) make an
+    alias ambiguous; ordinary function/class-local bindings cannot shadow it here.
+    Explicit globals and possible typing namespace mutations also invalidate aliases.
+    """
+    candidates: dict[str, tuple[str, int]] = {}
+    for stmt in statements:
+        if isinstance(stmt, ast.Import):
+            for alias in stmt.names:
+                if alias.name == "typing":
+                    candidates[alias.asname or alias.name] = ("typing", stmt.lineno)
+        elif isinstance(stmt, ast.ImportFrom) and stmt.level == 0 and stmt.module == "typing":
+            for alias in stmt.names:
+                if alias.name == "TYPE_CHECKING":
+                    candidates[alias.asname or alias.name] = ("TYPE_CHECKING", stmt.lineno)
+    if not candidates:
+        return {}
+    call_imports = _typing_call_imports(statements, candidates)
+
+    # Imports in any lexical scope can mutate the shared module, but only the
+    # unconditional module imports above can establish a guard alias. Matching
+    # names across scopes deliberately overapproximates possible mutation targets.
+    typing_names: set[str] = set()
+    for statement in statements:
+        for node in ast.walk(statement):
+            if isinstance(node, ast.Import):
+                typing_names.update(
+                    alias.asname or alias.name for alias in node.names if alias.name == "typing"
+                )
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module == "typing":
+                # An explicit namespace import shares typing's mutable dictionary.
+                typing_names.update(
+                    alias.asname or alias.name for alias in node.names if alias.name == "__dict__"
+                )
+
+    def module_statements(node: ast.AST) -> Iterator[ast.stmt]:
+        if isinstance(node, ast.stmt):
+            yield node
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            return
+        for child in ast.iter_child_nodes(node):
+            yield from module_statements(child)
+
+    bindings: dict[str, int] = defaultdict(int)
+    for statement in statements:
+        # Do not prune guards while checking whether an added alias is stable.
+        for stmt in module_statements(statement):
+            if isinstance(stmt, ast.ImportFrom) and any(alias.name == "*" for alias in stmt.names):
+                return {}
+            for name in _module_alias_bindings(stmt):
+                bindings[name] += 1
+        for node in ast.walk(statement):
+            if isinstance(node, ast.Global):
+                for name in node.names:
+                    bindings[name] += 1
+            if isinstance(node, ast.Call) and _call_exposes_typing_namespace(
+                node, typing_names, call_imports
+            ):
+                return {}
+            if (
+                isinstance(node, ast.AugAssign)
+                and isinstance(node.target, ast.Name)
+                and node.target.id in typing_names
+            ):
+                # AugAssign reads and may mutate its target despite its Store context.
+                return {}
+            for target in _alias_assignment_targets(node):
+                if _references_typing_namespace(target, typing_names):
+                    # All aliases share the same typing module, even across scopes.
+                    return {}
+    return {name: origin for name, origin in candidates.items() if bindings[name] == 1}
+
+
+def _is_type_checking_expr(
+    expr: ast.expr, aliases: Mapping[str, tuple[str, int]] | None = None
+) -> bool:
+    """Recognize plain/imported TYPE_CHECKING references and false conjunctions.
+
+    An ``or`` with a runtime alternative is not a type-only guard. The historical
+    plain spellings remain recognized without requiring import provenance.
+    """
+    if isinstance(expr, ast.BoolOp) and isinstance(expr.op, ast.And):
+        return any(_is_type_checking_expr(value, aliases) for value in expr.values)
+    if (isinstance(expr, ast.Name) and expr.id == "TYPE_CHECKING") or (
         isinstance(expr, ast.Attribute)
         and isinstance(expr.value, ast.Name)
         and expr.value.id == "typing"
         and expr.attr == "TYPE_CHECKING"
-    )
+    ):
+        return True
+    if aliases is None:
+        return False
+    if isinstance(expr, ast.Name):
+        origin = aliases.get(expr.id)
+        return origin is not None and origin[0] == "TYPE_CHECKING" and origin[1] < expr.lineno
+    if (
+        isinstance(expr, ast.Attribute)
+        and isinstance(expr.value, ast.Name)
+        and expr.attr == "TYPE_CHECKING"
+    ):
+        origin = aliases.get(expr.value.id)
+        return origin is not None and origin[0] == "typing" and origin[1] < expr.lineno
+    return False
 
 
 def _main_guard_polarity(expr: ast.expr) -> bool | None:
@@ -216,49 +437,63 @@ def _main_guard_polarity(expr: ast.expr) -> bool | None:
     return None
 
 
-def _iter_runtime_module_statements(statements: Sequence[ast.stmt]) -> Iterator[ast.stmt]:
+def _iter_runtime_module_statements(
+    statements: Sequence[ast.stmt], aliases: Mapping[str, tuple[str, int]] | None = None
+) -> Iterator[ast.stmt]:
     """Yield module-scope statements including nested blocks, skipping static/main-only guards."""
+    if aliases is None:
+        aliases = _type_checking_aliases(statements)
     for stmt in statements:
         yield stmt
         if isinstance(stmt, ast.If):
-            if _is_type_checking_expr(stmt.test):
-                yield from _iter_runtime_module_statements(stmt.orelse)
+            if _is_type_checking_expr(stmt.test, aliases):
+                yield from _iter_runtime_module_statements(stmt.orelse, aliases)
             elif (
                 isinstance(stmt.test, ast.UnaryOp)
                 and isinstance(stmt.test.op, ast.Not)
-                and _is_type_checking_expr(stmt.test.operand)
+                and _is_type_checking_expr(stmt.test.operand, aliases)
             ):
-                yield from _iter_runtime_module_statements(stmt.body)
+                yield from _iter_runtime_module_statements(stmt.body, aliases)
             else:
                 main_polarity = _main_guard_polarity(stmt.test)
                 if main_polarity is True:
-                    yield from _iter_runtime_module_statements(stmt.orelse)
+                    yield from _iter_runtime_module_statements(stmt.orelse, aliases)
                 elif main_polarity is False:
-                    yield from _iter_runtime_module_statements(stmt.body)
+                    yield from _iter_runtime_module_statements(stmt.body, aliases)
                 else:
-                    yield from _iter_runtime_module_statements(stmt.body)
-                    yield from _iter_runtime_module_statements(stmt.orelse)
+                    yield from _iter_runtime_module_statements(stmt.body, aliases)
+                    yield from _iter_runtime_module_statements(stmt.orelse, aliases)
         elif isinstance(stmt, (ast.For, ast.AsyncFor, ast.While)):
-            yield from _iter_runtime_module_statements(stmt.body)
-            yield from _iter_runtime_module_statements(stmt.orelse)
+            yield from _iter_runtime_module_statements(stmt.body, aliases)
+            yield from _iter_runtime_module_statements(stmt.orelse, aliases)
         elif isinstance(stmt, (ast.With, ast.AsyncWith)):
-            yield from _iter_runtime_module_statements(stmt.body)
+            yield from _iter_runtime_module_statements(stmt.body, aliases)
         elif isinstance(stmt, (ast.Try, ast.TryStar)):
-            yield from _iter_runtime_module_statements(stmt.body)
+            yield from _iter_runtime_module_statements(stmt.body, aliases)
             for handler in stmt.handlers:
-                yield from _iter_runtime_module_statements(handler.body)
-            yield from _iter_runtime_module_statements(stmt.orelse)
-            yield from _iter_runtime_module_statements(stmt.finalbody)
+                yield from _iter_runtime_module_statements(handler.body, aliases)
+            yield from _iter_runtime_module_statements(stmt.orelse, aliases)
+            yield from _iter_runtime_module_statements(stmt.finalbody, aliases)
         elif isinstance(stmt, ast.Match):
             for case in stmt.cases:
-                yield from _iter_runtime_module_statements(case.body)
+                yield from _iter_runtime_module_statements(case.body, aliases)
 
 
-def _iter_statement_expr_nodes(stmt: ast.stmt) -> Iterator[ast.AST]:
+def _iter_statement_expr_nodes(
+    stmt: ast.stmt, *, include_lambda_defaults: bool = False
+) -> Iterator[ast.AST]:
     """Walk expressions attached directly to a statement, excluding child statements and lambdas."""
 
     def walk_expr(node: ast.AST) -> Iterator[ast.AST]:
-        if isinstance(node, (ast.stmt, ast.Lambda)):
+        if isinstance(node, ast.stmt):
+            return
+        if isinstance(node, ast.Lambda):
+            if include_lambda_defaults:
+                for default in [
+                    *node.args.defaults,
+                    *(v for v in node.args.kw_defaults if v is not None),
+                ]:
+                    yield from walk_expr(default)
             return
         yield node
         for child in ast.iter_child_nodes(node):
