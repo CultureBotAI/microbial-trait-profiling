@@ -1,6 +1,6 @@
 # Measured evidence for independent validation: what exists, and what a test would need
 
-Produced by `src/bsdbng/validation_evidence.py`, driven by `just validation-evidence`,
+Produced by `src/mtp/validation_evidence.py`, driven by `just validation-evidence`,
 which writes `data/derived/validation_evidence/`: the per-study evidence-availability
 matrix, its summary, the marker-split candidates, the inferred-function traits,
 the external cohort overlap, and a provenance record. It implements
