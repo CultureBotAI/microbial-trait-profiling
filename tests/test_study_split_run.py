@@ -549,3 +549,169 @@ def test_source_boundary_refuses_other_populations_directions_and_scopes(
     with pytest.raises(ValueError, match=r"Tier 1\+2|phenotype sensitivity"):
         runner.execute(comparison, tmp_path / "out", Protocol())
     assert not (tmp_path / "out").exists()
+
+
+def test_runner_ignores_untracked_file_and_dangling_editor_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import shutil
+
+    from git import Actor, Repo
+
+    from mtp.paths import REPO_ROOT
+
+    checkout = tmp_path / "checkout"
+    for rel_path in {*runner.IMPLEMENTATIONS, "src/mtp/multiplicity/stage.py"}:
+        src_file = REPO_ROOT / rel_path
+        dst_file = checkout / rel_path
+        dst_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src_file, dst_file)
+
+    actor = Actor("Test", "test@example.com")
+    with Repo.init(checkout) as repository:
+        repository.index.add([*runner.IMPLEMENTATIONS, "src/mtp/multiplicity/stage.py"])
+        repository.index.commit("initial tracked tree", author=actor, committer=actor)
+
+    stage_path = checkout / "src/mtp/multiplicity/stage.py"
+    monkeypatch.setattr(multiplicity_stage, "__file__", str(stage_path))
+    monkeypatch.setattr(runner, "REPO_ROOT", checkout)
+    monkeypatch.setattr(
+        runner, "PROTOCOL_FILE", checkout / "methods/study_split_selection_protocol.json"
+    )
+    monkeypatch.setattr(
+        split_module, "PROTOCOL_PATH", checkout / "methods/study_split_selection_protocol.json"
+    )
+
+    upstream = tmp_path / "upstream"
+    upstream.mkdir()
+    comparison = upstream / "comparison" / "comparison_run.json"
+    comparison.parent.mkdir()
+    comparison.write_text("{}\n", encoding="utf-8")
+    core_manifest = upstream / "core" / "run.json"
+    core_manifest.parent.mkdir()
+    core_manifest.write_text("{}\n", encoding="utf-8")
+    verified = _verified_scope("off")
+    verified.comparison = SimpleNamespace(id="comparison-fixture")
+    paths = {"core:manifest": core_manifest, "comparison:manifest": comparison}
+    digests = {path: file_sha256(path) for path in paths.values()}
+    verified.expected_digest = digests.get
+    monkeypatch.setattr(runner, "_inputs", lambda _comparison: (verified, paths))
+    monkeypatch.setattr(runner, "open_core_bundle", lambda _manifest: SimpleNamespace())
+    monkeypatch.setattr(runner, "preflight_consumer_outputs", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        runner,
+        "_documents",
+        lambda _verified, _paths, _protocol, _ts: {
+            "split_results.json": "[]\n",
+            "split_stability.tsv": "hypothesis_id\n",
+            "README.md": "# Study split fixture\n",
+        },
+    )
+
+    clean_out = tmp_path / "sidecars" / "clean"
+    manifest_path = runner.execute(comparison, clean_out, Protocol(), verify=False)
+    clean_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert clean_manifest["repository_context"]["code_dirty"] is False
+
+    package_dir = checkout / "src" / "mtp"
+    (package_dir / "untracked_scratch.py").write_text("# unrelated scratch\n", encoding="utf-8")
+    (package_dir / ".#study_split_run.py").symlink_to(package_dir / "missing.py")
+
+    assert runner.execute(comparison, clean_out, Protocol(), verify=True) == manifest_path
+    dirty_out = tmp_path / "sidecars" / "with_lock"
+    dirty_manifest_path = runner.execute(comparison, dirty_out, Protocol(), verify=False)
+    dirty_manifest = json.loads(dirty_manifest_path.read_text(encoding="utf-8"))
+    assert (
+        dirty_manifest["provenance"]["code_sha256"] == clean_manifest["provenance"]["code_sha256"]
+    )
+    assert (
+        dirty_manifest["provenance"]["implementation"]
+        == clean_manifest["provenance"]["implementation"]
+    )
+    assert dirty_manifest["repository_context"]["code_dirty"] is True
+
+
+@pytest.mark.parametrize(
+    ("protocol", "expected_follows", "expected_seed"),
+    [
+        (Protocol(), "follows_protocol=True", "seed=20261023"),
+        (Protocol(splits=2, seed=99, permutations=19), "follows_protocol=False", "seed=99"),
+    ],
+)
+def test_readme_states_follows_protocol_and_seed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    protocol: Protocol,
+    expected_follows: str,
+    expected_seed: str,
+) -> None:
+    from datetime import UTC, datetime
+
+    verified: Any = SimpleNamespace(
+        scope="phenotype",
+        features={"count_profiles": ("trait",)},
+        bases={"count_profiles": SimpleNamespace()},
+        comparison=SimpleNamespace(id="comparison-fixture"),
+    )
+    paths = {
+        "core:taxa_matrix": tmp_path / "taxa_matrix.tsv",
+        "core:experiments": tmp_path / "experiments.tsv",
+        "core:reported_taxa": tmp_path / "reported_taxa.tsv",
+        "core:count_profiles": tmp_path / "count_profiles.tsv",
+    }
+    monkeypatch.setattr(scanner, "read_matrix", lambda *_args: SimpleNamespace(index=[]))
+    monkeypatch.setattr(scanner, "load_population", lambda *_args: (None, None))
+    monkeypatch.setattr(runner, "load_profiles", lambda *_args, **_kwargs: ([], None))
+    monkeypatch.setattr(runner, "_recorded_inputs", lambda *_args: {})
+    monkeypatch.setattr(runner, "run_splits", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(runner, "summarize_stability", lambda _records: [])
+
+    documents = runner._documents(verified, paths, protocol, datetime(2026, 11, 13, tzinfo=UTC))
+    readme = documents["README.md"]
+    assert expected_follows in readme
+    assert expected_seed in readme
+
+
+def test_cli_defaults_match_protocol_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import dataclass
+
+    @dataclass(frozen=True)
+    class CustomDefaultsProtocol:
+        splits: int = 3
+        seed: int = 777
+        permutations: int = 17
+
+    recorded: list[Any] = []
+
+    def fake_execute(
+        _comparison: Path, output_dir: Path, protocol: Any, *, verify: bool = False
+    ) -> Path:
+        recorded.append((protocol, verify))
+        return output_dir / "study_split_run.json"
+
+    monkeypatch.setattr(runner, "Protocol", CustomDefaultsProtocol)
+    monkeypatch.setattr(runner, "execute", fake_execute)
+
+    comparison = tmp_path / "comparison_run.json"
+    output = tmp_path / "out"
+    assert (
+        runner.main(["--comparison-run", str(comparison), "--output-dir", str(output), "--verify"])
+        == 0
+    )
+    assert recorded == [(CustomDefaultsProtocol(splits=3, seed=777, permutations=17), True)]
+
+    with pytest.raises(SystemExit):
+        runner.main(
+            [
+                "--phenotype-run",
+                str(tmp_path / "phenotype"),
+                "--off-run",
+                str(tmp_path / "off"),
+                "--output-dir",
+                str(tmp_path / "paired"),
+                "--splits",
+                "20",
+            ]
+        )
