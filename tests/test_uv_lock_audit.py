@@ -7,6 +7,7 @@ import json
 import runpy
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -600,5 +601,36 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
         inside_out = covering / "runs" / "from-inside-scripts"
         assert GUARD_PROBE["main"](["--output-dir", str(inside_out)]) == 0
         inside_log = (inside_out / "pytest.log").read_text(encoding="utf-8")
+        # The elided ".../" path below is synthetic output of the pytest.main stub above; real
+        # nested pytest runs with -vvv and does not elide arguments (#2352).
         assert ".../<pytest-tempdir>/test_min_stratified_pairs_is_r0/labels.tsv" in inside_log
         assert "probeacct" not in inside_log.casefold()
+
+
+def test_guard_isolation_probe_handles_deep_temp_root_without_path_elision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#2352: nested pytest must not elide long temp-root arguments or emit header paths."""
+    deep_tmp = (
+        tmp_path
+        / "deep_segment_0123456789abcdef"
+        / "deep_segment_0123456789abcdef"
+        / "deep_segment_0123456789abcdef"
+    )
+    deep_tmp.mkdir(parents=True)
+    assert len(str(deep_tmp.resolve())) >= 120
+    monkeypatch.setenv("TMPDIR", str(deep_tmp))
+    monkeypatch.setattr(tempfile, "tempdir", None)
+
+    probe_output = deep_tmp / "guard-evidence-long-root"
+    assert GUARD_PROBE["main"](["--output-dir", str(probe_output)]) == 0
+    raw_log = (probe_output / "pytest.log").read_text(encoding="utf-8")
+    assert "DID NOT RAISE SystemExit" in raw_log
+    assert "<pytest-tempdir>" in raw_log
+    assert ".../<pytest-tempdir>" not in raw_log
+    assert ABSOLUTE_LOCAL_PATH.search(raw_log) is None
+    assert str(deep_tmp) not in raw_log
+    assert str(deep_tmp.resolve()) not in raw_log
+    assert str(REPO_ROOT) not in raw_log
+    assert_portable_text(raw_log)

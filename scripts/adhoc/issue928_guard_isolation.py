@@ -225,7 +225,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         with redirect_stdout(captured), redirect_stderr(captured):
             code = int(
                 pytest.main(
-                    ["-q", "-p", "no:cacheprovider", f"{TEST}::{GUARD_TEST}"], plugins=[probe]
+                    ["-vvv", "--no-header", "-p", "no:cacheprovider", f"{TEST}::{GUARD_TEST}"],
+                    plugins=[probe],
                 )
             )
     after = inventory(checkout_outputs, repo_paths)
