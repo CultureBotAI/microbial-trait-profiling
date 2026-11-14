@@ -51,6 +51,7 @@ from mtp.composition_denominators import MEDIADIVE_MARKER
 from mtp.density_adjustment import TABLE_1_TRAITS
 from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 logger = logging.getLogger(__name__)
 
@@ -539,6 +540,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     profiles_df = pd.read_csv(args.profiles, sep="\t")
     trait_columns = load_composition_trait_columns(args.columns, profiles_df)
+    member_ids_by_trait = read_recorded_member_ids(args.columns)
 
     summary_dict, summary_df, replicates_df, null_pvals_df, table1_df = run_composition_calibration(
         profiles_df=profiles_df,
@@ -589,8 +591,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     print("\n--- Table 1 Canonical Traits Calibration ---")
     for t in summary_dict["table1_traits"]:
+        display_name = display_trait_label(
+            t["trait_id"],
+            t["trait_name"],
+            member_ids_by_trait.get(t["trait_id"]),
+        )
         print(
-            f"  {t['trait_name']:<28}: "
+            f"  {display_name:<28}: "
             f"obs_t={t['observed_t']:+6.3f} (q={t['observed_bh_q']:.2e}) | "
             f"null_t range=[{t['null_min_t']:+6.3f}, {t['null_max_t']:+6.3f}] | "
             f"reaching |t_obs|={t['null_reps_reaching_observed']}/{args.replicates} | "
