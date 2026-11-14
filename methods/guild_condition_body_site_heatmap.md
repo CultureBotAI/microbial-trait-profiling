@@ -1,7 +1,7 @@
 # Oxygen guild composition by condition and body site
 
 Figure: `guild_condition_body_site_heatmap.png`. Produced by
-`src/bsdbng/guild_maps.py`, driven by `just guild-maps`. How this analysis
+`src/mtp/guild_maps.py`, driven by `just guild-maps`. How this analysis
 differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
@@ -271,7 +271,7 @@ hypothesis or establish FDR control across these diagnostics.
 ## Reproducing
 
 All statistics use scipy (binomtest, spearmanr) rather than hand-rolled
-implementations. The figure was produced by `src/bsdbng/guild_maps.py`, driven
+implementations. The figure was produced by `src/mtp/guild_maps.py`, driven
 deterministically by `just guild-maps`, alongside the value matrix, the
 study-count matrix, the cell-status table, the row-cluster table, and the
 statistics table as tab-separated files. The statistics table's first row and a

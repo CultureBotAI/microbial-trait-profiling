@@ -29,11 +29,11 @@ Source study -> curated signature -> taxon mapping -> annotation/rollup -> stati
 | Annotation/rollup | Trait keys attached to mapped taxa and their descendants | KG release/checksums, source assertion and predicate/object IDs, full qualified column key, ontology version, direct versus rolled-up origin, deduplication rule, and source evidence where available. Display labels are not source evidence. |
 | Statistic | Counts, fractions, paired contrasts, enrichment or study-level direction summaries | Input hashes, code revision/recipe, filters, denominator, reference/background, transformation, inference unit, support, effect, uncertainty, test and correction family. Retain machine-readable backing tables and links to upstream IDs. |
 
-In [`taxa_trait_matrix.py`](../src/bsdbng/taxa_trait_matrix.py), `read_kg_edges`
+In [`taxa_trait_matrix.py`](../src/mtp/taxa_trait_matrix.py), `read_kg_edges`
 stores a set of trait keys per KG taxon; repeated identical keys on that taxon
 are deduplicated. `compute_trait_counts` counts trait-bearing taxa at or below
 each reported taxon. In
-[`study_trait_profiles.py`](../src/bsdbng/study_trait_profiles.py),
+[`study_trait_profiles.py`](../src/mtp/study_trait_profiles.py),
 `collect_profile_taxa` deduplicates reported taxon IDs within a
 study/experiment/direction by default, and `aggregate_profile_counts` sums their
 vectors. This does not deduplicate overlapping descendant contributions from
