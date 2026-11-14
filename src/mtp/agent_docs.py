@@ -340,6 +340,10 @@ def _destination(text: str, start: int, limit: int | None = None) -> tuple[int, 
     position, depth = start, 0
     while position < limit:
         char = text[position]
+        if not angle:
+            candidate = text[position + 1] if char == "\\" and position + 1 < limit else char
+            if (ord(candidate) < 0x20 and candidate not in " \t\r\n") or ord(candidate) == 0x7F:
+                return None
         if char == "\\" and position + 1 < limit:
             position += 2
             continue
@@ -424,7 +428,7 @@ def _targets(
 ) -> list[tuple[int, int]]:
     targets: list[tuple[int, int]] = []
     masked = list(visible)
-    for reference in re.finditer(rf"(?m)^[ \t]*{_REF_LABEL}", visible):
+    for reference in re.finditer(rf"(?:^|(?<=[\r\n]))[ \t]*{_REF_LABEL}", visible):
         limit = definition_limits.get(reference.end(), len(content))
         destination = _destination(content, reference.end(), limit)
         if destination is not None:

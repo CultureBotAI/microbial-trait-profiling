@@ -1,6 +1,6 @@
 # Sensitivity of the paired log-ratios to eligibility, reference and population
 
-Produced by `src/bsdbng/log_ratio_sensitivity.py`, driven by
+Produced by `src/mtp/log_ratio_sensitivity.py`, driven by
 `just table1-log-ratio-sensitivity`, which writes
 `data/derived/table1_composition_sensitivity/`: every scenario row
 (`sensitivity_results.tsv`), eligibility by ratio and by exact body site and

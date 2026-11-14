@@ -370,7 +370,7 @@ def quadrant_pages(bundle: FigureInputs) -> Iterator[Page]:
                 )
             )
             populations[population] = {
-                "n_comparisons": len(frame),
+                "n_comparisons": int(row["n_comparisons"]),
                 "n_studies": int(row["n_studies"]),
                 "axis": int(row["axis"]),
                 "sign_test_status": row["sign_test_status"],

@@ -7,7 +7,7 @@ Purpose:
   palette/strip/legend assertions in tests/test_enrichment_infographic_followup.py
   (#1922, #2005, #2006) kill source-level mutations in
   src/mtp/cellulose_decr/slide_figures.py, src/mtp/cellulose_decr/figures.py,
-  and scripts/analyze_enrichment_infographic_followup.py via AssertionError
+  and scripts/analyze_enrichment_infographic_followup.py via an assertion marker
   (rc=1, no KeyError) when executed against an isolated scratch copy with
   verified import origin inside pytest.
 
@@ -19,11 +19,11 @@ Inputs:
   - tests/test_enrichment_infographic_followup.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 12 killed mutants (rc=1, AssertionError,
+  - stdout summary of CONTROL (rc=0) and 12 killed mutants (rc=1, matched marker,
     PYTEST_ORIGIN_OK).
 
-Issue: #1921, #1922, #2005, #2006
-Date: 2026-11-08
+Issue: #1921, #1922, #2005, #2006, #2063
+Date: 2026-11-10
 """
 
 from __future__ import annotations
@@ -343,7 +343,8 @@ def main() -> int:
             if not any(marker in out for marker in ASSERTION_MARKERS):
                 print(f"FAIL [{mutant.name}]: no assertion marker in output\n{out}")
                 return 1
-            print(f"KILLED {mutant.name}: rc=1 AssertionError PYTEST_ORIGIN_OK")
+            matched_marker = next(marker for marker in ASSERTION_MARKERS if marker in out)
+            print(f"KILLED {mutant.name}: rc=1 {matched_marker} PYTEST_ORIGIN_OK")
 
     print(f"ALL {len(MUTANTS)} #1921/#1922 MUTANTS KILLED CLEANLY.")
     return 0

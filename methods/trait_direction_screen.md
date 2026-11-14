@@ -49,12 +49,22 @@ never redefines that total.
 
 Every retained column of `data/derived/study_trait_profiles_wide.tsv` — all columns
 except the three identifier columns and every MediaDive growth-medium column. The
-historical v1.3.1 `off` screen described here reported **317 candidates**, with 2,333
-MediaDive columns excluded, tested over 4,670 paired human profiles from 2,335
-experiments and 959 studies. The primary `phenotype` scope's 344 were counted on the
-later 5,629-profile table; the [F rebuild record](../docs/reviews/2026-10-25-rebuild-of-F-record.md)
-also records that scope's candidate count for its named runs. That later count does
-not establish the family size of the earlier `off` screen or of a future run.
+historical v1.3.1 `off` screen described here reported **317 candidates**, tested over
+4,670 paired human profiles from 2,335 experiments and 959 studies.
+
+The [pinned comparison record](https://github.com/CultureBotAI/microbial-trait-profiling/blob/de1a54b99ea8144531559c0d34be3fee681ec076/methods/table1_log_ratio_validation.md#L16-L27)
+identifies a historical profile matrix with **5,829 input profiles**, 317 retained
+traits and **2,290 excluded MediaDive columns**, with profile matrix SHA-256
+`c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f`.
+These counts describe that matrix, not the currently tracked gzip or a future run;
+see the [snapshot qualifications](three_arm_statistics.md#vintage). The original
+directional screen still lacks a complete execution manifest; matching these counts
+does not reconstruct it.
+
+The primary `phenotype` scope's 344 were counted on the later 5,629-profile table;
+the [F rebuild record](../docs/reviews/2026-10-25-rebuild-of-F-record.md) also records
+that scope's candidate count for its named runs. That later count does not establish
+the family size of the earlier `off` screen or of a future run.
 
 The set is read from the matrix at run time and never written down, so a corpus change
 moves the family rather than silently mismatching it. `retained_trait_columns` in

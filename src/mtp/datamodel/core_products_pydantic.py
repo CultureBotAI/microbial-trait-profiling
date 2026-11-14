@@ -254,7 +254,7 @@ class Study(NamedThing):
                                               'entries use DOIs or PMC IDs (e.g. '
                                               'bsdb:PMC11017998).',
                                'name': 'id',
-                               'pattern': '^bsdb:.+$'}},
+                               'pattern': '^bsdb:.+(?![\\s\\S])$'}},
          'title': 'Study',
          'tree_root': True})
 
@@ -273,7 +273,7 @@ class Study(NamedThing):
 
     @field_validator('doi')
     def pattern_doi(cls, v):
-        pattern=re.compile(r"^10\..+$")
+        pattern=re.compile(r"^10\..+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -286,7 +286,7 @@ class Study(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^bsdb:.+$")
+        pattern=re.compile(r"^bsdb:.+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -307,7 +307,7 @@ class Experiment(NamedThing):
          'slot_usage': {'id': {'description': 'BugSigDB experiment identifier, e.g. '
                                               'bsdb:10202341-1.',
                                'name': 'id',
-                               'pattern': '^bsdb:.+-[0-9]+$'}},
+                               'pattern': '^bsdb:.+-[0-9]+(?![\\s\\S])$'}},
          'title': 'Experiment'})
 
     experiment_name: Optional[str] = Field(default=None, title="Experiment Name", description="""Label for the experiment.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Experiment', 'ExperimentTableRow']} })
@@ -344,7 +344,7 @@ class Experiment(NamedThing):
 
     @field_validator('body_site_ontology_id')
     def pattern_body_site_ontology_id(cls, v):
-        pattern=re.compile(r"^UBERON:[0-9]+$")
+        pattern=re.compile(r"^UBERON:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -357,7 +357,7 @@ class Experiment(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^bsdb:.+-[0-9]+$")
+        pattern=re.compile(r"^bsdb:.+-[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -379,7 +379,7 @@ class Signature(NamedThing):
                         'id': {'description': 'BugSigDB signature identifier, e.g. '
                                               'bsdb:10202341-1-1.',
                                'name': 'id',
-                               'pattern': '^bsdb:.+-[0-9]+-[0-9]+$'}},
+                               'pattern': '^bsdb:.+-[0-9]+-[0-9]+(?![\\s\\S])$'}},
          'title': 'Signature'})
 
     direction: DirectionEnum = Field(default=..., title="Direction", description="""Reported direction of abundance change for taxa in the signature.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Signature', 'SignatureTableRow', 'TaxonOccurrenceRow']} })
@@ -390,7 +390,7 @@ class Signature(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^bsdb:.+-[0-9]+-[0-9]+$")
+        pattern=re.compile(r"^bsdb:.+-[0-9]+-[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -410,7 +410,7 @@ class Taxon(NamedThing):
          'id_prefixes': ['NCBITaxon'],
          'slot_usage': {'id': {'description': 'NCBITaxon CURIE, e.g. NCBITaxon:9606.',
                                'name': 'id',
-                               'pattern': '^NCBITaxon:[0-9]+$',
+                               'pattern': '^NCBITaxon:[0-9]+(?![\\s\\S])$',
                                'recommended': True,
                                'required': False},
                         'taxon_name': {'name': 'taxon_name', 'required': True},
@@ -426,7 +426,7 @@ class Taxon(NamedThing):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^NCBITaxon:[0-9]+$")
+        pattern=re.compile(r"^NCBITaxon:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -488,7 +488,7 @@ class Phenotype(ConfiguredBaseModel):
 
     @field_validator('phenotype_id')
     def pattern_phenotype_id(cls, v):
-        pattern=re.compile(r"^METPO:[0-9]+$")
+        pattern=re.compile(r"^METPO:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -538,7 +538,7 @@ class TaxonTraitMatrixRow(ConfiguredBaseModel):
 
     @field_validator('taxon_id')
     def pattern_taxon_id(cls, v):
-        pattern=re.compile(r"^NCBITaxon:[0-9]+$")
+        pattern=re.compile(r"^NCBITaxon:[0-9]+(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -590,7 +590,7 @@ class CountProfileRow(ConfiguredBaseModel):
 
     @field_validator('inc_dec')
     def pattern_inc_dec(cls, v):
-        pattern=re.compile(r"^(inc|dec)$")
+        pattern=re.compile(r"^(inc|dec)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -603,7 +603,7 @@ class CountProfileRow(ConfiguredBaseModel):
 
     @field_validator('trait_filter_id')
     def pattern_trait_filter_id(cls, v):
-        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -616,7 +616,7 @@ class CountProfileRow(ConfiguredBaseModel):
 
     @field_validator('unit')
     def pattern_unit(cls, v):
-        pattern=re.compile(r"^rolled_up_source_taxon_count$")
+        pattern=re.compile(r"^rolled_up_source_taxon_count(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -658,7 +658,7 @@ class ORAProfileRow(ConfiguredBaseModel):
 
     @field_validator('inc_dec')
     def pattern_inc_dec(cls, v):
-        pattern=re.compile(r"^(inc|dec)$")
+        pattern=re.compile(r"^(inc|dec)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -671,7 +671,7 @@ class ORAProfileRow(ConfiguredBaseModel):
 
     @field_validator('trait_filter_id')
     def pattern_trait_filter_id(cls, v):
-        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -684,7 +684,7 @@ class ORAProfileRow(ConfiguredBaseModel):
 
     @field_validator('unit')
     def pattern_unit(cls, v):
-        pattern=re.compile(r"^distinct_matched_reported_taxon_count$")
+        pattern=re.compile(r"^distinct_matched_reported_taxon_count(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -710,7 +710,7 @@ class SourceFileIdentity(ConfiguredBaseModel):
 
     @field_validator('sha256')
     def pattern_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -753,7 +753,7 @@ class SourceIdentity(ConfiguredBaseModel):
 
     @field_validator('declared_source_mode')
     def pattern_declared_source_mode(cls, v):
-        pattern=re.compile(r"^(unknown|fixture|live|pinned)$")
+        pattern=re.compile(r"^(unknown|fixture|live|pinned)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -766,7 +766,7 @@ class SourceIdentity(ConfiguredBaseModel):
 
     @field_validator('verification_status')
     def pattern_verification_status(cls, v):
-        pattern=re.compile(r"^(pinned_bytes_verified|origin_unverified)$")
+        pattern=re.compile(r"^(pinned_bytes_verified|origin_unverified)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -867,7 +867,7 @@ class SignatureTableRow(ConfiguredBaseModel):
 
     @field_validator('direction')
     def pattern_direction(cls, v):
-        pattern=re.compile(r"^(increased|decreased)$")
+        pattern=re.compile(r"^(increased|decreased)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -909,7 +909,7 @@ class TaxonOccurrenceRow(ConfiguredBaseModel):
 
     @field_validator('direction')
     def pattern_direction(cls, v):
-        pattern=re.compile(r"^(increased|decreased)$")
+        pattern=re.compile(r"^(increased|decreased)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -985,7 +985,7 @@ class FeatureDefinition(ConfiguredBaseModel):
 
     @field_validator('trait_key_policy')
     def pattern_trait_key_policy(cls, v):
-        pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)$")
+        pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -998,7 +998,7 @@ class FeatureDefinition(ConfiguredBaseModel):
 
     @field_validator('annotation_evidence')
     def pattern_annotation_evidence(cls, v):
-        pattern=re.compile(r"^(direct_or_descendant_unresolved|direct_descendant_or_strain_unresolved)$")
+        pattern=re.compile(r"^(direct_or_descendant_unresolved|direct_descendant_or_strain_unresolved)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1046,7 +1046,7 @@ class ProfileCoverageRecord(ConfiguredBaseModel):
 
     @field_validator('trait_filter_id')
     def pattern_trait_filter_id(cls, v):
-        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1059,7 +1059,7 @@ class ProfileCoverageRecord(ConfiguredBaseModel):
 
     @field_validator('lineage_resolution')
     def pattern_lineage_resolution(cls, v):
-        pattern=re.compile(r"^unresolved$")
+        pattern=re.compile(r"^unresolved(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):

@@ -552,7 +552,10 @@ def load_completed_table(
             raise ValueError(f"Completed-table source alias target changed: {path.name}")
         resolved_targets[path] = target
     sources = bind_recorded_hashes(
-        open_verified_sources(comparison, manifest_bytes=comparison_raw), comparison_hash
+        open_verified_sources(
+            comparison, manifest_bytes=comparison_raw, expected_sha256=comparison_hash
+        ),
+        comparison_hash,
     )
     _check_contract(record, sources, comparison_hash)
     snapshots: dict[Path, dict[str, Any]] = {}

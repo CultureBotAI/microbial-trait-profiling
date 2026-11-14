@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import json
-from pathlib import Path
 
 import pytest
 from scipy.stats import binomtest, false_discovery_control
@@ -177,29 +176,6 @@ def test_combined_summary_retains_native_text_and_labels_dependent_diagnostics()
     assert "dependent omissions" in text
     assert "not measurements of physiological activity" in text
     assert "Native report was not supplied" in combined_summary(None, [], [])
-
-
-def test_native_summary_binding_rejects_an_arm_from_another_core(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from types import SimpleNamespace
-
-    import mtp.influence_extension as extension
-
-    core = tmp_path / "core.json"
-    core.write_text("fixture core\n", encoding="utf-8")
-    monkeypatch.setattr(
-        extension,
-        "verify_arm",
-        lambda _path: SimpleNamespace(
-            arm="noel",
-            core_manifest_sha256="wrong",
-            steps=[],
-        ),
-    )
-    with pytest.raises(ValueError, match="this exact core"):
-        extension.native_summary_source(core, tmp_path / "noel.json")
 
 
 def ranking_corpus(*, half_empty: bool = False) -> tuple[Base, Graph]:

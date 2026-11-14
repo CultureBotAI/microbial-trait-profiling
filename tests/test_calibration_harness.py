@@ -54,12 +54,6 @@ def synthetic_calibration_data() -> CalibrationData:
             "experiment_id": ["e1", "e1", "e2", "e2"],
             "inc_dec": ["inc", "dec", "inc", "dec"],
             "taxa_count": [10, 12, 8, 9],
-            "TRAIT_A": [4, 1, 3, 2],
-            "TRAIT_B": [2, 5, 1, 4],
-            "TRAIT_C": [1, 2, 0, 1],
-            "TRAIT_D": [3, 0, 2, 1],
-            "TRAIT_E": [0, 1, 1, 0],
-            "TRAIT_F": [0, 0, 1, 2],
         }
     )
     rng = np.random.default_rng(1234)
@@ -67,6 +61,13 @@ def synthetic_calibration_data() -> CalibrationData:
     taxa_ids = [f"NCBITaxon:{1000 + i}" for i in range(m_taxa)]
     taxa_traits = rng.binomial(1, 0.4, size=(m_taxa, len(TRAITS)))
     taxa_traits[:4, :] = 1
+    # Concrete draws without replacement preserve both support and coannotation.
+    profiles_df[TRAITS] = np.stack(
+        [
+            taxa_traits[(np.arange(int(draws)) + 3 * index) % m_taxa].sum(axis=0)
+            for index, draws in enumerate(profiles_df["taxa_count"])
+        ]
+    )
 
     taxa_df = pd.DataFrame(
         taxa_traits,
@@ -420,8 +421,7 @@ def test_standard_module_command_executes_benchmark(
         check=False,
     )
     assert proc.returncode == EXIT_SUCCESS, proc.stderr
-    if package == "mtp":
-        assert "RuntimeWarning" not in proc.stderr
+    assert "RuntimeWarning" not in proc.stderr
     summary = _read_summary(out)
     assert summary["status"] == "SUCCESS"
     assert summary["completed_replicates"] == 4
@@ -435,6 +435,7 @@ def test_standard_module_command_executes_benchmark(
         check=False,
     )
     assert bad.returncode == EXIT_FAILURE
+    assert "RuntimeWarning" not in bad.stderr
     assert _read_summary(out)["status"] == "FAILED"
 
 

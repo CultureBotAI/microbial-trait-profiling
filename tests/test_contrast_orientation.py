@@ -8,9 +8,11 @@ import itertools
 import json
 import re
 from collections import Counter
-from dataclasses import asdict, replace
+from collections.abc import Callable
+from dataclasses import asdict, fields, make_dataclass, replace
 from functools import partial
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -2496,10 +2498,1856 @@ def test_the_experiments_v6_reclassifies_read_as_its_version_history_says(
 #: of the guard's cases and of the classifier's decisions on them. A pinned version's digests
 #: never change. A rule change that moves any case needs a new CLASSIFIER_VERSION, an entry in
 #: the version history of methods/contrast_orientation.md, and new digests under the new
-#: version. The digests are public checksums, so .secrets.baseline lists them as reviewed.
+#: version. The frozen per-case reference below is validated against those original pins.
 CLASSIFIER_GUARD_DIGESTS = (
     Path(__file__).parent / "fixtures" / "contrast_orientation_guard_digests.json"
 )
+
+
+# Frozen from the existing committed guard cases only (#803); no new export rows.
+_GUARD_REFERENCE_VERSION = "contrast-orientation-v6"
+_GUARD_REFERENCE_COMMON: dict[str, str] = {
+    "body_site": "",
+    "condition": "HIV infection",
+    "description": "",
+    "doi": "",
+    "efo_id": "",
+    "experiment_id": "bsdb:1-1",
+    "group_0_name": "Healthy Controls",
+    "group_0_sample_size": "",
+    "group_1_definition": "",
+    "group_1_name": "18-62 years",
+    "group_1_sample_size": "",
+    "host_species": "",
+    "pmid": "1",
+    "study_design": "",
+    "study_id": "bsdb:1",
+    "uberon_id": "",
+}
+
+_GUARD_REFERENCE_DECISIONS: tuple[tuple[str, str, str, str, str], ...] = (
+    (
+        "disease_vs_disease",
+        "not_applicable",
+        "disease_vs_disease",
+        "not_applicable",
+        "age_band_not_timepoint,negated_treatment_term,no_group_0_definition_in_export,shared_timepoint",
+    ),
+    (
+        "disease_vs_disease",
+        "not_applicable",
+        "disease_vs_disease",
+        "not_applicable",
+        "age_band_not_timepoint,no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "disease_vs_disease",
+        "not_applicable",
+        "disease_vs_disease",
+        "not_applicable",
+        "comparison_reading_withdrawn,no_group_0_definition_in_export",
+    ),
+    (
+        "disease_vs_disease",
+        "not_applicable",
+        "disease_vs_disease",
+        "not_applicable",
+        "no_group_0_definition_in_export",
+    ),
+    (
+        "disease_vs_disease",
+        "not_applicable",
+        "disease_vs_disease",
+        "not_applicable",
+        "no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_1_healthy_normal",
+        "disease_sample_dated_at_baseline,negated_treatment_term,no_group_0_definition_in_export",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_1_healthy_normal",
+        (
+            "disease_sample_dated_at_baseline,negated_treatment_term,"
+            "no_group_0_definition_in_export,no_group_1_definition,shared_treatment_term"
+        ),
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_1_healthy_normal",
+        "no_group_0_definition_in_export",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_1_healthy_normal",
+        "no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_1_healthy_normal",
+        "no_group_0_definition_in_export,no_group_1_definition,shared_timepoint",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_1_healthy_normal",
+        "no_group_0_definition_in_export,shared_timepoint",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_2_condition_negative_screened",
+        "no_group_0_definition_in_export,no_group_1_definition,weak_comparison_evidence",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_2_condition_negative_screened",
+        "no_group_0_definition_in_export,shared_timepoint,weak_comparison_evidence",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_2_condition_negative_screened",
+        "no_group_0_definition_in_export,weak_comparison_evidence",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_3_hospital_comorbid_or_tissue",
+        "age_band_not_timepoint,no_group_0_definition_in_export,treated_disease_group",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_3_hospital_comorbid_or_tissue",
+        "no_group_0_definition_in_export,no_group_1_definition,treated_disease_group",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_3_hospital_comorbid_or_tissue",
+        "no_group_0_definition_in_export,treated_disease_group",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "case_vs_control_subject",
+        "tier_3_hospital_comorbid_or_tissue",
+        "no_group_0_definition_in_export,treated_disease_group,weak_comparison_evidence",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "comorbidity_within_disease",
+        "tier_3_hospital_comorbid_or_tissue",
+        (
+            "comorbidity_control,no_group_0_definition_in_export,no_group_1_definition,"
+            "weak_comparison_evidence"
+        ),
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "comorbidity_within_disease",
+        "tier_3_hospital_comorbid_or_tissue",
+        "comorbidity_control,no_group_0_definition_in_export,weak_comparison_evidence",
+    ),
+    (
+        "disease_vs_healthy",
+        "native",
+        "paired_tissue_autologous",
+        "tier_3_hospital_comorbid_or_tissue",
+        "no_group_0_definition_in_export,no_group_1_definition,paired_tissue_comparison",
+    ),
+    (
+        "longitudinal_timepoint",
+        "not_applicable",
+        "longitudinal_timepoint",
+        "not_applicable",
+        "no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "other",
+        "not_applicable",
+        "other",
+        "not_applicable",
+        "age_band_not_timepoint,no_group_0_definition_in_export",
+    ),
+    (
+        "other",
+        "not_applicable",
+        "other",
+        "not_applicable",
+        "age_band_not_timepoint,no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "other",
+        "not_applicable",
+        "other",
+        "not_applicable",
+        "comparison_reading_withdrawn,no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    ("other", "not_applicable", "other", "not_applicable", "no_group_0_definition_in_export"),
+    (
+        "other",
+        "not_applicable",
+        "other",
+        "not_applicable",
+        "no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "other",
+        "not_applicable",
+        "resolved_disease",
+        "not_applicable",
+        "no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "treatment_exposure",
+        "not_applicable",
+        "treatment_exposure",
+        "not_applicable",
+        (
+            "comparison_group_present,negated_treatment_term,"
+            "no_group_0_definition_in_export,shared_timepoint"
+        ),
+    ),
+    (
+        "treatment_exposure",
+        "not_applicable",
+        "treatment_exposure",
+        "not_applicable",
+        "comparison_group_present,no_group_0_definition_in_export",
+    ),
+    (
+        "treatment_exposure",
+        "not_applicable",
+        "treatment_exposure",
+        "not_applicable",
+        "comparison_group_present,no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "treatment_exposure",
+        "not_applicable",
+        "treatment_exposure",
+        "not_applicable",
+        "negated_treatment_term,no_group_0_definition_in_export",
+    ),
+    (
+        "treatment_exposure",
+        "not_applicable",
+        "treatment_exposure",
+        "not_applicable",
+        "no_group_0_definition_in_export",
+    ),
+    (
+        "treatment_exposure",
+        "not_applicable",
+        "treatment_exposure",
+        "not_applicable",
+        "no_group_0_definition_in_export,no_group_1_definition",
+    ),
+    (
+        "unresolved",
+        "not_applicable",
+        "not_applicable",
+        "not_applicable",
+        "age_band_not_timepoint,no_group_0_definition_in_export",
+    ),
+    (
+        "unresolved",
+        "not_applicable",
+        "not_applicable",
+        "not_applicable",
+        "no_group_0_definition_in_export",
+    ),
+    (
+        "unresolved",
+        "not_applicable",
+        "not_applicable",
+        "not_applicable",
+        "no_group_0_definition_in_export,no_group_1_definition",
+    ),
+)
+
+_GUARD_REFERENCE_CASES: tuple[tuple[dict[str, str], int], ...] = (
+    (
+        {
+            "condition": "Chronic kidney disease",
+            "experiment_id": "bsdb:30300382-1",
+            "group_0_name": "healthy controls",
+            "group_1_name": "Chronic kidney disease",
+            "pmid": "30300382",
+            "study_id": "bsdb:30300382",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Arthritis",
+            "experiment_id": "bsdb:31842923-1",
+            "group_0_name": "healthy controls",
+            "group_1_name": "Juvenile Idiopathic Arthritis",
+            "pmid": "31842923",
+            "study_id": "bsdb:31842923",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Colorectal cancer",
+            "experiment_id": "bsdb:32083132-1",
+            "group_0_name": "Healthy Controls (HC)",
+            "group_1_name": "Colorectal Cancer (CC)",
+            "pmid": "32083132",
+            "study_id": "bsdb:32083132",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Human papilloma virus infection",
+            "experiment_id": "bsdb:32842982-5",
+            "group_0_name": "Healthy control",
+            "group_1_name": "HPV+",
+            "pmid": "32842982",
+            "study_id": "bsdb:32842982",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Irritable bowel syndrome",
+            "experiment_id": "bsdb:33663411-1",
+            "group_0_name": "Healthy Control",
+            "group_1_name": "IBS-D",
+            "pmid": "33663411",
+            "study_id": "bsdb:33663411",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Hypoglycemia",
+            "experiment_id": "bsdb:38481313-1",
+            "group_0_name": "Controls",
+            "group_1_name": "Diabetic hypoglycemia",
+            "pmid": "38481313",
+            "study_id": "bsdb:38481313",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Head and neck squamous cell carcinoma",
+            "experiment_id": "bsdb:39325441-2",
+            "group_1_name": "Head and neck squamous cell cancer (HNSCC) participants",
+            "pmid": "39325441",
+            "study_id": "bsdb:39325441",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Parkinson's disease",
+            "experiment_id": "bsdb:39443634-5",
+            "group_1_name": "Parkinson\u2019s disease patients (PD patients)",
+            "pmid": "39443634",
+            "study_id": "bsdb:39443634",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Constipation",
+            "experiment_id": "bsdb:39588509-4",
+            "group_0_name": "Maintenance Hemodialysis without Constipation (MHDNCG)",
+            "group_1_name": "Maintenance Hemodialysis with Constipation (MHDCG)",
+            "pmid": "39588509",
+            "study_id": "bsdb:39588509",
+        },
+        18,
+    ),
+    (
+        {
+            "condition": "Sleep Disorder",
+            "experiment_id": "bsdb:40247863-1",
+            "group_0_name": "Healthy control group",
+            "group_1_name": "Catathrenia group",
+            "pmid": "40247863",
+            "study_id": "bsdb:40247863",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Acute myeloid leukemia",
+            "experiment_id": "bsdb:28245856-2",
+            "group_0_name": "no infection",
+            "group_1_name": "infection",
+            "pmid": "28245856",
+            "study_id": "bsdb:28245856",
+        },
+        4,
+    ),
+    (
+        {
+            "condition": "Chlamydophila infectious disease,Human papilloma virus infection",
+            "experiment_id": "bsdb:29313867-2",
+            "group_0_name": "HPV positive women",
+            "group_1_name": "patient with chlamydia infection",
+            "pmid": "29313867",
+            "study_id": "bsdb:29313867",
+        },
+        4,
+    ),
+    (
+        {
+            "condition": "Gastric cancer",
+            "experiment_id": "bsdb:30584008-4",
+            "group_0_name": "early stage normal",
+            "group_1_name": "early stage tumor",
+            "pmid": "30584008",
+            "study_id": "bsdb:30584008",
+        },
+        20,
+    ),
+    (
+        {
+            "condition": "Oral mucositis",
+            "experiment_id": "bsdb:32537095-1",
+            "group_0_name": "No/mild oral mucositis (Muc0-1)",
+            "group_1_name": "Moderate oral mucositis (Muc2)",
+            "pmid": "32537095",
+            "study_id": "bsdb:32537095",
+        },
+        4,
+    ),
+    (
+        {
+            "condition": "Schizophrenia",
+            "experiment_id": "bsdb:33067643-2",
+            "group_0_name": "Schizophrenia patients without violence (NV.SCV)",
+            "group_1_name": "Schizophrenia patients with violence (V.SCZ)",
+            "pmid": "33067643",
+            "study_id": "bsdb:33067643",
+        },
+        4,
+    ),
+    (
+        {
+            "condition": "Psoriasis",
+            "experiment_id": "bsdb:33685393-2",
+            "group_0_name": "Pustular Psoriasis (PP)",
+            "group_1_name": "Psoriasis Vulgaris (PV)",
+            "pmid": "33685393",
+            "study_id": "bsdb:33685393",
+        },
+        4,
+    ),
+    (
+        {
+            "condition": "Body mass index,Physical activity",
+            "experiment_id": "bsdb:36381318-5",
+            "group_0_name": "Normal weight/active patients",
+            "group_1_name": "Overweight/Obese/active patients",
+            "pmid": "36381318",
+            "study_id": "bsdb:36381318",
+        },
+        24,
+    ),
+    (
+        {
+            "condition": "Colorectal cancer",
+            "experiment_id": "bsdb:38306898-3",
+            "group_0_name": "Small-sized colorectal cancer tumors in aoCRC",
+            "group_1_name": "Large-sized colorectal cancer tumors in aoCRC",
+            "pmid": "38306898",
+            "study_id": "bsdb:38306898",
+        },
+        4,
+    ),
+    (
+        {
+            "condition": "Metabolic toxicity",
+            "experiment_id": "bsdb:39417117-26",
+            "group_0_name": "Non-diabetic",
+            "group_1_name": "Diabetic",
+            "pmid": "39417117",
+            "study_id": "bsdb:39417117",
+        },
+        11,
+    ),
+    (
+        {
+            "condition": "Spontaneous preterm birth",
+            "experiment_id": "bsdb:39569373-1",
+            "group_0_name": "Term birth-Trimester one (TB-T1)",
+            "group_1_name": "Preterm birth-Trimester one (PTB-T1)",
+            "pmid": "39569373",
+            "study_id": "bsdb:39569373",
+        },
+        9,
+    ),
+    (
+        {
+            "condition": "Nutraceutical",
+            "experiment_id": "bsdb:26238090-2",
+            "group_0_name": "HGT Group - Healthy controls",
+            "group_1_name": "PGT group - colorectal cancer patients perioperative probiotics",
+            "pmid": "26238090",
+            "study_id": "bsdb:26238090",
+        },
+        30,
+    ),
+    (
+        {
+            "condition": "Oral squamous cell carcinoma",
+            "experiment_id": "bsdb:27259999-3",
+            "group_0_name": "surgery",
+            "group_1_name": "chemotherapy-radiation and surgery",
+            "pmid": "27259999",
+            "study_id": "bsdb:27259999",
+        },
+        33,
+    ),
+    (
+        {
+            "condition": "Smoking behavior",
+            "experiment_id": "bsdb:28844190-1",
+            "group_0_name": "non-smokers",
+            "group_1_name": "smokers",
+            "pmid": "28844190",
+            "study_id": "bsdb:28844190",
+        },
+        33,
+    ),
+    (
+        {
+            "condition": "Cesarean section",
+            "experiment_id": "bsdb:29538354-4",
+            "group_0_name": "Furry pets at home (NO)",
+            "group_1_name": "Furry pets at home (YES)",
+            "pmid": "29538354",
+            "study_id": "bsdb:29538354",
+        },
+        33,
+    ),
+    (
+        {
+            "condition": "Parkinson's disease",
+            "experiment_id": "bsdb:31815177-11",
+            "group_1_name": "Parkinson's disease Patients treated with entacapone",
+            "pmid": "31815177",
+            "study_id": "bsdb:31815177",
+        },
+        15,
+    ),
+    (
+        {
+            "condition": "Contraception",
+            "experiment_id": "bsdb:33149114-1",
+            "group_0_name": "NET-En (norethisterone enanthate ) arm",
+            "group_1_name": "COC (combined oral contraceptives) arm",
+            "pmid": "33149114",
+            "study_id": "bsdb:33149114",
+        },
+        36,
+    ),
+    (
+        {
+            "condition": "Oral squamous cell carcinoma",
+            "experiment_id": "bsdb:37542310-2",
+            "group_0_name": "Nonsmoking, nondrinking, and dentate healthy controls",
+            "group_1_name": "Nonsmoking, nondrinking, and dentate pre-treatment OSCC patients",
+            "pmid": "37542310",
+            "study_id": "bsdb:37542310",
+        },
+        6,
+    ),
+    (
+        {
+            "condition": "Viral disease",
+            "experiment_id": "bsdb:40032727-6",
+            "group_0_name": "Anti-NoV GII.4 Sydney 2012 pAb + isotype control nor the specific "
+            "pAb + IgG isotype control pAb (NoV+N+C)",
+            "group_1_name": "Total bacteria isolated before treatments (T)",
+            "pmid": "40032727",
+            "study_id": "bsdb:40032727",
+        },
+        30,
+    ),
+    (
+        {
+            "condition": "Diet measurement",
+            "experiment_id": "bsdb:40102379-7",
+            "group_0_name": "Mother + Infant Control",
+            "group_1_name": "Mother + Infant Intervention",
+            "pmid": "40102379",
+            "study_id": "bsdb:40102379",
+        },
+        30,
+    ),
+    (
+        {
+            "condition": "High altitude adaptation",
+            "experiment_id": "bsdb:40257273-5",
+            "group_0_name": "G-3(Group 3 prolonged altitude exposure at 4500 m.)",
+            "group_1_name": "G-2 (Group 2 acute altitude exposure at 4500 m)",
+            "pmid": "40257273",
+            "study_id": "bsdb:40257273",
+        },
+        33,
+    ),
+    (
+        {
+            "condition": "Diabetes mellitus",
+            "experiment_id": "bsdb:24013136-6",
+            "group_0_name": "Prediabetes (Pre-DM)",
+            "group_1_name": "Type 2 diabetes mellitus (T2DM)",
+            "pmid": "24013136",
+            "study_id": "bsdb:24013136",
+        },
+        4,
+    ),
+    (
+        {
+            "condition": "Premature birth",
+            "experiment_id": "bsdb:25444008-2",
+            "group_0_name": "10-day old Full-term infants(born after uncomplicated pregnancy)",
+            "group_1_name": "10-day old Pre-term",
+            "pmid": "25444008",
+            "study_id": "bsdb:25444008",
+        },
+        8,
+    ),
+    (
+        {
+            "condition": "Chronic constipation",
+            "experiment_id": "bsdb:28870194-10",
+            "group_0_name": "Placebo moderate subgroup V1 (Visit 1)",
+            "group_1_name": "Placebo moderate subgroup V3 (Visit 3)",
+            "pmid": "28870194",
+            "study_id": "bsdb:28870194",
+        },
+        21,
+    ),
+    (
+        {
+            "condition": "Chronic constipation",
+            "experiment_id": "bsdb:28870194-9",
+            "group_0_name": "EpiCor Severe subgroup V1(Visit 1)",
+            "group_1_name": "EpiCor Severe subgroup V3 (Visit 3)",
+            "pmid": "28870194",
+            "study_id": "bsdb:28870194",
+        },
+        21,
+    ),
+    (
+        {
+            "condition": "COVID-19",
+            "experiment_id": "bsdb:33431578-2",
+            "group_0_name": "Healthy controls",
+            "group_1_name": "Recovered COVID-19 cases",
+            "pmid": "33431578",
+            "study_id": "bsdb:33431578",
+        },
+        27,
+    ),
+    (
+        {
+            "condition": "Oral squamous cell carcinoma",
+            "experiment_id": "bsdb:37542310-3",
+            "group_0_name": "pre-treatment OSCC patients",
+            "group_1_name": "post-treatment OSCC patients",
+            "pmid": "37542310",
+            "study_id": "bsdb:37542310",
+        },
+        21,
+    ),
+    (
+        {
+            "condition": "Gastric cancer",
+            "experiment_id": "bsdb:37740058-1",
+            "group_0_name": "Gastric cancer patients (Pre-gastrectomy)",
+            "group_1_name": "Gastric cancer patients (Post-gastrectomy)",
+            "pmid": "37740058",
+            "study_id": "bsdb:37740058",
+        },
+        21,
+    ),
+    (
+        {
+            "condition": "Response to diet",
+            "experiment_id": "bsdb:39454570-2",
+            "group_0_name": "Non-Healthy Low Carbohydrate Diet at Baseline (Non-HLCD)",
+            "group_1_name": "Non-Healthy Low Carbohydrate Diet at Endpoint (Non-HLCD)",
+            "pmid": "39454570",
+            "study_id": "bsdb:39454570",
+        },
+        21,
+    ),
+    (
+        {
+            "condition": "Respiratory Syncytial Virus Infection",
+            "experiment_id": "bsdb:39642873-2",
+            "group_1_name": "RSV (Respiratory Syncytial Virus) Convalescence",
+            "pmid": "39642873",
+            "study_id": "bsdb:39642873",
+        },
+        27,
+    ),
+    (
+        {
+            "condition": "Response to allogeneic hematopoietic stem cell transplant",
+            "experiment_id": "bsdb:41077329-6",
+            "group_0_name": "Baseline samples",
+            "group_1_name": "Day 60 post-HSCT samples",
+            "pmid": "41077329",
+            "study_id": "bsdb:41077329",
+        },
+        21,
+    ),
+    (
+        {
+            "condition": "Ethnic group,Place of residence measurement",
+            "experiment_id": "bsdb:20679230-3",
+            "group_0_name": "European Children in Italy",
+            "group_1_name": "Rural African Children in Burkina Faso",
+            "pmid": "20679230",
+            "study_id": "bsdb:20679230",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Autoantibody measurement",
+            "experiment_id": "bsdb:26068542-9",
+            "group_0_name": "One autoantibody",
+            "group_1_name": "Two to four autoantibodies",
+            "pmid": "26068542",
+            "study_id": "bsdb:26068542",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Age",
+            "experiment_id": "bsdb:27474122-7",
+            "group_0_name": "2-12 years",
+            "pmid": "27474122",
+            "study_id": "bsdb:27474122",
+        },
+        23,
+    ),
+    (
+        {
+            "condition": "Stroke",
+            "experiment_id": "bsdb:30778376-13",
+            "group_0_name": "Low Risk (LR)",
+            "group_1_name": "High Risk (HR)",
+            "pmid": "30778376",
+            "study_id": "bsdb:30778376",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Waist circumference",
+            "experiment_id": "bsdb:31339887-18",
+            "group_0_name": "Low waist circumference (male and female)",
+            "group_1_name": "High waist circumference (male and female)",
+            "pmid": "31339887",
+            "study_id": "bsdb:31339887",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Hypertension",
+            "experiment_id": "bsdb:33294219-1",
+            "group_0_name": "Han Hypertensive at Low Altitude (LHH)",
+            "group_1_name": "Tibetan Hypertensive at High Altitude (HTH)",
+            "pmid": "33294219",
+            "study_id": "bsdb:33294219",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Population",
+            "experiment_id": "bsdb:37596536-18",
+            "group_0_name": "Himba",
+            "group_1_name": "!Xun",
+            "pmid": "37596536",
+            "study_id": "bsdb:37596536",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Population",
+            "experiment_id": "bsdb:37596536-3",
+            "group_0_name": "Kuvale",
+            "group_1_name": "Tjimba",
+            "pmid": "37596536",
+            "study_id": "bsdb:37596536",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Environmental exposure measurement",
+            "experiment_id": "bsdb:40595471-2",
+            "group_0_name": "Western Human Microbiome Project (HMP)",
+            "group_1_name": "Adult Yanomami (16\u201350 yrs)",
+            "pmid": "40595471",
+            "study_id": "bsdb:40595471",
+        },
+        23,
+    ),
+    (
+        {
+            "condition": "Grey matter volume measurement",
+            "experiment_id": "bsdb:41056270-6",
+            "group_0_name": "Lower grey matter volume (GMV)",
+            "group_1_name": "Higher grey matter volume (GMV)",
+            "pmid": "41056270",
+            "study_id": "bsdb:41056270",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Age at assessment",
+            "experiment_id": "bsdb:29196767-1",
+            "group_0_name": "Young",
+            "group_1_name": "Old",
+            "pmid": "29196767",
+            "study_id": "bsdb:29196767",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Helminthiasis",
+            "experiment_id": "bsdb:29486796-10",
+            "group_0_name": "2008 - Uninfected",
+            "group_1_name": "2010 - Uninfected",
+            "pmid": "29486796",
+            "study_id": "bsdb:29486796",
+        },
+        21,
+    ),
+    (
+        {
+            "condition": "Parkinson's disease",
+            "experiment_id": "bsdb:29776865-2",
+            "group_0_name": "PD duration less than 5 years",
+            "group_1_name": "PD duration more than 5 years",
+            "pmid": "29776865",
+            "study_id": "bsdb:29776865",
+        },
+        1,
+    ),
+    (
+        {
+            "condition": "Obesity",
+            "experiment_id": "bsdb:30459320-5",
+            "group_0_name": "Lean Ghanaians(GL)",
+            "group_1_name": "Lean Americans (UL)",
+            "pmid": "30459320",
+            "study_id": "bsdb:30459320",
+        },
+        26,
+    ),
+    (
+        {
+            "condition": "Air pollution",
+            "experiment_id": "bsdb:31126003-3",
+            "group_0_name": "moderately poluuted region (B)",
+            "group_1_name": "heavily polluted region (C)",
+            "pmid": "31126003",
+            "study_id": "bsdb:31126003",
+        },
+        33,
+    ),
+    (
+        {
+            "condition": "Asthma",
+            "experiment_id": "bsdb:31201890-3",
+            "group_0_name": "Samples that were RV-A negative-",
+            "group_1_name": "Samples with rhinovirus-A (RV-A)",
+            "pmid": "31201890",
+            "study_id": "bsdb:31201890",
+        },
+        36,
+    ),
+    (
+        {
+            "condition": "Small intestine enteropathy",
+            "experiment_id": "bsdb:31674052-3",
+            "group_0_name": "IBS.sibo-",
+            "group_1_name": "IBS.sibo+",
+            "pmid": "31674052",
+            "study_id": "bsdb:31674052",
+        },
+        36,
+    ),
+    (
+        {
+            "condition": "Parkinson's disease",
+            "experiment_id": "bsdb:33185912-3",
+            "group_0_name": "Levodopa (LD)",
+            "group_1_name": "Levodopa-carbidopa intestinal gel (LCIG)",
+            "pmid": "33185912",
+            "study_id": "bsdb:33185912",
+        },
+        33,
+    ),
+    (
+        {
+            "condition": "Non-alcoholic fatty liver disease",
+            "experiment_id": "bsdb:38162648-3",
+            "group_0_name": "HIV+ MASLD-",
+            "group_1_name": "HIV- MASLD+",
+            "pmid": "38162648",
+            "study_id": "bsdb:38162648",
+        },
+        36,
+    ),
+    (
+        {
+            "condition": "Phenylketonuria",
+            "experiment_id": "bsdb:38745393-10",
+            "group_0_name": "Control Adults Saliva (Ctrl-Adults-S) patients",
+            "group_1_name": "Control Adults Subgingival plaque (Ctrl-Adults-SP) patients",
+            "pmid": "38745393",
+            "study_id": "bsdb:38745393",
+        },
+        26,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "HER2 Positive Breast Carcinoma",
+            "efo_id": "EFO:1",
+            "group_0_name": "Her2 negative tumor",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Her2 positive tumor",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Crohn's disease",
+            "efo_id": "EFO:1",
+            "group_0_name": "crohn disease ASCA negative patients",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "crohn disease ASCA positive patients",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Type II diabetes mellitus",
+            "description": "the interactive influence of metformin and opioids on gut "
+            "microbiota in the subgroup with diabetes.",
+            "efo_id": "EFO:1",
+            "group_0_name": "Metaformin negative among Opoid negative",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Metaformin positive",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        32,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Lewy body dementia",
+            "efo_id": "EFO:1",
+            "group_0_name": "Parkinson\u2019s disease dementia negative (PDD-)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Dementia with Lewy Bodies (DLB) patients",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Asthma",
+            "efo_id": "EFO:1",
+            "group_0_name": "non-exacerbated asthma",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "exacerbated asthma",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Cancer",
+            "efo_id": "EFO:1",
+            "group_0_name": "Non-Cachectic Cancer",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Cachetic Cancer",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Intestinal obstruction",
+            "efo_id": "EFO:1",
+            "group_0_name": "Non-obstruction tumor group",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Obstruction tumor group",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Metastatic colorectal cancer",
+            "efo_id": "EFO:1",
+            "group_0_name": "No liver metastasis (NLM)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Liver metastasis (LM)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Depressive disorder",
+            "efo_id": "EFO:1",
+            "group_0_name": "Non-inflammatory depression",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Inflammatory depression",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Preeclampsia",
+            "efo_id": "EFO:1",
+            "group_0_name": "Mild/Non-severe Preeclampsia (P)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Severe Preeclampsia (SP)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Endometriosis",
+            "efo_id": "EFO:1",
+            "group_0_name": "Patients with non-endometrioma cysts",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Patients with ovarian endometrioma cysts",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Pregnancy",
+            "efo_id": "EFO:1",
+            "group_0_name": "non pregnant women without gingivitis",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "pregnant women without gingivitis",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        25,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Pregnancy",
+            "efo_id": "EFO:1",
+            "group_0_name": "Non-pregnant (FN)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Clinical pregnancy (FP)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        25,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Chronic constipation",
+            "efo_id": "EFO:1",
+            "group_0_name": "Control group",
+            "group_0_sample_size": "10",
+            "group_1_definition": "Experimental group of patients before and after AMT "
+            "(Acupoint Massage Therapy)",
+            "group_1_name": "Experimental group",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        29,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Exercise",
+            "efo_id": "EFO:1",
+            "group_0_name": "Control group",
+            "group_0_sample_size": "10",
+            "group_1_definition": "Tibetan Buddhist monks that performed meditation practices "
+            "of Samatha and Vipassana for at least 2 hours a day for 3 to "
+            "30 years.",
+            "group_1_name": "Meditation group",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        29,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Cannabis use",
+            "efo_id": "EFO:1",
+            "group_0_name": "controls (lateral border of tongue)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "marijuana usage group",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        29,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Metabolic process",
+            "efo_id": "EFO:1",
+            "group_0_name": "Control group",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Trial group; 35d (Intestinal)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        29,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Irritable bowel syndrome",
+            "efo_id": "EFO:1",
+            "group_0_name": "HC-like IBS(Healthy Control like Irritable Bowel Syndrome)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "IBS1 (Irritable Bowel Syndrome 1)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        2,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Gastric adenocarcinoma,Epstein-Barr virus infection",
+            "efo_id": "EFO:1",
+            "group_0_name": "Epstein-Barr virus non-infected (EBV- GC)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Epstein-Barr virus infected (EBV+ GC)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        2,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Age",
+            "efo_id": "EFO:1",
+            "group_0_name": "2-12 years",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        22,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Chlamydia trachomatis",
+            "efo_id": "EFO:1",
+            "group_0_name": "Controls aged < = 0 years",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Controls aged > 10 years",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        34,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Coinfection,Age",
+            "efo_id": "EFO:1",
+            "group_0_name": "young HIV-infected group without coinfection",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "aging HIV-infected women with coinfections",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        2,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Gastric cancer",
+            "efo_id": "EFO:1",
+            "group_0_name": "Normal group",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Gastric Cancer",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Squamous cell carcinoma",
+            "efo_id": "EFO:1",
+            "group_0_name": "noncancer individuals",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Oral Squamous Cell Cancer patients",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "Healthy controls",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HIV infected cART negative",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "COVID-19",
+            "efo_id": "EFO:1",
+            "group_0_name": "Negative for COVID-19 viral RNA in feces",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Positive for COVID-19 viral RNA in feces",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Human papilloma virus infection",
+            "efo_id": "EFO:1",
+            "group_0_name": "negative for intraepithelial lesion or malignancy",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "high-grade squamous intraepithelial lesions",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        3,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Non-alcoholic fatty liver disease",
+            "efo_id": "EFO:1",
+            "group_0_name": "obese without non-alcoholic fatty liver disease",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "non-alcoholic fatty liver disease patients",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        19,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Parkinson's disease",
+            "efo_id": "EFO:1",
+            "group_0_name": "healthy controls without any form of Parkinson's Disease",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "patients with idiopathic parkinson's disease",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Helminthiasis",
+            "efo_id": "EFO:1",
+            "group_0_name": "Uninfected (Zero STH infection)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Heavy Infected (Ascaris)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "HIV-uninfected men",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HIV-infected men",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Health trait",
+            "efo_id": "EFO:1",
+            "group_0_name": "healthy controls",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "suboptimal health status",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Chlamydia trachomatis",
+            "efo_id": "EFO:1",
+            "group_0_name": "Chlamydia trichomonas Controls (t0)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Chlamydia trichomonas Cases (t0)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        10,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Chronic constipation",
+            "efo_id": "EFO:1",
+            "group_0_name": "Children without Functional constipation",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Children with Functional constipation",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Atrial fibrillation",
+            "efo_id": "EFO:1",
+            "group_0_name": "Individuals without Prevalent Atrial Fibrillation (AF)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Individuals with Prevalent Atrial Fibrillation (AF)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Experimental autoimmune encephalomyelitis",
+            "efo_id": "EFO:1",
+            "group_0_name": "Healthy",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "EAE (Experimental Autoimmune Encephalomyelitis)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Eczema",
+            "efo_id": "EFO:1",
+            "group_0_name": "Normal control",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "AD cases with no reported cream usage",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Type II diabetes mellitus",
+            "efo_id": "EFO:1",
+            "group_0_name": "Healthy controls",
+            "group_0_sample_size": "10",
+            "group_1_definition": "Individuals having Type 2 Diabetes Mellitus without Diabetic "
+            "Retinopathy (T2D group); the T2DM cohort had history of "
+            "taking anti-diabetic medication such as metformin",
+            "group_1_name": "Individuals having Type 2 Diabetes Mellitus without Diabetic "
+            "Retinopathy",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        35,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Colorectal cancer",
+            "description": "Patients were sampled before chemotherapy or radiotherapy was started.",
+            "efo_id": "EFO:1",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "CRC",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "HIV\u2013 individuals",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HIV+ individuals",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "HIV-",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HIV+",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "HIV-1-negative individuals",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Recently HIV-1 infected individuals",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Human immunodeficiency virus",
+            "efo_id": "EFO:1",
+            "group_0_name": "People Without HIV",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "People With HIV",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        13,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "Pregnant women ≥ 18 years of age without Human immunodeficiency "
+            "virus (HIV) at Postpartum (PPt) visit",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Pregnant women ≥ 18 years of age with Human immunodeficiency virus "
+            "(HIV) at Postpartum (PPt) visit.",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        12,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "uninfected controls",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HIV-infected subjects",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        7,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "healthy control",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HAART-treated HIV+ patients",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        16,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "Controls/ People living without HIV (PLWOH)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "People living with HIV on Antiretroviral Therapy (PLWH on ART)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        16,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "HIV-",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "People Living With HIV on Antiretroviral therapy (ART+ PLWH)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        17,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "HIV-uninfected MSM",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "ART-treated HIV infected MSM",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        16,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "HAART-naive HIV-1 patients",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HAART-treated HIV-1 patients",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        31,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "Human immunodeficiency virus",
+            "efo_id": "EFO:1",
+            "group_0_name": "Acute HIV-infected participants at baseline (A0)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Acute HIV-infected participants on Antiretroviral Therapy (A12)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        32,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "condition": "HIV mother to child transmission",
+            "efo_id": "EFO:1",
+            "group_0_name": "HIV-unexposed infants (HUU) at 6 weeks",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HIV-exposed uninfected infants (HEU) at 6 weeks",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        28,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "Age-matched HIV-uninfected women",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "HIV-positive women who have been taking ART for more than 1 year",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        14,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "Human immunodeficiency virus negative (HIV-)Uninfected Controls",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Human immunodeficiency virus positive(HIV+) pre - antiretroviral "
+            "therapy(ART)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        5,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "Human immunodeficiency virus positive(HIV+) pre- antiretroviral "
+            "therapy (ART) in Fiebig stage 1-2(F1-2)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Human immunodeficiency virus positive (HIV+) pre- antiretroviral "
+            "therapy(ART) in Fiebig stage 3(F3)",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        0,
+    ),
+    (
+        {
+            "body_site": "Feces",
+            "efo_id": "EFO:1",
+            "group_0_name": "Healthy controls (HC)",
+            "group_0_sample_size": "10",
+            "group_1_definition": "patients with colorectal cancer",
+            "group_1_name": "Antiretroviral therapy (ART) Naïve at baseline",
+            "group_1_sample_size": "10",
+            "host_species": "Homo sapiens",
+            "study_design": "case-control",
+            "uberon_id": "UBERON:1",
+        },
+        5,
+    ),
+)
+
+_GUARD_REFERENCE_SNAPSHOT: list[dict[str, Any]] = [
+    {
+        "record": {**_GUARD_REFERENCE_COMMON, **changes},
+        "decision": list(_GUARD_REFERENCE_DECISIONS[index]),
+    }
+    for changes, index in _GUARD_REFERENCE_CASES
+]
 
 
 def _guard_cases() -> list[ExperimentRecord]:
@@ -2576,6 +4424,188 @@ def _guard_digests(cases: list[ExperimentRecord]) -> dict[str, str]:
     }
 
 
+_GuardKey = tuple[str, str, str, str, str]
+_GuardDecision = tuple[str, str, str, str, str]
+_GUARD_KEY_FIELDS = ("study_id", "experiment_id", "condition", "group_0_name", "group_1_name")
+_GUARD_DECISION_FIELDS = ("contrast_class", "orientation", "contrast_type", "control_tier", "flags")
+
+
+def _guard_reference_snapshot() -> list[dict[str, Any]]:
+    """Return fresh containers while keeping the original record field set (#803)."""
+    return [
+        {"record": dict(row["record"]), "decision": list(row["decision"])}
+        for row in _GUARD_REFERENCE_SNAPSHOT
+    ]
+
+
+def _guard_case_key(record: dict[str, Any]) -> _GuardKey:
+    return cast(_GuardKey, tuple(record[field] for field in _GUARD_KEY_FIELDS))
+
+
+def _guard_decision(record: ExperimentRecord) -> _GuardDecision:
+    found = classify(record)
+    flags = ",".join(sorted(flag for flag in found.flags.split(",") if flag))
+    return (found.contrast_class, found.orientation, found.contrast_type, found.control_tier, flags)
+
+
+def _guard_decision_rows(
+    cases: list[ExperimentRecord],
+) -> dict[_GuardKey, tuple[_GuardDecision, ...]]:
+    """Group only decisions by the five-field key, retaining duplicate-key rows."""
+    rows: dict[_GuardKey, list[_GuardDecision]] = {}
+    for record in cases:
+        rows.setdefault(_guard_case_key(asdict(record)), []).append(_guard_decision(record))
+    return {key: tuple(sorted(values)) for key, values in rows.items()}
+
+
+def _guard_reference_digests(reference: list[dict[str, Any]]) -> dict[str, str]:
+    """Validate the frozen raw records and decisions without calling classify."""
+    inputs, decisions = [], []
+    for row in reference:
+        case = json.dumps(row["record"], ensure_ascii=False, sort_keys=True)
+        inputs.append(case)
+        decisions.append("\t".join([case, *row["decision"]]))
+    return {
+        "inputs": hashlib.sha256("\n".join(sorted(inputs)).encode()).hexdigest(),
+        "decisions": hashlib.sha256("\n".join(sorted(decisions)).encode()).hexdigest(),
+    }
+
+
+def _guard_case_label(key: _GuardKey) -> str:
+    return (
+        f"{key[0]} / {key[1]} (condition={key[2]!r}; "
+        f"group_0_name={key[3]!r}; group_1_name={key[4]!r})"
+    )
+
+
+def _guard_input_differences(
+    cases: list[ExperimentRecord], reference: list[dict[str, Any]]
+) -> list[str]:
+    """Describe changed raw input rows without treating multiplicity as a rule."""
+    previous: dict[_GuardKey, Counter[str]] = {}
+    current: dict[_GuardKey, Counter[str]] = {}
+    for target, records in (
+        (previous, [row["record"] for row in reference]),
+        (current, [asdict(record) for record in cases]),
+    ):
+        for record in records:
+            key = _guard_case_key(record)
+            raw = json.dumps(record, ensure_ascii=False, sort_keys=True)
+            target.setdefault(key, Counter())[raw] += 1
+    differences = []
+    for key in sorted(previous.keys() | current.keys()):
+        old, new = previous.get(key, Counter()), current.get(key, Counter())
+        removed, added = list((old - new).elements()), list((new - old).elements())
+        paired = min(len(removed), len(added))
+        if paired:
+            changed_fields: set[str] = set()
+            for old_raw, new_raw in zip(
+                sorted(removed)[:paired], sorted(added)[:paired], strict=True
+            ):
+                before, after = json.loads(old_raw), json.loads(new_raw)
+                changed_fields.update(
+                    field
+                    for field in before.keys() | after.keys()
+                    if field not in before or field not in after or before[field] != after[field]
+                )
+            differences.append(
+                f"edited/replaced {paired} variant(s) of {_guard_case_label(key)}; "
+                f"differing fields: {', '.join(sorted(changed_fields))}"
+            )
+        if len(removed) > paired:
+            differences.append(f"removed {len(removed) - paired} row(s): {_guard_case_label(key)}")
+        if len(added) > paired:
+            differences.append(f"added {len(added) - paired} row(s): {_guard_case_label(key)}")
+    return differences
+
+
+def _guard_changed_reference_decisions(reference: list[dict[str, Any]]) -> list[str]:
+    """Classify every original record, even when evolving fixtures remove it."""
+    key_counts = Counter(_guard_case_key(row["record"]) for row in reference)
+    seen: Counter[_GuardKey] = Counter()
+    record_fields = {field.name for field in fields(ExperimentRecord)}
+    changed = []
+    for row in reference:
+        raw = row["record"]
+        key = _guard_case_key(raw)
+        seen[key] += 1
+        # Preserve raw snapshot bytes above; reconstruct only for calling the
+        # current API, whose unused/defaulted record fields may have evolved.
+        record = ExperimentRecord(
+            **{name: value for name, value in raw.items() if name in record_fields}
+        )
+        observed, expected = _guard_decision(record), tuple(row["decision"])
+        if observed != expected:
+            variant = f" variant {seen[key]}" if key_counts[key] > 1 else ""
+            fields_changed = ", ".join(
+                f"{name}: {old!r} -> {new!r}"
+                for name, old, new in zip(_GUARD_DECISION_FIELDS, expected, observed, strict=True)
+                if old != new
+            )
+            changed.append(f"{_guard_case_label(key)}{variant}: {fields_changed}")
+    return changed
+
+
+def _assert_classifier_guard(
+    cases: list[ExperimentRecord],
+    reference: list[dict[str, Any]],
+    pinned: dict[str, str],
+    *,
+    reference_version: str | None = None,
+) -> None:
+    if reference_version is None:
+        reference_version = _GUARD_REFERENCE_VERSION
+    assert reference_version == CLASSIFIER_VERSION, (
+        f"reference version {reference_version!r} differs from {CLASSIFIER_VERSION!r}; "
+        "capture a reviewed reference for the approved classifier version."
+    )
+    assert _guard_reference_digests(reference) == pinned, (
+        "the frozen reference does not match the pinned digests; restore the independently "
+        "verified snapshot before diagnosing the current classifier."
+    )
+    found = _guard_digests(cases)
+    input_changes = _guard_input_differences(cases, reference)
+    decision_changes = _guard_changed_reference_decisions(reference)
+    messages = []
+    if input_changes:
+        messages.append("fixture-input drift:\n" + "\n".join(input_changes))
+    if decision_changes:
+        messages.append(
+            "classification decision changes on frozen guard cases:\n"
+            + "\n".join(decision_changes)
+            + "\nThis requires a CLASSIFIER_VERSION bump, a methods version-history entry, "
+            "and new pins/reference under that version; never replace the existing pins."
+        )
+    elif input_changes:
+        frozen_rows: dict[_GuardKey, set[_GuardDecision]] = {}
+        for row in reference:
+            frozen_rows.setdefault(_guard_case_key(row["record"]), set()).add(
+                cast(_GuardDecision, tuple(row["decision"]))
+            )
+        current_rows = _guard_decision_rows(cases)
+        shared = frozen_rows.keys() & current_rows.keys()
+        changed_shared = [
+            key for key in sorted(shared) if frozen_rows[key] != set(current_rows[key])
+        ]
+        messages.append(
+            "no classifier decisions changed on the frozen guard cases. "
+            f"Shared keys: {len(shared)}; "
+            f"shared-key decision-value changes: {len(changed_shared)}. "
+            "Added/removed keys have no shared counterpart; row multiplicity is fixture data. "
+            "Restore the frozen fixture inputs and put new/edited cases in a separate test; "
+            "this is not a CLASSIFIER_VERSION bump."
+        )
+        if changed_shared:
+            messages.append(
+                "Input-driven decision values differ at: "
+                + "; ".join(_guard_case_label(key) for key in changed_shared)
+            )
+    assert not messages, "\n".join(messages)
+    assert found == pinned, (
+        "legacy guard digests changed without a diagnosed input or decision change"
+    )
+
+
 def test_the_classifier_s_decisions_change_only_with_its_version() -> None:
     """A classifier that decides differently is a new classifier version (#793).
 
@@ -2584,29 +4614,17 @@ def test_the_classifier_s_decisions_change_only_with_its_version() -> None:
     still reported ``contrast-orientation-v5``. Run records, manifests and provenance then
     gave one version for two classifications.
     """
-    found = _guard_digests(_guard_cases())
+    cases = _guard_cases()
+    found = _guard_digests(cases)
     pins = json.loads(CLASSIFIER_GUARD_DIGESTS.read_text(encoding="utf-8"))
     pinned = pins.get(CLASSIFIER_VERSION)
     assert pinned is not None, (
         f"no guard digests are pinned for {CLASSIFIER_VERSION}. Once the version history in "
         f"methods/contrast_orientation.md describes the change, pin {found} under "
-        f"{CLASSIFIER_VERSION!r} in {CLASSIFIER_GUARD_DIGESTS.name}, and list both digests "
-        "in .secrets.baseline as reviewed checksums."
+        f"{CLASSIFIER_VERSION!r} in {CLASSIFIER_GUARD_DIGESTS.name} and capture its reviewed "
+        "per-case reference. Existing version pins must remain unchanged."
     )
-    assert found["inputs"] == pinned["inputs"], (
-        "the guard's cases (the committed review's experiments, the #291, #569 and v6 "
-        "regression tables, and BASE, which those tables build on) changed under "
-        f"{CLASSIFIER_VERSION}, so the guard cannot tell whether the classifications "
-        "changed. Restore them and put a new case in a test of its own, or pin the new "
-        "digests under a new CLASSIFIER_VERSION."
-    )
-    assert found["decisions"] == pinned["decisions"], (
-        "the classifier's decisions on the guard's cases changed, but CLASSIFIER_VERSION is "
-        f"still {CLASSIFIER_VERSION}. Bump it, list the experiments the change reclassifies "
-        f"in the version history of methods/contrast_orientation.md, and pin {found} under "
-        f"the new version in {CLASSIFIER_GUARD_DIGESTS.name}. A pinned version's digests "
-        "never change."
-    )
+    _assert_classifier_guard(cases, _guard_reference_snapshot(), pinned)
 
 
 def test_the_classifier_version_has_an_entry_in_the_version_history() -> None:
@@ -2621,3 +4639,249 @@ def test_the_classifier_version_has_an_entry_in_the_version_history() -> None:
         f"methods/contrast_orientation.md has no '## Changes from `contrast-orientation-vN` "
         f"to `-{version}`' section for {CLASSIFIER_VERSION}"
     )
+
+
+_UNIT_GUARD_DECISION = (
+    "disease_vs_healthy",
+    "native",
+    "case_vs_control_subject",
+    "tier_1_healthy_normal",
+    "no_group_0_definition_in_export",
+)
+
+
+def _guard_api(name: str) -> Callable[..., Any]:
+    function = globals().get(name)
+    assert callable(function), f"The classifier guard must provide its {name} boundary"
+    return cast(Callable[..., Any], function)
+
+
+def _unit_guard_answer() -> Classification:
+    return Classification(
+        contrast_class=_UNIT_GUARD_DECISION[0],
+        orientation=_UNIT_GUARD_DECISION[1],
+        evidence="synthetic diagnostic fixture",
+        flags=_UNIT_GUARD_DECISION[4],
+        contrast_type=_UNIT_GUARD_DECISION[2],
+        control_tier=_UNIT_GUARD_DECISION[3],
+    )
+
+
+def _unit_guard_data(
+    monkeypatch: pytest.MonkeyPatch, cases: list[ExperimentRecord] | None = None
+) -> tuple[list[ExperimentRecord], list[dict[str, Any]], dict[str, str]]:
+    records = cases if cases is not None else [BASE]
+    monkeypatch.setitem(globals(), "classify", lambda _record: _unit_guard_answer())
+    reference = [
+        {"record": asdict(record), "decision": list(_UNIT_GUARD_DECISION)} for record in records
+    ]
+    return records, reference, _guard_digests(records)
+
+
+def _guard_failure_message(
+    cases: list[ExperimentRecord],
+    reference: list[dict[str, Any]],
+    pinned: dict[str, str],
+    *,
+    reference_version: str | None = None,
+) -> str:
+    """Require refusal before checking its diagnosis, including in mutant proofs."""
+    try:
+        _guard_api("_assert_classifier_guard")(
+            cases, reference, pinned, reference_version=reference_version
+        )
+    except AssertionError as error:
+        return str(error)
+    raise AssertionError("The classifier guard did not refuse the changed case")
+
+
+@pytest.mark.parametrize("edit", ["metadata", "added", "removed", "key", "default-field"])
+def test_guard_fixture_drift_does_not_request_a_classifier_version_bump(
+    monkeypatch: pytest.MonkeyPatch, edit: str
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch)
+    if edit == "metadata":
+        changed = [replace(records[0], pmid="corrected-pmid")]
+        witness = "pmid"
+    elif edit == "added":
+        changed = [*records, replace(records[0], experiment_id="new-case")]
+        witness = "added"
+    elif edit == "removed":
+        changed = []
+        witness = "removed"
+    elif edit == "key":
+        changed = [replace(records[0], group_0_name="Corrected healthy group")]
+        witness = "Corrected healthy group"
+    else:
+        extended = make_dataclass(
+            "ExtendedGuardRecord",
+            [("unused_extension", str, "")],
+            bases=(ExperimentRecord,),
+            frozen=True,
+        )
+        changed = [extended(**asdict(records[0]))]
+        monkeypatch.setitem(globals(), "ExperimentRecord", extended)
+        witness = "unused_extension"
+    message = _guard_failure_message(changed, reference, pinned)
+    assert "fixture-input drift" in message
+    assert witness in message
+    assert "no classifier decisions changed" in message
+    assert "separate test" in message
+    assert "not a CLASSIFIER_VERSION bump" in message
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("contrast_class", "other"),
+        ("orientation", "reversed"),
+        ("contrast_type", "disease_vs_disease"),
+        ("control_tier", "tier_2_condition_negative_screened"),
+        ("flags", "new_guard_flag"),
+    ],
+)
+def test_guard_reports_each_changed_classification_field(
+    monkeypatch: pytest.MonkeyPatch, field: str, value: str
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch)
+    changed_answer = replace(_unit_guard_answer(), **{field: value})
+    monkeypatch.setitem(globals(), "classify", lambda _record: changed_answer)
+    message = _guard_failure_message(records, reference, pinned)
+    assert "classification decision changes" in message
+    assert records[0].experiment_id in message
+    assert field in message
+    assert "requires a CLASSIFIER_VERSION bump" in message
+
+
+def test_guard_keeps_decision_changes_visible_during_fixture_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch)
+    changed_answer = replace(_unit_guard_answer(), orientation="reversed")
+    monkeypatch.setitem(globals(), "classify", lambda _record: changed_answer)
+    message = _guard_failure_message([replace(records[0], pmid="edited")], reference, pinned)
+    assert "fixture-input drift" in message
+    assert "classification decision changes" in message
+    assert "orientation" in message
+    assert "requires a CLASSIFIER_VERSION bump" in message
+
+
+def test_guard_keeps_changed_rules_visible_after_all_fixture_rows_are_removed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch)
+    changed_answer = replace(_unit_guard_answer(), orientation="reversed")
+    monkeypatch.setitem(globals(), "classify", lambda _record: changed_answer)
+    message = _guard_failure_message([], reference, pinned)
+    assert "fixture-input drift" in message
+    assert "removed" in message
+    assert "classification decision changes on frozen guard cases" in message
+    assert records[0].experiment_id in message
+    assert "orientation: 'native' -> 'reversed'" in message
+    assert "requires a CLASSIFIER_VERSION bump" in message
+    assert "no classifier decisions changed" not in message
+
+
+def test_guard_distinguishes_input_driven_decisions_from_changed_rules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch)
+    first = _unit_guard_answer()
+    reversed_answer = replace(first, orientation="reversed")
+    monkeypatch.setitem(
+        globals(),
+        "classify",
+        lambda record: reversed_answer if record.description == "edited" else first,
+    )
+    message = _guard_failure_message([replace(records[0], description="edited")], reference, pinned)
+    assert "fixture-input drift" in message
+    assert "Input-driven decision values differ" in message
+    assert records[0].experiment_id in message
+    assert "no classifier decisions changed on the frozen guard cases" in message
+    assert "not a CLASSIFIER_VERSION bump" in message
+
+
+def test_guard_decision_rows_preserve_duplicate_keys_and_ignore_unused_fields(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, _reference, _pinned = _unit_guard_data(monkeypatch)
+    answer = replace(_unit_guard_answer(), flags="beta,,alpha")
+    monkeypatch.setitem(globals(), "classify", lambda _record: answer)
+    rows = _guard_api("_guard_decision_rows")([records[0], replace(records[0], pmid="other")])
+    key = (
+        records[0].study_id,
+        records[0].experiment_id,
+        records[0].condition,
+        records[0].group_0_name,
+        records[0].group_1_name,
+    )
+    expected = (*_UNIT_GUARD_DECISION[:4], "alpha,beta")
+    assert rows == {key: (expected, expected)}
+
+
+def test_guard_reordering_and_evidence_wording_do_not_change_the_pins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, reference, pinned = _unit_guard_data(
+        monkeypatch, [BASE, replace(BASE, experiment_id="second-case")]
+    )
+    answer = replace(_unit_guard_answer(), evidence="changed explanation only")
+    monkeypatch.setitem(globals(), "classify", lambda _record: answer)
+    _guard_api("_assert_classifier_guard")(list(reversed(records)), reference, pinned)
+
+
+def test_guard_removing_an_identical_duplicate_is_only_fixture_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch, [BASE, BASE])
+    message = _guard_failure_message(records[:1], reference, pinned)
+    assert "removed" in message
+    assert "no classifier decisions changed" in message
+    assert "not a CLASSIFIER_VERSION bump" in message
+
+
+def test_guard_does_not_hide_swapped_decisions_under_one_five_field_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records = [replace(BASE, description="first"), replace(BASE, description="second")]
+    first = _unit_guard_answer()
+    second = replace(first, orientation="reversed")
+    monkeypatch.setitem(
+        globals(), "classify", lambda record: first if record.description == "first" else second
+    )
+    reference = [
+        {"record": asdict(records[0]), "decision": list(_UNIT_GUARD_DECISION)},
+        {
+            "record": asdict(records[1]),
+            "decision": [*_UNIT_GUARD_DECISION[:1], "reversed", *_UNIT_GUARD_DECISION[2:]],
+        },
+    ]
+    pinned = _guard_digests(records)
+    monkeypatch.setitem(
+        globals(), "classify", lambda record: second if record.description == "first" else first
+    )
+    message = _guard_failure_message(records, reference, pinned)
+    assert "classification decision changes" in message
+    assert "variant 1" in message
+    assert "variant 2" in message
+    assert "orientation" in message
+
+
+def test_guard_rejects_a_corrupt_reference_before_diagnosing_current_rules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch)
+    reference[0]["decision"][0] = "corrupted"
+    message = _guard_failure_message(records, reference, pinned)
+    assert "frozen reference" in message
+    assert "pinned digests" in message
+
+
+def test_guard_rejects_a_reference_from_a_different_classifier_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    records, reference, pinned = _unit_guard_data(monkeypatch)
+    message = _guard_failure_message(
+        records, reference, pinned, reference_version="contrast-orientation-v0"
+    )
+    assert "reference version" in message

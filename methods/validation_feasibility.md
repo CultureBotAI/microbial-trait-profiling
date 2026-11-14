@@ -30,6 +30,19 @@ definition, description, matching and confounder fields, title and keywords - ov
 read back from the artifacts by
 `just validation-evidence -- --report`; none is maintained by hand.
 
+The inventory reports two nested human study universes side by side (#744):
+all 1,080 human-host studies in `full_dump.csv` (**Human studies** /
+**Human studies mentioning**, spanning every sequencing modality in the
+export — including ITS, PCR, 18S or untyped rows — as well as unpaired
+studies) and the 959 discovery-eligible paired human 16S/WMS studies
+(**Discovery studies** / **Discovery studies mentioning**, flagged by
+`in_discovery_corpus` from `data/derived/study_trait_profiles_wide.tsv`,
+#742). Keeping the whole-export human denominator alongside the
+discovery-corpus denominator is intentional so validation-feasibility
+pointers in non-16S/WMS or unpaired human studies remain visible while
+discovery-corpus counts stay separate; changing the underlying denominator
+would be a separate scientific decision.
+
 | Evidence | Discovery studies mentioning | Human studies mentioning | Most frequent words |
 | --- | --- | --- | --- |
 | Clinical covariates (age, sex, BMI, smoking, medication) | 481 | 542 | age (418), sex (276), body mass index (163) |
@@ -95,6 +108,17 @@ reason rather than dropped.
 | `marker_stratified` | 31 | 24 | 11 |
 | `marker_named_groups_not_measured` | 29 | 18 | 15 |
 | `intervention_contrast` | 15 | 4 | 2 |
+
+As in the study-level summary above, the **Human** column
+(`bucket["human"]` in `validation_evidence_provenance.json`) counts every
+`Homo sapiens` experiment row in `full_dump.csv` across all sequencing
+modalities (including ITS, PCR, 18S or untyped rows) and pairing states,
+whereas **In discovery corpus** (`bucket["in_discovery_corpus"]`) counts
+only paired human 16S/WMS experiments present in the discovery corpus
+(`data/derived/study_trait_profiles_wide.tsv`, #742, #744). Non-16S/WMS or
+unpaired human experiments (such as the ITS experiment `bsdb:684/1` in
+`marker_named_groups_not_measured`) therefore increment **Human** without
+being eligible for **In discovery corpus**.
 
 The 24 human measured splits come from nine studies: a multiplex cytokine and
 growth-factor panel in schizophrenia (`bsdb:39103909`, 13 experiments, five in the

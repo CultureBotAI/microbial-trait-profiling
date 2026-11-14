@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import hashlib
 import json
 from collections.abc import Sequence
 from dataclasses import replace
@@ -967,6 +969,7 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     )
     status = json.loads((tmp_path / "calibration_status.json").read_text(encoding="utf-8"))
     assert status["p_value_diagnostics"] == cal.P_VALUE_DIAGNOSTICS_NOTE
+    assert status["not_calibrated_here"] == list(cal.NOT_CALIBRATED_HERE)
 
     with (tmp_path / "calibration_results.tsv").open(encoding="utf-8") as handle:
         written_results = list(csv.DictReader(handle, delimiter="\t"))
@@ -984,6 +987,163 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert written_replicates
     assert {r["p_value_diagnostics_role"] for r in written_replicates} == {"calibration_diagnostic"}
     assert {r["p_value_diagnostics_correction"] for r in written_replicates} == {"none (nominal)"}
+
+
+def test_calibration_cli_export_schema_preserves_scientific_and_flip_contracts(
+    tmp_path: Path,
+) -> None:
+    """#1487: real small CLI inputs retain scientific/RNG contracts and add export metadata."""
+    import mtp.calibration as cal
+
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    profile_path = inputs / "profiles.tsv"
+    experiments_path = inputs / "experiments.tsv"
+    full_dump_path = inputs / "full_dump.csv"
+    output = tmp_path / "output"
+    traits = [term for terms in {**TABLE1_TRAITS, **OXYGEN_GUILDS}.values() for term in terms]
+    assert len(traits) == len(set(traits))
+    with profile_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["study_id", "experiment_id", "inc_dec", *traits, "METPO:9999999"])
+        for study in range(30):
+            for direction, offset in (("inc", 4), ("dec", 1)):
+                counts = [(study * 3 + index * 5 + offset) % 17 + 1 for index in range(len(traits))]
+                writer.writerow([f"s{study:02d}", "e1", direction, *counts, 400])
+    with experiments_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["study_id", "experiment_id", "condition", "body_site", "host_species"])
+        writer.writerows(
+            [f"s{study:02d}", "e1", "synthetic condition", "Feces", "Homo sapiens"]
+            for study in range(30)
+        )
+    full_dump_path.write_text(
+        "# BugSigDB 2026-04-24, synthetic calibration fixture\nstudy_id\nsynthetic\n",
+        encoding="utf-8",
+    )
+    assert (
+        cal.main(
+            [
+                "--profile-input",
+                str(profile_path),
+                "--experiments-input",
+                str(experiments_path),
+                "--full-dump-input",
+                str(full_dump_path),
+                "--output-dir",
+                str(output),
+                "--replicates",
+                "2",
+                "--power-replicates",
+                "2",
+                "--seed",
+                "182",
+            ]
+        )
+        == 0
+    )
+    expected_files = {
+        "calibration_flip_assignments.tsv",
+        "calibration_flip_assignments.json",
+        "calibration_results.tsv",
+        "calibration_replicates.tsv",
+        "calibration_injection.tsv",
+        "calibration_criteria.tsv",
+        "calibration_status.json",
+    }
+    assert {path.name for path in output.iterdir()} == expected_files
+    assert all((output / name).stat().st_size > 0 for name in expected_files)
+    status = json.loads((output / "calibration_status.json").read_text(encoding="utf-8"))
+    flips = json.loads((output / "calibration_flip_assignments.json").read_text(encoding="utf-8"))
+    assert cal.VERSION == status["version"] == flips["version"] == "calibration-v3"
+    assert status["protocol"] == "methods/calibration_protocol.json"
+    assert status["seed"] == flips["seed"] == 182
+    assert status["corpus"]["kept_profiles"] == 60
+    assert status["corpus"]["kept_experiments"] == 30
+    assert set(status["replicates_completed"].values()) == {2}
+    for role, path in (
+        ("profile", profile_path),
+        ("experiments", experiments_path),
+        ("full_dump", full_dump_path),
+    ):
+        assert status["inputs"][f"{role}_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert flips["inputs"] == status["inputs"]
+    assert set(flips) == {
+        "version",
+        "issue",
+        "seed",
+        "stream",
+        "unit",
+        "replicates",
+        "units",
+        "rows",
+        "rng",
+        "draw_order",
+        "semantics",
+        "table_sha256",
+        "bugsigdb_vintage",
+        "inputs",
+        "code_commit",
+    }
+    assert flips["stream"] == "complete_null_study_flip"
+    assert flips["unit"] == "study"
+    assert flips["replicates"] == 100
+    assert flips["units"] == 30
+    assert flips["rows"] == 3000
+    assert (
+        flips["table_sha256"]
+        == hashlib.sha256((output / "calibration_flip_assignments.tsv").read_bytes()).hexdigest()
+    )
+    with (output / "calibration_flip_assignments.tsv").open(encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == [
+            "seed",
+            "stream",
+            "unit",
+            "replicate",
+            "study_id",
+            "experiment_id",
+            "flipped",
+        ]
+        written_flips = list(reader)
+    assert len(written_flips) == 3000
+    assert {int(row["replicate"]) for row in written_flips} == set(range(100))
+    assert {row["study_id"] for row in written_flips} == {f"s{study:02d}" for study in range(30)}
+    assert {row["flipped"] for row in written_flips} == {"0", "1"}
+    with (output / "calibration_results.tsv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    non_family = [row for row in rows if row["label"] != "FAMILY"]
+    family = [row for row in rows if row["label"] == "FAMILY"]
+    assert non_family
+    assert family
+    assert {row["procedure"] for row in non_family} == {
+        "fraction_sign_test",
+        "log_ratio_sign_test",
+        "guild_mcnemar",
+        "screened_fraction_sign_test",
+    }
+    assert any(
+        0 < float(row["smallest_observed_p"]) < 1
+        for row in non_family
+        if row["smallest_observed_p"]
+    )
+    for row in non_family:
+        assert row["p_value_diagnostics_role"] == "calibration_diagnostic"
+        assert row["p_value_diagnostics_correction"] == "none (nominal)"
+        assert "rejections_q" in row
+    for row in family:
+        assert row["p_value_diagnostics_role"] == ""
+        assert row["p_value_diagnostics_correction"] == ""
+    with (output / "calibration_replicates.tsv").open(encoding="utf-8") as handle:
+        ledger = list(csv.DictReader(handle, delimiter="\t"))
+    assert ledger
+    assert any(int(row["tests_evaluated"]) > 0 for row in ledger)
+    assert {row["p_value_diagnostics_role"] for row in ledger} == {"calibration_diagnostic"}
+    assert {row["p_value_diagnostics_correction"] for row in ledger} == {"none (nominal)"}
+    assert "export_schema_version" not in rows[0]
+    assert "export_schema_version" not in ledger[0]
+    assert "export_schema_version" in status, "Completed calibration export has no schema version"
+    assert status["export_schema_version"] == "calibration-output-v1"
 
 
 def test_a_nonfinite_mcnemar_p_is_not_counted_as_a_tested_replicate(
@@ -1107,3 +1267,196 @@ def test_a_nonfinite_mcnemar_p_is_not_counted_as_a_tested_replicate(
         assert replicate_pq["null_tests_evaluated"] == 0
         assert replicate_pq["null_tests_rejected_p"] == 0
         assert replicate_pq["family_rejected_q"] == 0
+
+
+def test_calibration_protocol_and_docs_declare_ora_urn_scope_amendment() -> None:
+    """#568: protocol, calibration module, and methods docs distinguish the three ORA urns."""
+    import mtp.calibration as cal
+
+    repo_root = PROTOCOL_PATH.resolve().parents[1]
+    declared = load_protocol()
+
+    assert declared["protocol"] == "calibration-v3"
+    assert declared["declared_by"] == (
+        "calibration-v1 was drafted by a coding agent (Claude Code) before any "
+        "calibration result was computed. calibration-v2 was amended after review "
+        "(#293) with the v1 results in hand. calibration-v3 repairs the guild "
+        "population mismatch identified in #730, and its scope and not_covered "
+        "declarations were amended in #568 to record the three ORA background/urn "
+        "definitions and the separate arm-calibration harnesses (#550, #551). The "
+        "amendments array records what changed, why, and what was already known "
+        "when each change was made. Nothing here should be read as predeclared "
+        "except where an amendment says it is unchanged from v1."
+    )
+
+    scope = str(declared["scope"])
+    assert (
+        "their adapters belong to their owners (#182 assigns them), and the "
+        "assertion-level urn of #131 is a separate model question."
+    ) not in scope
+    assert scope == (
+        "procedures owned by this repository's directional-consistency framework "
+        "(src/mtp/calibration.py). As amended in #568, the enrichment arm's "
+        "production hypergeometric procedure draws distinct reported taxa against "
+        "the all-host taxa_trait_matrix.tsv background (M = 5,829 BugSigDB-reported "
+        "taxa, including 645 non-human-only and 862 non-paired-human taxa; "
+        "src/mtp/three_test_table/ora.py, calibrated separately in "
+        "src/mtp/ora_calibration/ under #551), whereas the historical #131 "
+        "assertion-count urn (106,993,585 assertions across 4,517 testable profiles) "
+        "is retained only in the Table 1 native influence ORA reruns "
+        "(src/mtp/native_taxon_influence.py, methods/table1_native_influence.md) and "
+        "the harmonized baseline in methods/three_arm_statistics.md defines a "
+        "proposed paired-human assertion-weighted background; the composition arm's "
+        "native transformed procedure is calibrated separately in "
+        "src/mtp/composition_calibration/ (#550)."
+    )
+
+    amendments = list(declared["amendments"])
+    assert len(amendments) == 8
+    assert amendments[0] == {
+        "date": "2026-11-08",
+        "protocol": "calibration-v3",
+        "change": (
+            "Amended scope and not_covered[0] to distinguish the three ORA "
+            "background/urn definitions and record the separate arm-calibration "
+            "harnesses (#550, #551) without changing the directional acceptance "
+            "rules, eligibility policy, or replicate budget."
+        ),
+        "reason": (
+            "Issue #568 showed that scope and not_covered[0] still carried the "
+            "initial #182 owner-adapter and #131 assertion-level urn wording after "
+            "production ORA switched to the distinct-taxon urn over "
+            "taxa_trait_matrix.tsv (M = 5,829 BugSigDB-reported taxa across all "
+            "hosts, including 645 non-human-only and 862 non-paired-human taxa; "
+            "src/mtp/three_test_table/ora.py, calibrated in src/mtp/ora_calibration/ "
+            "under #551), while the historical #131 assertion-count urn (106,993,585 "
+            "assertions across 4,517 testable profiles) is retained only in the "
+            "Table 1 native influence ORA reruns (src/mtp/native_taxon_influence.py, "
+            "methods/table1_native_influence.md), the harmonized baseline in "
+            "methods/three_arm_statistics.md defines a proposed paired-human "
+            "assertion-weighted background, and the composition arm is calibrated in "
+            "src/mtp/composition_calibration/ (#550)."
+        ),
+        "known_when_amended": (
+            "The completed calibration-v3 full-budget run (58b2ce84), the production "
+            "distinct-taxon ORA implementation and calibration harness (#551, #558), "
+            "the paired composition calibration harness (#550), and the Table 1 "
+            "native influence ORA reruns (#190)."
+        ),
+        "unchanged": (
+            "Every directional procedure, eligibility policy, seed 182, null and "
+            "injection design, deterministic flip-assignment stream, replicate "
+            "budget, acceptance criterion, and tolerance."
+        ),
+    }
+    assert [entry["date"] for entry in amendments[1:]] == [
+        "2026-10-19",
+        "2026-09-16",
+        "2026-10-02",
+        "2026-10-02",
+        "2026-10-02",
+        "2026-10-08",
+        "2026-10-09",
+    ]
+
+    not_covered = list(declared["not_covered"])
+    assert (
+        "the enrichment arm's hypergeometric urn (#131) and the composition arm's "
+        "native transform (owners' adapters)"
+    ) not in not_covered
+    assert not_covered[0] == (
+        "the enrichment arm's hypergeometric procedures — production distinct-taxon "
+        "urn over taxa_trait_matrix.tsv (M = 5,829 all-host taxa, including 645 "
+        "non-human-only and 862 non-paired-human taxa; calibrated separately in "
+        "src/mtp/ora_calibration/, #551), historical #131 assertion-count urn "
+        "retained in the Table 1 native influence reruns (106,993,585 assertions "
+        "across 4,517 testable profiles; methods/table1_native_influence.md), and "
+        "proposed harmonized-baseline paired-human assertion-weighted background "
+        "(methods/three_arm_statistics.md) — and the composition arm's native "
+        "transformed procedure (calibrated separately in "
+        "src/mtp/composition_calibration/, #550)"
+    )
+
+    doc = " ".join((cal.__doc__ or "").split())
+    assert "need adapters from their owners" not in doc
+    assert (
+        "Only the directional-consistency procedures in this module are evaluated "
+        "here. As recorded in the v3.1 (#568) amendment to "
+        "methods/calibration_protocol.json, the enrichment arm's production "
+        "distinct-taxon urn over taxa_trait_matrix.tsv (M = 5,829 all-host taxa, "
+        "calibrated in src/mtp/ora_calibration/, #551), the historical #131 "
+        "assertion-count urn retained only in the Table 1 native influence ORA "
+        "reruns (106,993,585 assertions across 4,517 testable profiles, "
+        "src/mtp/native_taxon_influence.py), the proposed harmonized-baseline "
+        "paired-human assertion-weighted ORA background "
+        "(methods/three_arm_statistics.md), and the composition arm's native "
+        "transformed test (calibrated in src/mtp/composition_calibration/, #550) "
+        "are outside this directional protocol."
+    ) in doc
+
+    assert cal.NOT_CALIBRATED_HERE == (
+        "the enrichment arm's hypergeometric procedures (production M = 5,829 "
+        "all-host distinct-taxon urn in src/mtp/ora_calibration/ #551; historical "
+        "#131 assertion-count urn in Table 1 native influence reruns; proposed "
+        "harmonized-baseline paired-human assertion-weighted background #568)",
+        "the composition arm's native transformed test (calibrated in "
+        "src/mtp/composition_calibration/ #550)",
+        "the aggregated profile-support rule (#177)",
+    )
+    bsdbng_shim_source = (repo_root / "src" / "bsdbng" / "calibration.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"NOT_CALIBRATED_HERE",' in bsdbng_shim_source
+
+    calibration_md = " ".join(
+        (repo_root / "methods" / "calibration.md").read_text(encoding="utf-8").split()
+    )
+    assert "its adapter belongs to its owner" not in calibration_md
+    assert (
+        "The enrichment arm's hypergeometric procedures across all three documented "
+        "ORA background definitions (`methods/three_arm_statistics.md`, #568): "
+        "production ORA (`src/mtp/three_test_table/ora.py`) draws distinct reported "
+        "taxa against the all-host `taxa_trait_matrix.tsv` background (`M = 5,829` "
+        "BugSigDB-reported taxa, including 645 non-human-only and 862 "
+        "non-paired-human taxa) rather than trait-annotation assertions (#131), "
+        "where nested taxa inherit the same annotations and are not independent "
+        "draws, and is calibrated separately at the production thresholds in "
+        "`src/mtp/ora_calibration/` (#551); the Table 1 native influence ORA reruns "
+        "(`src/mtp/native_taxon_influence.py`, `methods/table1_native_influence.md`) "
+        "retain the historical #131 assertion-count urn (4,517 testable profiles "
+        "against 106,993,585 assertions across 556,516 enrichment tests, with "
+        "depletion fold <= 0.67); and the harmonized baseline in "
+        "`methods/three_arm_statistics.md` defines a proposed paired-human "
+        "assertion-weighted background."
+    ) in calibration_md
+    assert (
+        "The composition arm's native transformed test, which is calibrated "
+        "separately against the shared study-flip null in "
+        "`src/mtp/composition_calibration/` (`methods/calibration_composition.md`, "
+        "#550). [`calibration_protocol.json`](calibration_protocol.json) records "
+        "this scope amendment explicitly (`v3.1`, #568) rather than silently "
+        "rewriting its earlier #131 assertion-level and #182 owner-adapter "
+        "declaration."
+    ) in calibration_md
+
+    three_arm_md = " ".join(
+        (repo_root / "methods" / "three_arm_statistics.md").read_text(encoding="utf-8").split()
+    )
+    assert (
+        "[`calibration_protocol.json`](calibration_protocol.json) (`v3.1`, #568) "
+        "and [`calibration.md`](calibration.md) explicitly record how these three "
+        "ORA background definitions relate to the directional calibration scope and "
+        "the separate ORA calibration harness (`src/mtp/ora_calibration/`, #551)."
+    ) in three_arm_md
+
+    native_influence_md = " ".join(
+        (repo_root / "methods" / "table1_native_influence.md").read_text(encoding="utf-8").split()
+    )
+    assert (
+        "[`calibration_protocol.json`](calibration_protocol.json) (`v3.1`, #568) "
+        "and [`calibration.md`](calibration.md) record this distinction between the "
+        "historical #131 assertion-count urn retained here, the production "
+        "`M = 5,829` all-host distinct-taxon urn calibrated in "
+        "`src/mtp/ora_calibration/` (#551), and the proposed harmonized-baseline "
+        "paired-human assertion-weighted background."
+    ) in native_influence_md

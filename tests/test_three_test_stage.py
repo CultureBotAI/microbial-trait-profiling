@@ -67,8 +67,37 @@ def sources_for_stage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Verifi
     for name, arm in sources.arms.items():
         arm.id = f"fixture-{name}"
         arm.git_commit = "c" * 40
-    monkeypatch.setattr(stage, "open_verified_sources", lambda _path: sources)
+
+    def verified(path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        manifest = path / "comparison_run.json" if path.is_dir() else path
+        assert expected_sha256 == file_sha256(manifest)
+        return sources
+
+    monkeypatch.setattr(stage, "open_verified_sources", verified)
     return sources
+
+
+def test_comparison_pin_reaches_three_test_source_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The published parent digest must also constrain the source parser (#1216)."""
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    expected = file_sha256(comparison)
+    observed: list[str | None] = []
+
+    def verified(path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        assert path == comparison
+        observed.append(expected_sha256)
+        assert expected_sha256 == expected, "Existing comparison digest was not forwarded"
+        return sources
+
+    monkeypatch.setattr(stage, "open_verified_sources", verified)
+    output = tmp_path / "output"
+    record = stage.run_table(comparison, output, scratch=tmp_path / "scratch")
+    assert observed == [expected]
+    assert record["comparison_manifest_sha256"] == expected
+    assert (output / stage.MANIFEST).stat().st_size > 0
 
 
 @pytest.mark.parametrize("error_number", [errno.ENOTSUP, errno.ENOSYS])
@@ -132,7 +161,10 @@ def test_successful_probe_uses_only_private_siblings_and_cleans_before_verificat
         calls.append((source, destination))
         original(source, destination)
 
-    def stop_after_probe(_comparison: Path) -> VerifiedSources:
+    def stop_after_probe(
+        comparison: Path, *, expected_sha256: str | None = None
+    ) -> VerifiedSources:
+        assert expected_sha256 == file_sha256(comparison)
         assert len(calls) == 2
         assert not list(tmp_path.glob(".output-probe-*"))
         raise ValueError("reached verification after successful probe")
