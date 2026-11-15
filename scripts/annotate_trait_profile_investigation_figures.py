@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
 
@@ -219,9 +220,10 @@ FIGURE_LABELS = {
 }
 
 
-def load_font(label: str, max_width: int) -> ImageFont.ImageFont:
+def load_font(label: str, max_width: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     """Load a font sized to keep label text within the image width."""
     scratch = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont
     for size in range(28, 13, -1):
         try:
             font = ImageFont.truetype("arial.ttf", size)
@@ -248,7 +250,7 @@ def crop_footer(image: Image.Image) -> tuple[Image.Image, bool]:
     width, height = rgb.size
     step = max(1, width // 500)
     for y in range(max(0, height - 250), height):
-        row = [rgb.getpixel((x, y)) for x in range(0, width, step)]
+        row = [cast(tuple[int, int, int], rgb.getpixel((x, y))) for x in range(0, width, step)]
         if is_footer_separator_row(row):
             return rgb.crop((0, 0, width, y)), True
     return rgb, False
@@ -260,7 +262,7 @@ def add_top_label(image: Image.Image, label: str) -> Image.Image:
     text_x = max(18, int(width * 0.018))
     font = load_font(label, width - (text_x * 2))
     scratch = ImageDraw.Draw(Image.new("RGB", (1, 1)))
-    text_bbox = scratch.textbbox((0, 0), label, font=font)
+    text_bbox = cast(tuple[int, int, int, int], scratch.textbbox((0, 0), label, font=font))
     text_height = text_bbox[3] - text_bbox[1]
     band_height = max(56, text_height + 30)
 
@@ -294,7 +296,7 @@ def process_figure(relative_path: Path, label: str) -> str:
     metadata = PngImagePlugin.PngInfo()
     if needs_top_label:
         metadata.add_text("guild_specific_top_label", label)
-    save_kwargs: dict[str, object] = {"pnginfo": metadata}
+    save_kwargs: dict[str, Any] = {"pnginfo": metadata}
     if dpi:
         save_kwargs["dpi"] = dpi
     output.save(path, **save_kwargs)
