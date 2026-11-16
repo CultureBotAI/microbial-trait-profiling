@@ -30,6 +30,8 @@ import sys
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, cast
 
 import gdown
 
@@ -57,7 +59,7 @@ FILES = [
 ]
 
 
-def _md5(path) -> str:
+def _md5(path: Path) -> str:
     h = hashlib.md5(usedforsecurity=False)
     with path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
@@ -65,20 +67,20 @@ def _md5(path) -> str:
     return h.hexdigest()
 
 
-def _load_provenance() -> dict:
+def _load_provenance() -> dict[str, Any]:
     if PROVENANCE_PATH.exists():
-        return json.loads(PROVENANCE_PATH.read_text(encoding="utf-8"))
+        return cast(dict[str, Any], json.loads(PROVENANCE_PATH.read_text(encoding="utf-8")))
     return {"release": KG_MICROBE_RELEASE, "files": {}}
 
 
-def _should_skip(f: DriveFile, provenance: dict) -> bool:
+def _should_skip(f: DriveFile, provenance: dict[str, Any]) -> bool:
     dest = OUT_DIR / f.name
     record = provenance.get("files", {}).get(f.name)
     if not dest.exists() or not record:
         return False
     if record.get("file_id") != f.file_id:
         return False
-    return record.get("size") == dest.stat().st_size
+    return cast(int | None, record.get("size")) == dest.stat().st_size
 
 
 def main() -> int:

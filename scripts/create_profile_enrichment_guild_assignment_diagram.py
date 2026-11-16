@@ -7,10 +7,14 @@ import json
 from itertools import pairwise
 from pathlib import Path
 from textwrap import fill
+from typing import TYPE_CHECKING, Any, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.trait_guilds import OXYGEN_GUILDS
@@ -96,8 +100,8 @@ AMBER_50 = "#fffbeb"
 AMBER_600 = "#d97706"
 
 
-def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
-    return pd.read_csv(path, sep="\t", **kwargs)
+def read_tsv(path: Path, **kwargs: Any) -> pd.DataFrame:
+    return cast(pd.DataFrame, pd.read_csv(path, sep="\t", **kwargs))
 
 
 def clean_text(value: object) -> str:
@@ -125,7 +129,7 @@ def format_count(value: int) -> str:
     return f"{value:,}"
 
 
-def count_label(counts: dict[str, object], key: str) -> str:
+def count_label(counts: dict[str, Any], key: str) -> str:
     return format_count(int(counts.get(key, 0)))
 
 
@@ -273,7 +277,7 @@ def write_direction_grid_table() -> None:
     comparator_direction = {"increased": "decreased", "decreased": "increased"}
     condition_counts = metadata["condition_clean"].value_counts()
     conditions = sorted(
-        condition
+        cast(str, condition)
         for condition, profile_count in condition_counts.items()
         if profile_count >= MIN_CONDITION_PROFILES and not is_excluded_condition_label(condition)
     )
@@ -314,7 +318,7 @@ def write_direction_grid_table() -> None:
     pd.DataFrame(records).to_csv(GRID_OUTPUT_TSV, sep="\t", index=False)
 
 
-def get_summary_counts() -> dict[str, object]:
+def get_summary_counts() -> dict[str, Any]:
     metadata = read_tsv(
         VIS_DIR / "study_trait_profile_study_metadata.tsv",
         usecols=[
@@ -337,7 +341,7 @@ def get_summary_counts() -> dict[str, object]:
         usecols=["trait_id", "display_category"],
     )
     provenance = load_download_provenance()
-    counts: dict[str, object] = {
+    counts: dict[str, Any] = {
         "bugsigdb_version": provenance.get("version", "unknown"),
         "bugsigdb_doi": provenance.get("doi", "unknown"),
         "bugsigdb_snapshot": full_dump_snapshot_label(),
@@ -382,7 +386,7 @@ def wrapped(text: str, width: int = 31) -> str:
 
 
 def add_box(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     xy: tuple[float, float],
     width: float,
@@ -434,7 +438,7 @@ def add_box(
 
 
 def add_arrow(
-    ax: plt.Axes,
+    ax: Axes,
     start: tuple[float, float],
     end: tuple[float, float],
     *,
@@ -474,7 +478,7 @@ def add_arrow(
 
 
 def add_stage_box(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     xy: tuple[float, float],
     width: float,
@@ -546,7 +550,7 @@ def add_stage_box(
 
 
 def add_output_chip(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     xy: tuple[float, float],
     width: float,
@@ -583,7 +587,7 @@ def add_output_chip(
 
 
 def add_sankey_preview(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     xy: tuple[float, float],
     width: float,
@@ -668,7 +672,7 @@ def add_sankey_preview(
 
 
 def add_workflow_lane(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     xy: tuple[float, float],
     width: float,
@@ -739,7 +743,7 @@ def add_workflow_lane(
 
 
 def add_badge(
-    ax: plt.Axes,
+    ax: Axes,
     xy: tuple[float, float],
     text: str,
     *,
@@ -773,7 +777,7 @@ def add_badge(
 
 
 def add_compact_direction_grid(
-    ax: plt.Axes, *, xy: tuple[float, float], width: float, height: float
+    ax: Axes, *, xy: tuple[float, float], width: float, height: float
 ) -> None:
     """Add the 2x2 direction grid with parent signals and guardrail cells."""
     x, y = xy
@@ -878,7 +882,7 @@ def add_compact_direction_grid(
 
 
 def add_grid_cell(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     xy: tuple[float, float],
     width: float,
@@ -927,7 +931,7 @@ def add_grid_cell(
     )
 
 
-def add_large_direction_grid(ax: plt.Axes, counts: dict[str, int]) -> None:
+def add_large_direction_grid(ax: Axes, counts: dict[str, int]) -> None:
     grid_x = 8.0
     grid_y = 19.0
     grid_w = 84.0
@@ -1108,7 +1112,7 @@ def load_anaerobe_guild_definition_rows() -> list[dict[str, str]]:
 
 
 def add_definition_table_cell(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     x: float,
     y: float,

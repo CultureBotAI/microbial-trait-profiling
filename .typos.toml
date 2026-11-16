@@ -21,6 +21,9 @@ muc = "muc"
 # Bifidobacterium longum subsp. infantis. BugSigDB experiment labels quote it verbatim in the
 # enrichment-infographic-followup READMEs, and typos rewrites it to "infants" (#586).
 infantis = "infantis"
+# False-positive rate, printed on NCASM plate VIII and in its speaker note, which
+# src/mtp/ncasm_tufte_plates/ reproduces as drawn (#2264).
+fpr = "fpr"
 
 [files]
 extend-exclude = ["uv.lock", ".venv"]

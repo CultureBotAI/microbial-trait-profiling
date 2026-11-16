@@ -1,0 +1,9 @@
+{
+  "id": "comparison-disease_vs_healthy_tier1_2_subject_controls-3d40e23048d0",
+  "contrast_population": "disease_vs_healthy_tier1_2_subject_controls",
+  "direction_basis": "disease_vs_comparison",
+  "status": "completed",
+  "core_run_id": "run-a2d30f9ca1dd45aeb98085f39badc4bf",
+  "git_commit": "511c891229b659e207cfe0f4281a97c3fc039a80",
+  "git_dirty": false
+}

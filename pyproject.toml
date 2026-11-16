@@ -25,9 +25,9 @@ dependencies = [
   # numpy arrives with scipy either way; it is declared because `mtp.enrichment_stats`
   # and `mtp.calibration` import it directly.
   "numpy>=2.4.6",
-  "pandas>=3.0.6",
+  "pandas>=3.1.1",
   "plotly>=7.1.0",
-  "pydantic>=2.13.0",
+  "pydantic>=2.14.3",
   "pyyaml>=6.0.2",
   # scipy stays a runtime dependency on purpose (#288): the analysis modules
   # guild_maps, table1_trait_maps and trait_composition all import it at module
@@ -39,9 +39,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "mypy>=1.15.0",
+  "mypy>=2.4.1",
   "pre-commit>=4.6.2",
-  "pytest>=9.1.1",
+  "pytest>=9.2.0",
   "ruff>=0.17.0",
   "types-PyYAML>=6.0.12.20260408",
 ]
@@ -77,10 +77,10 @@ mongo = [
 dev = [
   # tests/test_sync_agent_docs.py checks the link rewriter against CommonMark (#1434).
   "markdown-it-py>=4.0.0",
-  "mypy>=1.15.0",
+  "mypy>=2.4.1",
   "pandas-stubs>=3.0.5.260914",
   "pre-commit>=4.6.2",
-  "pytest>=9.1.1",
+  "pytest>=9.2.0",
   "pytest-cov>=6.0.0",
   "ruff>=0.17.0",
   "types-PyYAML>=6.0.12.20260408",
@@ -92,7 +92,7 @@ qa = [
   "detect-secrets==1.5.0",
   # Reproduce the historical Git-state audit and regression comparisons (#635).
   # Runtime provenance uses GitPython's native Git interface instead.
-  "dulwich>=1.2.17",
+  "dulwich>=1.2.21",
   "pip-audit>=2.10.1",
   "pytest-cov>=6.0.0",
   "types-PyYAML>=6.0.12.20260408",
