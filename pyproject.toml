@@ -78,7 +78,7 @@ dev = [
   # tests/test_sync_agent_docs.py checks the link rewriter against CommonMark (#1434).
   "markdown-it-py>=4.0.0",
   "mypy>=2.4.1",
-  "pandas-stubs>=3.0.5.260914",
+  "pandas-stubs>=3.1.0.261029",
   "pre-commit>=4.6.2",
   "pytest>=9.2.0",
   "pytest-cov>=6.0.0",
