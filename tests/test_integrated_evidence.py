@@ -12,6 +12,7 @@ from typing import NamedTuple, TypedDict
 import pytest
 
 from mtp import guild_maps
+from mtp.count_input import ProfileCoverage, annotation_coverage_status
 from mtp.guild_maps import (
     CELL_BELOW_MIN_STUDIES,
     CELL_NO_SIGNAL,
@@ -47,11 +48,13 @@ from mtp.integrated_evidence import (
     UNTESTED,
     ZERO_ANNOTATION,
     AssessmentStatus,
+    CoverageBinding,
     Record,
     apply_statuses,
     assessment_rows,
     build_guild_matrix,
     cell_support_records,
+    coverage_binding,
     family_inventory,
     feature_column_rows,
     fraction_sign_records,
@@ -75,8 +78,10 @@ from mtp.trait_guilds import (
     TABLE1_TRAITS,
     Profile,
     drop_zero_total_pairs,
+    load_profiles,
     resolve_trait_columns,
 )
+from mtp.workflow.coverage import feature_filter_id, write_profile_coverage
 
 
 class _Thresholds(TypedDict):
@@ -2187,3 +2192,193 @@ def test_strict_cli_rejects_unbound_status_816(
     with pytest.raises(ValueError, match="unreadable or unbound statuses"):
         main(arguments)
     assert not (tmp_path / "output/integrated_evidence_provenance.json").exists()
+
+
+#: The retained, non-MediaDive vocabulary every profile total in `_corpus` is built from.
+RETAINED_FILTER_ID = feature_filter_id(list(MATRIX_COLUMNS.values()))
+
+
+def _coverage_record(key: tuple[str, str, str], kind: str, filter_id: str) -> ProfileCoverage:
+    """One sidecar row: complete, one taxon without a lookup row, or no annotation."""
+    matched, unmatched, annotated = {
+        "complete": (3, 0, 3),
+        "unmatched": (2, 1, 2),
+        "unannotated": (3, 0, 0),
+    }[kind]
+    return ProfileCoverage(
+        *key,
+        reported_distinct_taxa=matched + unmatched,
+        lookup_matched_taxa=matched,
+        lookup_unmatched_taxa=unmatched,
+        matched_taxa_with_annotations=annotated,
+        matched_taxa_without_annotations=matched - annotated,
+        coverage_status=annotation_coverage_status(
+            reported=matched + unmatched,
+            matched=matched,
+            unmatched=unmatched,
+            with_annotations=annotated,
+            without_annotations=matched - annotated,
+        ),
+        unmatched_taxon_ids=tuple(f"NCBITaxon:9{i}" for i in range(unmatched)),
+        matched_without_annotation_taxon_ids=tuple(
+            f"NCBITaxon:{i}" for i in range(matched - annotated)
+        ),
+        trait_filter_id=filter_id,
+    )
+
+
+def _corpus_coverage(
+    tmp_path: Path,
+    profile_path: Path,
+    *,
+    filter_id: str = RETAINED_FILTER_ID,
+    drop: tuple[str, str, str] | None = None,
+) -> Path:
+    """A sidecar for every matrix row: the zero-total study unannotated, bsdb:1 short."""
+    with profile_path.open(encoding="utf-8") as handle:
+        keys = [
+            (row["study_id"], row["experiment_id"], row["inc_dec"])
+            for row in csv.DictReader(handle, delimiter="\t")
+        ]
+    zero_total_study = f"bsdb:{sum(block[0] for block in CORPUS_BLOCKS[:4]) + 1}"
+    coverage = {}
+    for key in keys:
+        if key == drop:
+            continue
+        kind = (
+            "unannotated"
+            if key[0] == zero_total_study
+            else "unmatched"
+            if key == ("bsdb:1", "bsdb:1-1", "inc")
+            else "complete"
+        )
+        coverage[key] = _coverage_record(key, kind, filter_id)
+    path = tmp_path / "core_consumption.coverage.tsv"
+    write_profile_coverage(path, coverage)
+    return path
+
+
+def _corpus_binding(profile_path: Path, experiments_path: Path) -> CoverageBinding:
+    profiles, _ = load_profiles(profile_path, experiments_path, {**TABLE1_TRAITS, **OXYGEN_GUILDS})
+    return coverage_binding(profile_path, profiles, drop_zero_total_pairs(profiles).profiles)
+
+
+def test_coverage_sidecar_reaches_every_row_and_keeps_zero_exclusion_apart(
+    tmp_path: Path,
+) -> None:
+    """#184: the table reads the sidecar instead of `pending #184` on every row.
+
+    Source missingness (a reported taxon with no matrix row, a matched taxon with no
+    retained annotation) is described per analysed profile. The zero-total pair
+    exclusion stays in `pair_exclusion`; the assessment only cross-tabulates it.
+    """
+    profile_path, experiments_path = _corpus(tmp_path)
+    sidecar = _corpus_coverage(tmp_path, profile_path)
+    output = tmp_path / "out"
+    assert (
+        main(
+            [
+                "--profile-input",
+                str(profile_path),
+                "--experiments-input",
+                str(experiments_path),
+                "--full-dump-input",
+                str(tmp_path / "no_such_full_dump.csv"),
+                "--calibration-status",
+                str(tmp_path / "no_such_calibration_status.json"),
+                "--sensitivity-status",
+                str(tmp_path / "no_such_sensitivity_status.json"),
+                "--orientation-provenance",
+                str(tmp_path / "no_such_orientation_provenance.json"),
+                "--coverage-status",
+                str(sidecar),
+                "--output-dir",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    with (output / "integrated_evidence.tsv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    # 16 paired human studies are analysed; the mouse study and the unpaired side
+    # are not. Three profiles are incomplete: one unmatched taxon in bsdb:1 inc, and
+    # both sides of the zero-total study, whose taxa match but carry no annotation.
+    expected = "source coverage described, 3 of 32 analysed profiles incomplete, no verdict #184"
+    assert {row["coverage_status"] for row in rows} == {expected}
+
+    with (output / "integrated_evidence_assessments.tsv").open(encoding="utf-8") as handle:
+        detail = {
+            (row["scope_kind"], row["scope"], row["state_variable"]): row["state_value"]
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["assessment"] == "coverage_status"
+        }
+    analysed = "analysed_profiles"
+    assert detail[(analysed, "complete_annotation_coverage", "profiles")] == "29"
+    assert detail[(analysed, "partial_lookup_coverage", "profiles")] == "1"
+    assert detail[(analysed, "matched_without_annotations", "profiles")] == "2"
+    assert detail[(analysed, "taxa", "lookup_unmatched_taxa")] == "1"
+    excluded = "zero_total_excluded_profiles"
+    assert detail[(excluded, "matched_without_annotations", "profiles")] == "2"
+    assert detail[(excluded, "complete_annotation_coverage", "profiles")] == "0"
+    # The mouse study's two profiles and the unpaired side are in the sidecar only.
+    assert detail[("note", "sidecar_profiles_not_analysed", "profiles")] == "3"
+
+    provenance = json.loads(
+        (output / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
+    )
+    source = provenance["assessment_status"]["coverage_status"]["source"]
+    assert source["binding"] == "matched"
+    assert source["feature_filter_id"] == [RETAINED_FILTER_ID]
+    assert source["input_origin"] == "supplied"
+    # The analytical exclusion is still reported by its own rule, unchanged.
+    assert provenance["pair_exclusion"]["zero_total_experiments"] == 1
+
+
+def test_coverage_sidecar_for_another_vocabulary_or_cohort_is_unbound(tmp_path: Path) -> None:
+    """A sidecar counted over MediaDive too, or missing a profile, is not this table's."""
+    profile_path, experiments_path = _corpus(tmp_path)
+    binding = _corpus_binding(profile_path, experiments_path)
+    assert binding.feature_filter_id == RETAINED_FILTER_ID
+
+    with_media = feature_filter_id([*MATRIX_COLUMNS.values(), "mediadive.medium:372"])
+    other = read_status(
+        _corpus_coverage(tmp_path, profile_path, filter_id=with_media),
+        "coverage_status",
+        "#184",
+        coverage=binding,
+    )
+    assert other.default == (
+        "unreadable #184: coverage sidecar describes another retained feature vocabulary"
+    )
+    assert other.source["binding"] == "mismatch_or_missing_identity"
+
+    short = read_status(
+        _corpus_coverage(tmp_path, profile_path, drop=("bsdb:2", "bsdb:2-1", "dec")),
+        "coverage_status",
+        "#184",
+        coverage=binding,
+    )
+    assert short.default == "unreadable #184: coverage sidecar lacks 1 of 32 analysed profiles"
+    assert short.source["binding"] == "mismatch_or_missing_identity"
+
+
+def test_malformed_coverage_sidecar_is_unreadable_without_a_machine_path(
+    tmp_path: Path,
+) -> None:
+    """The strict sidecar reader's rejection reaches the row, naming only the file."""
+    profile_path, experiments_path = _corpus(tmp_path)
+    sidecar = _corpus_coverage(tmp_path, profile_path)
+    lines = sidecar.read_text(encoding="utf-8").splitlines()
+    lines[1] = lines[1].replace("complete_annotation_coverage", "partial_lookup_coverage", 1)
+    sidecar.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    status = read_status(
+        sidecar,
+        "coverage_status",
+        "#184",
+        coverage=_corpus_binding(profile_path, experiments_path),
+    )
+    assert status.default.startswith(
+        "unreadable #184: Coverage status mismatch in core_consumption.coverage.tsv:2"
+    )
+    assert str(tmp_path) not in status.default

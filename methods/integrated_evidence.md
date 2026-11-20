@@ -288,8 +288,10 @@ one before that stated the assessments' branch findings as established (#294).
     subset, so none of them is a disease-versus-control result. The verified-subset
     comparison is `disease_control_comparison.tsv` in
     `data/derived/contrast_orientation/`, which is not imported here.
-- **Coverage (#184).** Nothing produces this assessment yet, so all 40 rows read
-  `pending #184`. No row should be read as accounting for annotation coverage.
+- **Coverage (#184).** The committed run was given no coverage sidecar, so all 40
+  rows read `pending #184`. No row should be read as accounting for annotation
+  coverage. `--coverage-status` now reads the profile coverage sidecar
+  (`count-input-v1`) when one is supplied; see Reproducing.
 - **Influence (#190).** All 40 rows read `pending #190: influence evidence not
   supplied`, because no influence output was given to this run. No row should be read
   as accounting for taxonomic concentration.
@@ -340,9 +342,27 @@ comparison stage passes, a native table or a calibration, sensitivity, orientati
 influence status that is not supplied or does not exist is an error rather than a
 pending row (#814). So is a supplied status that reads as unreadable or whose binding is
 `mismatch_or_missing_identity` or `missing_producer_identity` (#844). A status that
-declares no input hashes is still accepted, pending #816. Nothing produces the #184
-coverage status yet, so it may be left out and then reads as not supplied; a coverage
-path that is supplied must exist.
+declares no input hashes is still accepted, pending #816. The comparison stage does
+not pass a #184 coverage sidecar yet, so it may be left out and then reads as not
+supplied; a coverage path that is supplied must exist.
+
+A `--coverage-status` path ending in `.tsv` or `.tsv.gz` is read as a profile coverage
+sidecar with the strict `count-input-v1` reader, such as the `.coverage.tsv` a core
+consumer writes for the retained non-MediaDive vocabulary. It is bound to this table
+in two ways: its `trait_filter_id` must equal the fingerprint of the retained columns
+that form every profile total here, and it must have a row for every analysed
+profile (human, paired, before the zero-total exclusion). The core run's own
+`count_coverage` product counts MediaDive annotations too, so it is rejected as
+another vocabulary. A bound sidecar reaches every row as `source coverage described,
+K of N analysed profiles incomplete, no verdict #184`, where incomplete is anything
+other than `complete_annotation_coverage`. The side-car keeps the per-status profile
+counts and the taxon totals for the analysed profiles, and the same counts for the
+profiles the zero-total pair exclusion removed. Those three things stay separate:
+source coverage says how many reported taxa found a matrix row and a retained
+annotation, `pair_exclusion` records the analytical zero rule, and `display_status`
+records figure masking. A sidecar that fails the reader, or either binding check, is
+unreadable with the reason, and `--require-complete-sources` rejects it. A path with
+any other suffix is still read as a JSON status.
 The provenance record carries the code revision, input
 hashes, the corpus cascade, the assessment statuses and the per-method summary.
 

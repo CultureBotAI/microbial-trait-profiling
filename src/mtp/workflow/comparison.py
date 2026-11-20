@@ -50,8 +50,9 @@ BASELINE_FILES = {
 
 #: Each integrated_evidence input an arm produces: the option, then the arm, step and
 #: file name that arm's arm_run.json records (#814). No arm produces the pooled Arm 1
-#: statistics, so the stage computes them; nothing produces the #184 coverage status,
-#: so it is left out and integrated_evidence records it as not supplied.
+#: statistics, so the stage computes them. No arm records a #184 coverage sidecar for
+#: the table's retained vocabulary, so it is left out and integrated_evidence records
+#: it as not supplied.
 ARM_EVIDENCE_INPUTS: tuple[tuple[str, str, str, str], ...] = (
     ("--arm2-enrichment-results", "ilyas", "enrichment", "trait_enrichment_all_results.tsv"),
     ("--arm2-depletion-results", "ilyas", "depletion", "trait_depletion_all_results.tsv"),

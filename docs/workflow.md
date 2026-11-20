@@ -452,8 +452,9 @@ arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
 `directional_screen`, `empirical_calibration`, `contrast_orientation` and
 `native_taxon_influence`, and Jed's `composition_sensitivity`.
 `--require-complete-sources` rejects a native table or status input that is missing
-or unreadable, or a status that records other input bytes. No step produces the #184
-coverage status yet, so it is left out and recorded as not supplied.
+or unreadable, or a status that records other input bytes. No arm records a #184
+coverage sidecar for the table's retained vocabulary yet, so it is left out and
+recorded as not supplied.
 
 The `ComparisonRun` calibration verdicts and its eligibility ledger are built before
 the stage writes anything, so a bad input leaves no partial directory behind (#844).
