@@ -8,7 +8,7 @@ BugSigDB vintage the numbers came from.
 | Figure | Produced by | Recipe | Methods |
 | --- | --- | --- | --- |
 | `guild_condition_body_site_heatmap.png` | `src/mtp/guild_maps.py` | `just guild-maps` | [`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md) |
-| `table1_traits_condition_body_site_heatmap.png` | `src/mtp/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
+| `table1_traits_condition_body_site_heatmap.png`, with evidence marks from `src/mtp/table1_evidence.py` (tables `table1_traits_cell_support.tsv`, `table1_traits_composition_contrasts.tsv`, `table1_traits_composition_screen.tsv`, `table1_traits_evidence_provenance.json`) | `src/mtp/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_first_last_body_site_panels.png` | `src/mtp/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/mtp/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | Matched-corpus Table 1-trait analog source contributions and genus/family influence TSVs | `src/mtp/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md); [measured results and cross-scale interpretation flags](table1_taxon_influence_results.md) |
@@ -150,8 +150,8 @@ deck instead: the files that differ are not linked, their slides say so, and the
 every stamp read "review build" (#637). Slides whose code was never merged into main
 (PRs #148, #173 and #315) stay in the deck: they link that code at the pull request's head
 commit, and their stamp reads "not rerun on main" (#614). PR #173 also committed its Table 1
-maps, whose significance outlines and composition triangles main's `just table1-trait-maps`
-does not draw; the builder reads those five maps from that pull request's head and checks
+maps, whose outlines and composition triangles main's `just table1-trait-maps` did not
+draw before the #172 rebuild; the builder still reads those five maps from that pull request's head and checks
 them there, so no checkout needs them on disk (#677, #704). The build also stops, or with
 `--allow-unverified` names the reason as a review build, when the plates' record lacks a
 count the slides quote (#682) or the cellulose_decr tables were built on another contrast

@@ -51,6 +51,13 @@ from mtp.guild_maps import (
     write_matrix_outputs,
 )
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.table1_evidence import (
+    build_evidence,
+    cell_display_status,
+    evidence_marks,
+    report_lines,
+    write_evidence_tables,
+)
 from mtp.trait_guilds import (
     DEFAULT_EXPERIMENTS_PATH,
     DEFAULT_FULL_DUMP_PATH,
@@ -73,6 +80,8 @@ if TYPE_CHECKING:
     from plotly.graph_objects import Figure
 
 TRAIT_ORDER: tuple[str, ...] = tuple(TABLE1_TRAITS)
+#: Where ``just analyze`` writes the enrichment arm's unfiltered results.
+DEFAULT_ENRICHMENT_RESULTS = DERIVED_DATA_DIR / "trait_enrichment_all_results.tsv"
 OUTPUT_PREFIX = "table1_traits"
 CONFIDENCE_LEVEL = 0.95
 ANALYSIS_LABEL = "Matched-corpus Table 1-trait analog"
@@ -883,6 +892,16 @@ def build_parser() -> argparse.ArgumentParser:
             "The state stays in the emitted cell-status table either way."
         ),
     )
+    parser.add_argument(
+        "--enrichment-results",
+        type=Path,
+        help=(
+            "The enrichment arm's unfiltered results (scripts/trait_enrichment.py "
+            "--all-results-output) for the aggregated profile-support marks. Defaults to "
+            f"{DEFAULT_ENRICHMENT_RESULTS.name} beside the profile table when that exists; "
+            "without it the figures draw composition evidence only and say so."
+        ),
+    )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     return parser
 
@@ -994,7 +1013,35 @@ def main() -> int:
 
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
+    # Evidence runs on the analysed corpus alone; the matrix only decides where it
+    # is drawn (#176).
+    if args.enrichment_results is None:
+        sibling = args.profile_input.with_name(DEFAULT_ENRICHMENT_RESULTS.name)
+        args.enrichment_results = sibling if sibling.exists() else None
+    print(
+        "\nEnrichment results for profile support: "
+        + (str(args.enrichment_results) if args.enrichment_results else "none; not drawn")
+    )
+    evidence = build_evidence(
+        profiles,
+        args.profile_input,
+        TABLE1_TRAITS,
+        enrichment_results=args.enrichment_results,
+    )
+    marks = evidence_marks(evidence)
+    print("\n".join(report_lines(evidence, matrix)))
+
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
+    written.extend(
+        write_evidence_tables(
+            evidence,
+            args.output_dir,
+            OUTPUT_PREFIX,
+            display_status=lambda cell: cell_display_status(matrix, cell),
+            site_drawn=lambda site: site in matrix.body_sites,
+            provenance={"code_commit": args.code_commit, "bugsigdb_vintage": vintage},
+        )
+    )
     written.extend(
         write_shift_table(
             result,
@@ -1020,6 +1067,7 @@ def main() -> int:
             separate_body_sites=True,
             mark_no_signal=args.mark_no_signal,
             note=population_note,
+            evidence=marks,
         )
     )
     # The combined figure squeezes every body site in, which leaves each column
@@ -1135,6 +1183,7 @@ def main() -> int:
                 # A cut is shown on its own, so it states the population on a line
                 # of its own too.
                 note="<br>".join(line for line in (note, population_note) if line),
+                evidence=marks,
             )
         )
     written.append(

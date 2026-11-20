@@ -396,6 +396,111 @@ trait list is not six long; the production callers `table1_trait_maps.main`,
 `contrast_orientation.comparison_rows`, and `integrated_evidence.fraction_sign_records`
 all use the six Table 1 traits through `TRAIT_ORDER`, explicitly or by default.
 
+## Evidence marks on the maps (#172)
+
+The combined figure and the four cuts carry three kinds of evidence. Each has its
+own rule, its own mark and its own legend line, and none of them is a cell-level
+significance test. Produced by `src/mtp/table1_evidence.py` inside
+`just table1-trait-maps`; drawn by `src/mtp/guild_maps.py`.
+
+- **Aggregated profile-level support (solid outline).** The enrichment arm's own
+  per-profile calls are read from its unfiltered results
+  (`scripts/trait_enrichment.py --all-results-output`, which `just analyze` writes to
+  `data/derived/trait_enrichment_all_results.tsv`), not recomputed. A study supports a
+  cell when at least one of its tested profiles there is called; the cell is outlined
+  when a strict majority of at least two eligible studies support it. That is a
+  descriptive rule. It has no cell-level p- or q-value, and
+  `table1_traits_cell_support.tsv` carries none. Matching the arm's profile calls says
+  nothing about the calibration of this rule (#177). The same table reports the
+  stricter alternative, where a study supports a cell only when most of its own tested
+  profiles there are called, so a study with many experiments gets no more chances
+  than a study with one. A corpus profile with no result row is counted as untested,
+  never as a miss. Without the enrichment results the figures say that support is not
+  drawn.
+- **Body-site composition contrast (triangle above a trait's two columns).** The
+  composition arm's study-level paired test, run per exact body-site label. A triangle
+  points to the side with the higher share and is drawn once per trait. It is a
+  statement about the whole site and tests no single condition in the column.
+- **Condition-by-body-site composition contrast (dotted inner outline).** The same
+  test inside one exact condition of a tested site, drawn on the side it favours.
+
+Inference never reads the figure (#176). Every test runs on exact source labels over
+the population the maps draw (human, paired, zero-total pairs excluded), and the
+correction families are fixed before anything is drawn. Top-N cuts, masking and the
+pooled Other row and column only decide where a result lands; `display_status` in each
+table records that. The pooled Other block is never marked, because it is not one
+label. A study enters a site's test once, as the mean of all its pairs in that site,
+however many conditions or experiments it has. The legend counts only the marks a
+figure draws and states the corpus-wide count beside it (#216).
+
+What the composition marks take from the arm unchanged:
+
+- denominator: the sum of every retained non-MediaDive trait column
+- trait selection, log1p(per-mille share) transform and z-scoring: mtp.native_composition
+- sampling unit: each pair's increased-minus-decreased z contrast, averaged to one value per unique study in the stratum, whatever its conditions
+- test: two-sided one-sample t-test of the study values against 0
+- site family: Benjamini-Hochberg over every trait the stratum selects, with untestable traits entering at p = 1
+
+Every way they differ, from `COMPOSITION_DEPARTURES`, which the figure legend also
+renders (#215):
+
+| aspect | composition arm (`scripts/create_trait_profile_infographic.py` on main) | these marks |
+| --- | --- | --- |
+| strata | body_site_group from the heatmap pair metadata: the top body sites plus a pooled Other, each kept at 50 or more pairs, plus Feces and Feces-excluded | exact source body-site labels with 50 or more eligible pairs; no pooled Other or Feces-excluded stratum, because those pools are defined by a display cut |
+| zero totals | zero-total profiles stay in, with every share 0, through selection, z-scoring and the test | a pair with a zero retained-annotation total on either side is left out first, as the maps leave it out, because its shares are undefined |
+| condition contrasts | none; conditions are only summarised descriptively | the site test repeated inside each exact condition with at least 2 studies, on the site's selection and z scale, in one Benjamini-Hochberg family over every such condition, site and trait |
+| cutoff | q-values published without a cutoff | q <= 0.05, chosen here for display |
+
+The six traits were selected on this corpus, so no mark confirms them independently.
+Each contrast row also carries the q-value in a six-trait family, labelled as a
+sensitivity column only.
+
+### The #215 departures table, re-read against `3afeecd`
+
+The table posted on #215 for the closed PR #173 compared that reimplementation with
+the arm at `3afeecd`. Re-reading `3afeecd`'s
+`scripts/create_trait_profile_infographic.py`:
+
+- **Correction family.** The arm computes `benjamini_hochberg(p_value.fillna(1.0))`, so
+  a selected trait it cannot test enters the family at p = 1. #173 corrected over
+  tested traits only, so "the same selection and family" was not exact. These marks
+  follow the arm.
+- **Strata.** `body_site_group` holds the heatmap's top body sites plus a pooled Other
+  (521 of 2,335 pairs in that commit's
+  `trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv`), so the arm
+  itself tests a display-defined pool. The row was accurate about the floor
+  of 50 pairs but did not say this.
+- **Zero totals.** At `3afeecd` zero-total profiles enter selection and z-scoring as
+  well as the test, so excluding them changes the z scale, not only the test
+  population. The row named only the test.
+- **Test floor.** The arm refuses a column with fewer than 3 pairs; #173 required 3
+  unique studies. Not listed.
+- Sampling unit, denominator and cutoff were described correctly.
+
+Since then the arm on main has moved: it uses the non-MediaDive denominator and emits
+study-level `study_p_value` and `study_q_value` alongside the pair-level test. These
+marks use that study-level path through `mtp.native_composition`, so the denominator
+and sampling unit are no longer departures.
+
+### First run
+
+From `just table1-trait-maps` code on the committed `study_trait_profiles_wide.tsv.gz`
+(`43b2e230…`, 5,629 profile rows; 923 studies after 43 zero-total pairs are excluded),
+without enrichment results, so no support outlines:
+
+- Only Feces (1,393 pairs) and Saliva (155 pairs) clear the 50-pair floor; the other
+  145 sites are recorded as below it. Feces selects 337 traits and Saliva 309.
+- In Feces, over 583 studies and 298 conditions, all six traits are significant within
+  the site's family: moderately halophilic +0.271 z (q 5.3e-08), facultatively aerobic
+  +0.282 (q 7.0e-07), arsenate reduction +0.241 (q 1.3e-04), coccus shaped +0.197
+  (q 1.0e-03), sphere shaped +0.182 (q 1.3e-03), and cellulose catabolic process
+  -0.197 (q 1.6e-03). These are pooled site contrasts: taxa annotated with five of the
+  traits were more often reported increased than decreased, and cellulose-annotated
+  taxa more often decreased. None of this applies to a single condition.
+- In Saliva (64 studies) none of the six reaches q <= 0.05; the smallest q is 0.97.
+- Of 29,342 condition-by-site contrasts, none reaches q <= 0.05 (smallest q 0.32), so
+  no dotted outline is drawn.
+
 ## Reproducing
 
 All statistics use scipy (binomtest, false_discovery_control, spearmanr) rather

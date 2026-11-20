@@ -16,10 +16,12 @@ import argparse
 import csv
 import importlib.util
 import math
-from collections import defaultdict
-from collections.abc import Sequence
+import textwrap
+from collections import Counter, defaultdict
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from scipy.cluster.hierarchy import fcluster, leaves_list, linkage
 from scipy.spatial.distance import pdist
@@ -41,6 +43,11 @@ from mtp.trait_guilds import (
     read_bugsigdb_vintage,
     write_stats_report,
 )
+
+if TYPE_CHECKING:
+    # plotly is the optional "viz" extra, so it is imported for annotations only;
+    # the figure builders import it at call time behind require_plotly().
+    from plotly.graph_objects import Figure
 
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
@@ -872,6 +879,145 @@ SUBTITLE_LINE_HEIGHT = 22
 SITE_HEADER_HEIGHT = 60
 
 
+#: Evidence outlines and the site-level glyphs above a trait's columns.
+MARK_LINE_COLOR = "#111111"
+MARK_LINE_WIDTH = 2
+COLUMN_MARK_GLYPH = {"increased": "\u25b2", "decreased": "\u25bc"}
+#: Room between the plotting area and the site names for the glyphs.
+GLYPH_BAND_HEIGHT = 18
+#: Evidence legend lines wrap at this many characters.
+EVIDENCE_WRAP_WIDTH = 150
+
+
+@dataclass(frozen=True)
+class MarkStyle:
+    """How one evidence type outlines a cell: line dash, and inset from the cell edge."""
+
+    dash: str
+    inset: float
+
+
+@dataclass(frozen=True)
+class EvidenceMarks:
+    """Evidence to draw over a heatmap, keyed by exact source labels.
+
+    ``cells`` maps (condition, body site, group, direction) to the evidence types
+    that mark it, each of which must have a style and a legend line. ``columns``
+    maps (body site, group) to the direction a site-level result favours; it is
+    drawn once above the group's two columns, never in a cell. ``corpus_totals``
+    counts the cells meeting each rule anywhere in the corpus, so the legend can
+    say how many of them this figure actually draws (#216). A pooled Other row
+    or column is never marked, because it is not one label.
+    """
+
+    cells: Mapping[tuple[str, str, str, str], frozenset[str]]
+    styles: Mapping[str, MarkStyle]
+    legend: Mapping[str, str]
+    corpus_totals: Mapping[str, int]
+    columns: Mapping[tuple[str, str], str]
+    column_legend: str
+    notes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class DrawnEvidence:
+    """The marks one figure draws, and how many of each."""
+
+    shapes: list[dict[str, object]]
+    glyphs: list[dict[str, object]]
+    cells: Counter[str]
+
+
+def _evidence_overlay(
+    evidence: EvidenceMarks,
+    matrix: GuildMatrix,
+    row_labels: Sequence[str],
+    row_values: Sequence[Sequence[float | None]],
+    column_indices: Sequence[int],
+    *,
+    xref: str,
+    yref: str,
+) -> DrawnEvidence:
+    """Outline the marked cells this figure draws, and place its site glyphs.
+
+    ``column_indices`` are the matrix columns on this x axis, in drawing order.
+    Only a cell holding a drawn value is outlined, so a mark on a masked cell is
+    never drawn and never counted as drawn.
+    """
+    rows = {label: index for index, label in enumerate(row_labels) if label in matrix.conditions}
+    positions = {matrix.columns[i]: x for x, i in enumerate(column_indices)}
+    shapes: list[dict[str, object]] = []
+    drawn: Counter[str] = Counter()
+    for (condition, site, group, direction), kinds in sorted(evidence.cells.items()):
+        styles = [(kind, evidence.styles[kind]) for kind in sorted(kinds)]
+        if OTHER_LABEL in (condition, site):
+            continue
+        row = rows.get(condition)
+        x = positions.get(f"{site}|{group}_{direction}")
+        if row is None or x is None:
+            continue
+        if row_values[row][column_indices[x]] is None:
+            continue
+        for kind, style in styles:
+            drawn[kind] += 1
+            shapes.append(
+                {
+                    "type": "rect",
+                    "xref": xref,
+                    "yref": yref,
+                    "x0": x - 0.5 + style.inset,
+                    "x1": x + 0.5 - style.inset,
+                    "y0": row - 0.5 + style.inset,
+                    "y1": row + 0.5 - style.inset,
+                    "line": {
+                        "color": MARK_LINE_COLOR,
+                        "width": MARK_LINE_WIDTH,
+                        "dash": style.dash,
+                    },
+                    "layer": "above",
+                }
+            )
+    glyphs: list[dict[str, object]] = []
+    for (site, group), direction in sorted(evidence.columns.items()):
+        if site == OTHER_LABEL:
+            continue
+        pair = [positions.get(f"{site}|{group}_{side}") for side in DIRECTIONS]
+        if None in pair:
+            continue
+        glyphs.append(
+            {
+                "x": sum(x for x in pair if x is not None) / 2.0,
+                "y": 1.0,
+                "xref": xref,
+                "yref": f"{yref} domain",
+                "yshift": 2,
+                "text": COLUMN_MARK_GLYPH[direction],
+                "showarrow": False,
+                "font": {"size": 14, "color": MARK_LINE_COLOR},
+                "xanchor": "center",
+                "yanchor": "bottom",
+            }
+        )
+    return DrawnEvidence(shapes=shapes, glyphs=glyphs, cells=drawn)
+
+
+def _evidence_lines(evidence: EvidenceMarks, drawn: Counter[str], glyphs: int) -> list[str]:
+    """Legend lines for every evidence type, drawn or not, with drawn and corpus counts."""
+    entries = [
+        f"{text} Drawn here: {drawn[kind]} cells. Across the corpus "
+        f"{evidence.corpus_totals.get(kind, 0)} cells meet the rule; the rest are masked, "
+        "outside this figure's rows and columns, or in a pooled Other block, which is never "
+        "marked."
+        for kind, text in evidence.legend.items()
+    ]
+    entries.append(f"{evidence.column_legend} Drawn here: {glyphs} triangles.")
+    entries.extend(evidence.notes)
+    return [
+        "<br>".join(textwrap.wrap(entry, EVIDENCE_WRAP_WIDTH, break_on_hyphens=False))
+        for entry in entries
+    ]
+
+
 def _title_block_height(lines: Sequence[str]) -> int:
     """Room for the title and every subtitle line it renders.
 
@@ -1036,11 +1182,12 @@ def write_figure(
     separate_body_sites: bool = False,
     mark_no_signal: bool = True,
     note: str | None = None,
+    evidence: EvidenceMarks | None = None,
 ) -> Path:
-    """Render the heatmap with one colour scale per trait group.
+    """Render the heatmap with one colour scale per trait group to an image file.
 
     ``note`` is one more subtitle line, which the oxygen guild figure uses to state
-    its population (#783).
+    its population (#783). The figure itself is :func:`build_figure`.
 
     Each group is drawn as its own overlaid trace so it keeps its own hue. With
     ``shared_range`` the traces share the range 0 to the largest observed value,
@@ -1055,6 +1202,49 @@ def write_figure(
     ``mark_no_signal`` off they are left blank instead: the shading dominates the
     figure where the traits are rare, and the state is still recorded in the
     emitted cell-status table.
+    """
+    figure = build_figure(
+        matrix,
+        vintage,
+        guild_order=guild_order,
+        colorscales=colorscales,
+        title=title,
+        group_noun=group_noun,
+        value_phrase=value_phrase,
+        shared_range=shared_range,
+        colorbar_labels=colorbar_labels,
+        range_quantile=range_quantile,
+        separate_body_sites=separate_body_sites,
+        mark_no_signal=mark_no_signal,
+        note=note,
+        evidence=evidence,
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.write_image(str(output_path), scale=2)
+    return output_path
+
+
+def build_figure(
+    matrix: GuildMatrix,
+    vintage: str | None,
+    *,
+    guild_order: Sequence[str] = GUILD_ORDER,
+    colorscales: dict[str, object] | None = None,
+    title: str = "Oxygen guilds by condition and body site",
+    group_noun: str = "guild",
+    value_phrase: str = "guild trait fraction",
+    shared_range: bool = True,
+    colorbar_labels: dict[str, str] | None = None,
+    range_quantile: float = 1.0,
+    separate_body_sites: bool = False,
+    mark_no_signal: bool = True,
+    note: str | None = None,
+    evidence: EvidenceMarks | None = None,
+) -> Figure:
+    """Build the figure :func:`write_figure` renders.
+
+    ``evidence`` outlines marked cells, places site glyphs above their columns and
+    adds one legend line per evidence type, with drawn and corpus-wide counts.
     """
     require_plotly()
     import plotly.graph_objects as go
@@ -1131,7 +1321,24 @@ def write_figure(
         if sampled and mark_no_signal
     ]
 
+    overlay = (
+        None
+        if evidence is None
+        else _evidence_overlay(
+            evidence,
+            matrix,
+            row_labels,
+            row_values,
+            range(len(matrix.columns)),
+            xref="x",
+            yref="y",
+        )
+    )
+    glyph_band = 0 if overlay is None else GLYPH_BAND_HEIGHT
     annotations: list[dict[str, object]] = []
+    if overlay is not None:
+        shapes.extend(overlay.shapes)
+        annotations.extend(overlay.glyphs)
     if separate_body_sites:
         # One rule between body-site blocks. With six traits times two directions
         # per site the blocks otherwise run together and the x labels are the only
@@ -1164,7 +1371,7 @@ def write_figure(
                 "y": 1.0,
                 "xref": "x",
                 "yref": "paper",
-                "yshift": 12,
+                "yshift": 12 + glyph_band,
                 "text": f"<b>{_wrapped(site)}</b>",
                 "showarrow": False,
                 "font": {"size": 18},
@@ -1201,6 +1408,11 @@ def write_figure(
         cluster_note,
         *_coverage_note(matrix),
         *([note] if note else []),
+        *(
+            []
+            if evidence is None or overlay is None
+            else _evidence_lines(evidence, overlay.cells, len(overlay.glyphs))
+        ),
         "Annotation shares do not measure patient traits or exposure.",
         f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
@@ -1210,7 +1422,7 @@ def write_figure(
     # 220-pixel margin with the title centred in it let the last subtitle lines run
     # over the top rows (#783). A fixed 420 pixels with site headers let the
     # Table 1-trait maps' population line run into a two-line header (#811).
-    top = _title_block_height(lines)
+    top = _title_block_height(lines) + glyph_band
     if separate_body_sites:
         top += SITE_HEADER_HEIGHT
     height = ROW_HEIGHT * len(row_labels) + 300 + top
@@ -1225,9 +1437,7 @@ def write_figure(
         height=height,
         margin={"l": 300, "b": 300, "t": top},
     )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    figure.write_image(str(output_path), scale=2)
-    return output_path
+    return figure
 
 
 def subset_matrix(
@@ -1352,7 +1562,47 @@ def write_body_site_panels(
     mark_no_signal: bool = True,
     scale_reference: GuildMatrix | None = None,
     note: str | None = None,
+    evidence: EvidenceMarks | None = None,
 ) -> Path:
+    """Render :func:`build_body_site_panels` to an image file."""
+    figure = build_body_site_panels(
+        matrix,
+        vintage,
+        sites=sites,
+        guild_order=guild_order,
+        colorscales=colorscales,
+        title=title,
+        group_noun=group_noun,
+        value_phrase=value_phrase,
+        colorbar_labels=colorbar_labels,
+        range_quantile=range_quantile,
+        mark_no_signal=mark_no_signal,
+        scale_reference=scale_reference,
+        note=note,
+        evidence=evidence,
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.write_image(str(output_path), scale=2)
+    return output_path
+
+
+def build_body_site_panels(
+    matrix: GuildMatrix,
+    vintage: str | None,
+    *,
+    sites: Sequence[str],
+    guild_order: Sequence[str] = GUILD_ORDER,
+    colorscales: dict[str, object] | None = None,
+    title: str = "Body site detail",
+    group_noun: str = "guild",
+    value_phrase: str = "guild trait fraction",
+    colorbar_labels: dict[str, str] | None = None,
+    range_quantile: float = 1.0,
+    mark_no_signal: bool = True,
+    scale_reference: GuildMatrix | None = None,
+    note: str | None = None,
+    evidence: EvidenceMarks | None = None,
+) -> Figure:
     """Draw one panel per named body site, at a width where the labels are readable.
 
     The combined figure fits every site by making each column narrow enough that
@@ -1360,7 +1610,8 @@ def write_body_site_panels(
     blocks out into their own panels: same rows in the same clustered order, same
     per-trait colour ranges as the combined figure so a cell here is the same
     colour there, but with the site named once above the panel and the columns
-    labelled by trait and direction alone.
+    labelled by trait and direction alone. ``evidence`` is drawn as in
+    :func:`build_figure`, per panel.
     """
     require_plotly()
     import plotly.graph_objects as go
@@ -1381,6 +1632,27 @@ def write_body_site_panels(
     missing = [site for site in sites if site not in matrix.body_sites]
     if missing:
         raise ValueError(f"body sites absent from the matrix: {', '.join(missing)}")
+    site_indices = {
+        site: [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
+        for site in sites
+    }
+    overlays = (
+        []
+        if evidence is None
+        else [
+            _evidence_overlay(
+                evidence,
+                matrix,
+                row_labels,
+                row_values,
+                site_indices[site],
+                xref="x" if panel == 1 else f"x{panel}",
+                yref="y" if panel == 1 else f"y{panel}",
+            )
+            for panel, site in enumerate(sites, start=1)
+        ]
+    )
+    glyph_band = 0 if evidence is None else GLYPH_BAND_HEIGHT
 
     # Colour ranges come from ``scale_reference`` when one is given - the full
     # matrix - rather than from the panels, so a cell keeps the same colour in
@@ -1424,13 +1696,22 @@ def write_body_site_panels(
         f"blank row here was drawn in another body site.{grey_note}",
         *_coverage_note(matrix),
         *([note] if note else []),
+        *(
+            []
+            if evidence is None
+            else _evidence_lines(
+                evidence,
+                sum((overlay.cells for overlay in overlays), Counter()),
+                sum(len(overlay.glyphs) for overlay in overlays),
+            )
+        ),
         "Annotation shares do not measure patient traits or exposure.",
         f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
-    # Sized from the subtitle and the site titles under it, as in ``write_figure``.
+    # Sized from the subtitle and the site titles under it, as in ``build_figure``.
     # A fixed 400 pixels with the title centred in it let a panel's last subtitle
     # lines run into its site titles and top row (#811).
-    top = _title_block_height(lines) + SITE_HEADER_HEIGHT
+    top = _title_block_height(lines) + SITE_HEADER_HEIGHT + glyph_band
 
     count = len(guild_order)
     # All six bars on one line. Plotly places a horizontal bar's title a fixed
@@ -1448,8 +1729,27 @@ def write_body_site_panels(
         (legend_height - 80.0 - row * LEGEND_ROW_PITCH) / height for row in range(legend_depth)
     ]
     shapes: list[dict[str, object]] = []
+    # One colour bar per trait for the whole figure, carried by the last panel that
+    # draws a cell of that trait: plotly drops the bar of a trace with no values, so
+    # a trait absent from the last panel would otherwise lose its bar (#217).
+    scale_panel = {
+        guild: max(
+            (
+                panel
+                for panel, site in enumerate(sites, start=1)
+                if any(
+                    row[i] is not None
+                    for row in row_values
+                    for i in site_indices[site]
+                    if _guild_of_column(matrix.columns[i]) == guild
+                )
+            ),
+            default=len(sites),
+        )
+        for guild in guild_order
+    }
     for panel, site in enumerate(sites, start=1):
-        indices = [i for i, column in enumerate(matrix.columns) if _site_of_column(column) == site]
+        indices = site_indices[site]
         # The site is named once above the panel, so a column only has to carry its
         # trait and direction.
         tick_text = []
@@ -1473,8 +1773,7 @@ def write_body_site_panels(
                     zmax=scale_max[guild],
                     hoverongaps=False,
                     name=guild,
-                    # One colour bar per trait for the whole figure, not per panel.
-                    showscale=panel == len(sites),
+                    showscale=panel == scale_panel[guild],
                     colorbar={
                         # The unit is in the subtitle: three bars across a narrow
                         # figure leave no room to repeat it under each one.
@@ -1517,6 +1816,8 @@ def write_body_site_panels(
                 if flags[i]
             )
 
+    for overlay in overlays:
+        shapes.extend(overlay.shapes)
     figure.update_layout(
         title={
             "text": f"{title}<br><sub>{'<br>'.join(lines)}</sub>",
@@ -1539,10 +1840,11 @@ def write_body_site_panels(
     figure.update_yaxes(title_text="condition", row=1, col=1)
     for annotation in figure.layout.annotations[: len(sites)]:
         annotation.font = {"size": 18}
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    figure.write_image(str(output_path), scale=2)
-    return output_path
+        annotation.yshift = glyph_band
+    for overlay in overlays:
+        for glyph in overlay.glyphs:
+            figure.add_annotation(glyph)
+    return figure
 
 
 def build_parser() -> argparse.ArgumentParser:

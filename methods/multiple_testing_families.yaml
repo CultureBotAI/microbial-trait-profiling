@@ -5332,6 +5332,196 @@
         }
       ],
       "launcher": true
+    },
+    {
+      "family_id": "mt-table1-evidence-site-composition",
+      "area": "Table 1 map evidence marks",
+      "hypotheses": "One selected trait in one exact body-site label: the study-mean standardized log1p(1000*retained-fraction) increased-minus-decreased contrast is zero.",
+      "family_definition": "Each exact body site with at least MIN_SITE_PAIRS eligible pairs independently: every trait select_stratum_traits keeps there, untestable members held at p=1.",
+      "size_source": {
+        "kind": "selected_rows",
+        "selection_rule": "Run select_stratum_traits on the site's profiles after zero-total pairs are excluded; test each kept column on one value per unique study.",
+        "count_rule": "Count site_composition rows of one body site whose status is not trait_not_selected_in_site or site_below_min_pairs; family_size repeats it on each row of table1_traits_composition_screen.tsv.",
+        "unfiltered_count_rule": "Count the retained non-MediaDive columns of the analysed profile table before select_stratum_traits."
+      },
+      "primary_procedure": "BH",
+      "comparison_procedure": [],
+      "threshold": "q <= 0.05 for the column triangle; q exported",
+      "outputs": [
+        {
+          "file": "table1_traits_composition_screen.tsv",
+          "column": "p_value,q_value,family,family_size"
+        }
+      ],
+      "deliberate_difference": "BH per exact body-site label keeps the composition arm's study-level family for the map triangles while replacing its display-defined body_site_group strata (#176, #215).",
+      "anchors": [
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "_correct",
+          "procedures": [
+            "BH"
+          ]
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "composition_contrasts",
+          "procedures": []
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "build_evidence",
+          "procedures": []
+        },
+        {
+          "path": "src/mtp/table1_trait_maps.py",
+          "function": "main",
+          "procedures": []
+        }
+      ],
+      "procedure_role": "Display evidence for the Table 1 maps (#172); no family here is a primary inferential claim about a cell.",
+      "policy_rule": [
+        "R1",
+        "R2",
+        "R4",
+        "R5",
+        "R7"
+      ],
+      "open_issue": [
+        172,
+        215
+      ],
+      "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
+      "consumers": [
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "evidence_marks"
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "report_lines"
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "write_evidence_tables"
+        }
+      ]
+    },
+    {
+      "family_id": "mt-table1-evidence-cell-composition",
+      "area": "Table 1 map evidence marks",
+      "hypotheses": "One selected trait in one exact condition of a tested body site: the study-mean standardized increased-minus-decreased contrast is zero.",
+      "family_definition": "One family over every condition with at least MIN_CELL_STUDIES studies in every tested site, crossed with that site's selected traits; untestable members held at p=1.",
+      "size_source": {
+        "kind": "executed_inventory",
+        "selection_rule": "Within each tested site, group its pairs by exact condition, reuse the site's trait selection and z scale, and keep conditions with at least MIN_CELL_STUDIES unique studies.",
+        "count_rule": "Count condition_site_composition rows with family all_condition_site_cells; family_size repeats it on each row."
+      },
+      "primary_procedure": "BH",
+      "comparison_procedure": [],
+      "threshold": "q <= 0.05 for the dotted cell outline; q exported",
+      "outputs": [
+        {
+          "file": "table1_traits_composition_screen.tsv",
+          "column": "p_value,q_value,family,family_size"
+        }
+      ],
+      "deliberate_difference": "One BH family across all condition-by-site cells, so a dotted outline is never selected from a per-site family the figure chose (#177).",
+      "anchors": [
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "_correct",
+          "procedures": [
+            "BH"
+          ]
+        }
+      ],
+      "procedure_role": "Display evidence for the Table 1 maps (#172); no family here is a primary inferential claim about a cell.",
+      "policy_rule": [
+        "R1",
+        "R2",
+        "R4",
+        "R5",
+        "R7"
+      ],
+      "open_issue": [
+        172,
+        215
+      ],
+      "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
+      "consumers": [
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "evidence_marks"
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "report_lines"
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "write_evidence_tables"
+        }
+      ]
+    },
+    {
+      "family_id": "mt-table1-evidence-six-trait-sensitivity",
+      "area": "Table 1 map evidence marks",
+      "hypotheses": "The same site and cell contrasts, restricted to the six Table 1 traits.",
+      "family_definition": "The six Table 1 traits within each site family, and within the cell family, untestable members held at p=1; a labelled sensitivity column only.",
+      "size_source": {
+        "kind": "selected_rows",
+        "selection_rule": "Keep the rows of the site and cell families whose column is one of the six Table 1 trait columns.",
+        "count_rule": "table1_family_size on each contrast row.",
+        "unfiltered_count_rule": "family_size of the parent site or cell family on the same row."
+      },
+      "primary_procedure": "none",
+      "comparison_procedure": [
+        "BH"
+      ],
+      "threshold": "none; table1_q_value exported for comparison",
+      "outputs": [
+        {
+          "file": "table1_traits_composition_contrasts.tsv",
+          "column": "table1_family_size,table1_q_value"
+        }
+      ],
+      "deliberate_difference": "Reported only to show how much a six-trait family understates q when the six traits were selected on this corpus (#215).",
+      "anchors": [
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "_correct",
+          "procedures": [
+            "BH"
+          ]
+        }
+      ],
+      "procedure_role": "Display evidence for the Table 1 maps (#172); no family here is a primary inferential claim about a cell.",
+      "policy_rule": [
+        "R1",
+        "R2",
+        "R4",
+        "R5",
+        "R7"
+      ],
+      "open_issue": [
+        172,
+        215
+      ],
+      "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
+      "consumers": [
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "evidence_marks"
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "report_lines"
+        },
+        {
+          "path": "src/mtp/table1_evidence.py",
+          "function": "write_evidence_tables"
+        }
+      ]
     }
   ],
   "infrastructure": [
@@ -5847,6 +6037,28 @@
     {
       "path": "src/mtp/trait_screen.py",
       "function": "step_up_array",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/table1_evidence.py",
+      "function": "_correct",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/table1_evidence.py",
+      "function": "build_evidence",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/table1_evidence.py",
+      "function": "composition_contrasts",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/table1_trait_maps.py",
+      "function": "main",
       "counts": {}
     }
   ],
