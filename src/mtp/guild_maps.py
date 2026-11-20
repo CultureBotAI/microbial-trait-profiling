@@ -541,10 +541,27 @@ def study_direction_means(
     }
 
 
-def _sign(value: float) -> int:
+def contrast_sign(value: float) -> int:
+    """Return the sign of a paired contrast, 0 within ``SIGN_TOLERANCE`` of zero."""
     if abs(value) < SIGN_TOLERANCE:
         return 0
     return 1 if value > 0 else -1
+
+
+_sign = contrast_sign
+
+
+def exact_mcnemar_p(first_up: int, second_up: int) -> float | None:
+    """Exact two-sided McNemar p-value on the two discordant pair counts.
+
+    The test is a binomial test of ``first_up`` out of all discordant pairs
+    against one half. ``None`` when no pair is discordant: there is then no test,
+    and 1.0 would read as "tested, no difference".
+    """
+    discordant = first_up + second_up
+    if not discordant:
+        return None
+    return float(binomtest(first_up, discordant, p=0.5).pvalue)
 
 
 def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
@@ -570,7 +587,7 @@ def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
             dec = per_key.get(f"{guild}_dec")
             if inc is None or dec is None:
                 continue
-            sign = _sign(inc - dec)
+            sign = contrast_sign(inc - dec)
             if sign == 0:
                 continue
             signs[study][guild] = sign
@@ -590,11 +607,7 @@ def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
     # like one (#289). This is the fault the Table 1 arm already fixed; the guild
     # arm carried it until now. Neither branch fires on the pinned corpus.
     n_discordant = aerobe_up_anaerobe_down + anaerobe_up_aerobe_down
-    mcnemar_p = (
-        float(binomtest(aerobe_up_anaerobe_down, n_discordant, p=0.5).pvalue)
-        if n_discordant
-        else None
-    )
+    mcnemar_p = exact_mcnemar_p(aerobe_up_anaerobe_down, anaerobe_up_aerobe_down)
     odds_ratio = (
         aerobe_up_anaerobe_down / anaerobe_up_aerobe_down if anaerobe_up_aerobe_down else None
     )

@@ -11,14 +11,15 @@ BugSigDB vintage the numbers came from.
 | `table1_traits_condition_body_site_heatmap.png` | `src/mtp/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_first_last_body_site_panels.png` | `src/mtp/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/mtp/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
+| `gram_{positive,negative}_{inc,dec}_sankey.png`, `gram_sankey_edges.tsv` | `src/mtp/gram_sankey.py` | `just gram-sankey` | [`gram_stain_sankey.md`](gram_stain_sankey.md) |
 | Matched-corpus Table 1-trait analog source contributions and genus/family influence TSVs | `src/mtp/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md); [measured results and cross-scale interpretation flags](table1_taxon_influence_results.md) |
 | Additional lineage exclusions, removed annotation mass and study omissions (no figure) | `src/mtp/influence_extension.py` | `just table1-influence-extension` | [`table1_influence_extension.md`](table1_influence_extension.md) |
 | `trait_direction_screen.tsv` (no figure) | `src/mtp/trait_screen.py` | `just trait-direction-screen` | [`trait_direction_screen.md`](trait_direction_screen.md) |
 | `trait_coupling_loto_matrix.tsv`, `trait_coupling_lco_summary.tsv`, `trait_coupling_report.txt` (no figure) | `src/mtp/coupling.py` | `just audit-trait-coupling` | [`trait_coupling_sensitivity.md`](trait_coupling_sensitivity.md) |
 
-Figures write to `data/derived/guild_maps/` and `data/derived/table1_traits/`
-alongside the tab-separated tables backing them, so every number quoted in a
-methods file can be checked without measuring pixels. Those outputs are
+Figures write to `data/derived/guild_maps/`, `data/derived/table1_traits/` and
+`data/derived/gram_sankey/` alongside the tab-separated tables backing them, so
+every number quoted in a methods file can be checked without measuring pixels. Those outputs are
 gitignored and are meant to be regenerated from the recipe rather than committed.
 PNG export needs a headless Chrome (kaleido 1.x); run `just get-chrome` once —
 it fetches a version-pinned Chrome for Testing build (~170 MB) that kaleido

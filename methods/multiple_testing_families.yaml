@@ -5332,6 +5332,132 @@
         }
       ],
       "launcher": true
+    },
+    {
+      "family_id": "mt-supp-gram-sankey-flow-sign",
+      "inventory_ids": [
+        "supp-gram-sankey-flow-sign"
+      ],
+      "area": "Gram-stain directional Sankey",
+      "hypotheses": "One gram class in one condition and body site: the study-mean increased-minus-decreased gram-class fraction has equally likely positive and negative non-tied signs (exact two-sided binomial sign test).",
+      "family_definition": "One family per gram class (gram positive, gram negative): every condition -> body site flow of that class whose non-tied study count reaches min_studies.",
+      "size_source": {
+        "kind": "selected_rows",
+        "selection_rule": "build_flows keeps a flow for testing when its up plus down study count is at least min_studies (default 3). The rule reads support only, before any test, and never the sign balance or a p-value.",
+        "count_rule": "Count flows of the gram class whose status is tested in this execution; written on every row as sign_test_family_size.",
+        "unfiltered_count_rule": "Count every condition and body site in site_contrasts for this execution, before the support rule; written on every row as sign_test_unfiltered_flows."
+      },
+      "primary_procedure": "BH",
+      "comparison_procedure": [
+        "BY"
+      ],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R6/R7; BH is primary and BY is written beside it.",
+      "threshold": "BH q <= 0.05 draws a flow dark; BY q is reported, not thresholded in the figure.",
+      "outputs": [
+        {
+          "file": "gram_sankey_edges.tsv",
+          "column": "sign_test_p_nominal,sign_test_bh_q,sign_test_by_q,sign_test_family_id,sign_test_family_size,sign_test_unfiltered_flows,primary_correction,q_threshold"
+        },
+        {
+          "file": "gram_sankey_summary.json",
+          "column": "sign_test"
+        }
+      ],
+      "consumers": [
+        {
+          "path": "src/mtp/gram_sankey.py",
+          "function": "write_sankey"
+        },
+        {
+          "path": "src/mtp/gram_sankey.py",
+          "function": "summarize"
+        }
+      ],
+      "policy_rule": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R6",
+        "R7"
+      ],
+      "deliberate_difference": "BH is primary because the flows are a directional view over condition x body-site cells, the heatmap-cell case of methods/multiple_testing_policy.md R4, and it is the procedure the #223 review fix specified; BY is written beside it. The two gram-class families hold the same studies and near-complementary shares, so they are not independent evidence.",
+      "open_issue": [
+        147,
+        223
+      ],
+      "conformance_status": "New family (#147, #223). The edge table records family id, selected size, unfiltered inventory, procedure and threshold on every row; this registry does not certify consumers outside src/mtp/gram_sankey.py.",
+      "anchors": [
+        {
+          "path": "src/mtp/gram_sankey.py",
+          "function": "_corrected",
+          "procedures": [
+            "BH",
+            "BY"
+          ]
+        }
+      ]
+    },
+    {
+      "family_id": "mt-supp-gram-sankey-site-mcnemar",
+      "inventory_ids": [
+        "supp-gram-sankey-site-mcnemar"
+      ],
+      "area": "Gram-stain directional Sankey",
+      "hypotheses": "One condition and body site: among studies whose gram-positive and gram-negative contrasts have opposite signs, each discordant direction is equally likely (exact McNemar, binomial on discordant studies).",
+      "family_definition": "Every condition and body site whose discordant study count reaches min_studies.",
+      "size_source": {
+        "kind": "selected_rows",
+        "selection_rule": "site_mcnemar_tests keeps a condition and body site for testing when its discordant study count is at least min_studies (default 3). The rule reads support only, before any test.",
+        "count_rule": "Count conditions and body sites whose mcnemar_status is tested in this execution; written on every row as mcnemar_family_size.",
+        "unfiltered_count_rule": "Count every condition and body site in site_contrasts for this execution, before the support rule; written on every row as mcnemar_unfiltered_sites."
+      },
+      "primary_procedure": "BH",
+      "comparison_procedure": [
+        "BY"
+      ],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R6/R7; BH is primary and BY is written beside it.",
+      "threshold": "BH q <= 0.05 draws a flow dark; BY q is reported, not thresholded in the figure.",
+      "outputs": [
+        {
+          "file": "gram_sankey_edges.tsv",
+          "column": "mcnemar_p_nominal,mcnemar_bh_q,mcnemar_by_q,mcnemar_family_id,mcnemar_family_size,mcnemar_unfiltered_sites"
+        },
+        {
+          "file": "gram_sankey_summary.json",
+          "column": "mcnemar"
+        }
+      ],
+      "consumers": [
+        {
+          "path": "src/mtp/gram_sankey.py",
+          "function": "summarize"
+        }
+      ],
+      "policy_rule": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R6",
+        "R7"
+      ],
+      "deliberate_difference": "BH is primary to match the per-flow sign-test family it sits beside and the guild figure's paired McNemar convention (#223); BY is written beside it. It tests the pairing of the two gram classes, a different hypothesis from the per-class sign tests over the same studies.",
+      "open_issue": [
+        147,
+        223
+      ],
+      "conformance_status": "New family (#147, #223). The edge table records family id, selected size, unfiltered inventory, procedure and threshold on every row; this registry does not certify consumers outside src/mtp/gram_sankey.py.",
+      "anchors": [
+        {
+          "path": "src/mtp/gram_sankey.py",
+          "function": "_corrected",
+          "procedures": [
+            "BH",
+            "BY"
+          ]
+        }
+      ]
     }
   ],
   "infrastructure": [
@@ -5634,6 +5760,14 @@
       "path": "src/mtp/enrichment_stats.py",
       "function": "benjamini_hochberg",
       "counts": {}
+    },
+    {
+      "path": "src/mtp/gram_sankey.py",
+      "function": "_corrected",
+      "counts": {
+        "BH": 1,
+        "BY": 1
+      }
     },
     {
       "path": "src/mtp/influence_extension.py",

@@ -944,6 +944,13 @@ get-chrome:
 guild-maps:
 	just timed guild-maps "uv run python scripts/create_guild_maps.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\""
 
+# Same inputs and corpus filters as guild-maps, over the gram-stain pair instead of the
+# oxygen guilds. Writes four Sankey PNGs (gram positive/negative x net increased/decreased),
+# the edge table with every flow's sign test and its site's McNemar, and a summary JSON
+# to data/derived/gram_sankey/. Needs a local Chrome for the PNGs (`just get-chrome`).
+gram-sankey:
+	just timed gram-sankey "uv run python scripts/create_gram_sankey.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\""
+
 # Same inputs and same corpus filters as guild-maps, but over the six individual
 # traits of manuscript Table 1 instead of the two pooled oxygen guilds. Writes the
 # combined condition x body-site heatmap, the paired directional-shift figure, and
