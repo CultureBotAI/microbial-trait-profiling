@@ -38,6 +38,13 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields, replace
 from pathlib import Path
 
+from mtp.count_input import (
+    COVERAGE_COUNT_COLUMNS,
+    COVERAGE_STATUSES,
+    ProfileCoverage,
+    profile_count_reader,
+    read_profile_coverage,
+)
 from mtp.guild_maps import (
     CELL_BELOW_MIN_STUDIES,
     CELL_NO_SIGNAL,
@@ -69,8 +76,10 @@ from mtp.trait_guilds import (
     load_profiles,
     read_bugsigdb_vintage,
     resolve_trait_columns,
+    retained_trait_columns,
     write_stats_report,
 )
+from mtp.workflow.coverage import feature_filter_id
 
 #: Declared term ids and the raw matrix columns they resolved to, per feature.
 #: The raw column is the only key that joins a result back to the matrix: two of
@@ -1660,6 +1669,125 @@ def _orientation_status(content: Mapping[str, object], issue: str) -> Assessment
     )
 
 
+_CoverageKey = tuple[str, str, str]
+
+
+@dataclass(frozen=True)
+class CoverageBinding:
+    """The profiles and feature vocabulary a #184 coverage sidecar must describe."""
+
+    #: Every profile the table analyses, before the zero-total pair exclusion.
+    analysed_profiles: frozenset[_CoverageKey]
+    #: The analysed profiles left after that exclusion.
+    compared_profiles: frozenset[_CoverageKey]
+    #: ``feature_filter_id`` of the retained columns that form every profile total.
+    feature_filter_id: str
+
+
+def coverage_binding(
+    profile_input: Path, analysed: Iterable[Profile], compared: Iterable[Profile]
+) -> CoverageBinding:
+    """Bind coverage to this table's profiles and retained-annotation vocabulary."""
+    _, columns, _ = retained_trait_columns(profile_count_reader(profile_input).header)
+    return CoverageBinding(
+        analysed_profiles=frozenset((p.study_id, p.experiment_id, p.inc_dec) for p in analysed),
+        compared_profiles=frozenset((p.study_id, p.experiment_id, p.inc_dec) for p in compared),
+        feature_filter_id=feature_filter_id(columns),
+    )
+
+
+def _is_coverage_sidecar(path: Path) -> bool:
+    """A TSV is a count-input-v1 profile coverage sidecar; anything else is a JSON status."""
+    return path.name.endswith((".tsv", ".tsv.gz"))
+
+
+def _coverage_sidecar_status(
+    path: Path, issue: str, binding: CoverageBinding | None
+) -> AssessmentStatus:
+    """#184: source annotation coverage of the analysed profiles, and no verdict.
+
+    Coverage is a property of the source: how many reported taxa found a matrix
+    row, and how many of those carry a retained annotation. It is kept apart from
+    the zero-total pair exclusion, which is an analytical rule recorded in
+    ``pair_exclusion``, and from figure masking, which is ``display_status``. The
+    zero-excluded profiles are cross-tabulated here only so the two can be told
+    apart, never so one can stand in for the other.
+    """
+    try:
+        coverage = read_profile_coverage(path)
+    except ValueError as error:
+        return _unreadable(issue, str(error).replace(str(path), path.name))
+    filter_ids = sorted({record.trait_filter_id for record in coverage.values()})
+    source: dict[str, object] = {
+        "path": str(path.resolve()),
+        "sha256": _sha256(path),
+        "format": "profile coverage sidecar (count-input-v1)",
+        "feature_filter_id": filter_ids,
+        "expected_feature_filter_id": binding.feature_filter_id if binding else None,
+        "binding": "not_checked" if binding is None else "matched",
+        "validation_scope": (
+            "Profile keys and the retained feature vocabulary checked against this "
+            "table's inputs; the sidecar records no input hashes of its own"
+            if binding is not None
+            else "No profiles or vocabulary supplied; corpus compatibility not checked"
+        ),
+    }
+    analysed = binding.analysed_profiles if binding is not None else frozenset(coverage)
+    if binding is not None:
+        missing = analysed.difference(coverage)
+        why = ""
+        if filter_ids != [binding.feature_filter_id]:
+            why = "coverage sidecar describes another retained feature vocabulary"
+        elif missing:
+            why = f"coverage sidecar lacks {len(missing)} of {len(analysed)} analysed profiles"
+        if why:
+            source["binding"] = "mismatch_or_missing_identity"
+            return replace(_unreadable(issue, why), source=source)
+    if not analysed:
+        return AssessmentStatus(issue, {}, f"pending {issue}", source=source)
+    rows = [coverage[key] for key in sorted(analysed)]
+    excluded = [
+        coverage[key]
+        for key in sorted(analysed.difference(binding.compared_profiles if binding else analysed))
+    ]
+    detail: list[tuple[str, str, str, str]] = []
+    for scope_kind, records in (
+        ("analysed_profiles", rows),
+        ("zero_total_excluded_profiles", excluded),
+    ):
+        detail += _coverage_counts(scope_kind, records)
+    detail += [
+        ("note", "sidecar_profiles_not_analysed", "profiles", str(len(coverage) - len(analysed))),
+        ("note", "trait_filter_id", "feature_filter_id", filter_ids[0] if filter_ids else ""),
+        ("note", "lineage_resolution", "lineage", "unresolved"),
+    ]
+    incomplete = sum(not record.is_complete for record in rows)
+    # Coverage describes the profiles every procedure here reads, so it reaches
+    # every row through the default, like orientation.
+    return AssessmentStatus(
+        issue,
+        {},
+        f"source coverage described, {incomplete} of {len(rows)} analysed profiles "
+        f"incomplete, no verdict {issue}",
+        tuple(detail),
+        source=source,
+    )
+
+
+def _coverage_counts(
+    scope_kind: str, records: Sequence[ProfileCoverage]
+) -> list[tuple[str, str, str, str]]:
+    counts = [
+        (scope_kind, status, "profiles", str(sum(r.coverage_status == status for r in records)))
+        for status in COVERAGE_STATUSES
+    ]
+    counts += [
+        (scope_kind, "taxa", column, str(sum(getattr(r, column) for r in records)))
+        for column in COVERAGE_COUNT_COLUMNS
+    ]
+    return counts
+
+
 def read_status(
     path: Path | None,
     key: str,
@@ -1667,6 +1795,7 @@ def read_status(
     *,
     expected_input_sha256: Mapping[str, str] | None = None,
     supplied: bool | None = None,
+    coverage: CoverageBinding | None = None,
 ) -> AssessmentStatus:
     """Read an assessment and retain how the caller selected its input.
 
@@ -1676,7 +1805,9 @@ def read_status(
     supplied by the caller.
     """
     try:
-        status = _read_status(path, key, issue, expected_input_sha256=expected_input_sha256)
+        status = _read_status(
+            path, key, issue, expected_input_sha256=expected_input_sha256, coverage=coverage
+        )
     except OSError:
         # An influence assessment also hashes its source inside _read_status.
         # Filesystem failures remain an unreadable verdict for every assessment.
@@ -1707,6 +1838,7 @@ def _read_status(
     issue: str,
     *,
     expected_input_sha256: Mapping[str, str] | None = None,
+    coverage: CoverageBinding | None = None,
 ) -> AssessmentStatus:
     """Read one assessment's state from its own output, or say it is pending.
 
@@ -1748,6 +1880,8 @@ def _read_status(
             influence.detail,
             source={"path": str(path.resolve()), "sha256": _sha256(path), "binding": "supplied"},
         )
+    if key == "coverage_status" and _is_coverage_sidecar(path):
+        return _coverage_sidecar_status(path, issue, coverage)
     try:
         content = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
@@ -2696,7 +2830,12 @@ def _build_parser(
     parser.add_argument("--calibration-status", type=Path)
     parser.add_argument("--sensitivity-status", type=Path)
     parser.add_argument("--orientation-provenance", type=Path)
-    parser.add_argument("--coverage-status", type=Path)
+    parser.add_argument(
+        "--coverage-status",
+        type=Path,
+        help="#184 profile coverage sidecar (.tsv or .tsv.gz) for the retained "
+        "non-MediaDive features, such as a core consumer's .coverage.tsv",
+    )
     parser.add_argument("--influence-status", type=Path)
     parser.add_argument(
         "--arm1-pooled-stats",
@@ -2795,6 +2934,7 @@ def _read_assessment_statuses(
     experiments_input: Path,
     full_dump_input: Path,
     supplied: Mapping[str, bool],
+    coverage: CoverageBinding | None = None,
 ) -> dict[str, AssessmentStatus]:
     """Read selected assessments with the producer's exact input identities.
 
@@ -2832,6 +2972,7 @@ def _read_assessment_statuses(
             "#184",
             expected_input_sha256=assessment_inputs,
             supplied=supplied["coverage_status"],
+            coverage=coverage,
         ),
         "orientation_status": read_status(
             args.orientation_provenance,
@@ -3010,8 +3151,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             if candidate is None or not candidate.is_file()
         ]
-        # Nothing produces the #184 coverage status yet, so a complete run may leave it
-        # out and it reads as not supplied; a path that is supplied must exist (#814).
+        # The comparison stage does not pass a #184 coverage sidecar yet, so a complete
+        # run may leave it out and it reads as not supplied; a path that is supplied
+        # must exist (#814).
         if args.coverage_status is not None and not args.coverage_status.is_file():
             missing_files.append("coverage_status")
         if missing_files:
@@ -3038,6 +3180,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         experiments_input=args.experiments_input,
         full_dump_input=args.full_dump_input,
         supplied=assessment_supplied,
+        coverage=coverage_binding(args.profile_input, historical_profiles, profiles),
     )
     if args.require_complete_sources:
         # A status that cannot be read, or that belongs to other input bytes, is no more
