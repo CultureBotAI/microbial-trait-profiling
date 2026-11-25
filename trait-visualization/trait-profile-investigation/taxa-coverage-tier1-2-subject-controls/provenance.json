@@ -1,0 +1,239 @@
+{
+  "schema_version": "1.0",
+  "recipe": "just taxa-coverage",
+  "generated_at": "2026-11-25T19:25:35.539849+00:00",
+  "tables_only": false,
+  "strain_rollup": "phenotype",
+  "strain_rollup_evidence": {
+    "status": "declared_unverified",
+    "source": "required_argument",
+    "limitation": "Input hashes and reconciliation do not verify upstream rollup scope"
+  },
+  "population": {
+    "host_species": "Homo sapiens",
+    "sequencing_types": [
+      "16S",
+      "WMS"
+    ],
+    "contrast_filter": "disease_vs_healthy_tier1_2_subject_controls",
+    "direction_basis": "disease_vs_comparison",
+    "zero_trait_profiles": "included"
+  },
+  "counts": {
+    "input_profiles": 5629,
+    "selected_profiles": 1870,
+    "excluded_profiles": 3759,
+    "input_occurrences": 59486,
+    "selected_occurrences": 19566,
+    "excluded_occurrences": 39920
+  },
+  "taxonomy_diagnosis": {
+    "policy": "coverage-taxonomy-v1",
+    "roots": {
+      "NCBITaxon:2": "bacteria",
+      "NCBITaxon:2157": "archaea",
+      "NCBITaxon:2759": "eukaryota",
+      "NCBITaxon:10239": "viruses",
+      "NCBITaxon:12908": "unclassified_sequences",
+      "NCBITaxon:2787823": "unclassified_sequences"
+    },
+    "validation_population": "all selected reported taxa",
+    "parser_audit": {
+      "parser_contract": "kg-edge-export-v1",
+      "records": 6134514,
+      "header_continuations_reconstructed": 1,
+      "duplicate_agent_fields_preserved": 1,
+      "agent_field_continuations_reconstructed": 190505,
+      "excluded_records": 0,
+      "native_count_columns": [
+        "subject",
+        "predicate",
+        "object"
+      ],
+      "excluded_records_note": "excluded_records counts malformed KG edge records dropped by the strict edge parser (always 0); taxonomy_rank_class_edge_records_skipped counts well-formed NCBITaxon:<name> ontology rank-class subclass_of records skipped during organism-ancestry graph projection, while OBO-form rank-class subjects take the non-NCBITaxon skip (#1008, #1274).",
+      "taxonomy_edge_records": 882440,
+      "taxonomy_rank_class_edge_records_skipped": 41,
+      "unique_taxonomy_edges": 882440,
+      "taxonomy_node_count": 882441
+    },
+    "matrix_kg_identity": "not_verified",
+    "limitation": "The supplied taxonomy is hashed, not verified as the matrix's producing KG"
+  },
+  "inputs": {
+    "taxa": {
+      "file": "data/derived/bugsigdb_taxa.tsv",
+      "sha256": "e7fa982b23ea82456247bcd841fd97d4fe71518e09eaaa27aee65d9adb271c59",
+      "size_bytes": 5851798
+    },
+    "matrix": {
+      "file": "data/derived/taxa_trait_matrix.tsv",
+      "sha256": "6638849b04137de73cad556446a1de024765b2a64301f841386fd9ed7bf389af",
+      "size_bytes": 31559093
+    },
+    "profiles": {
+      "file": "data/derived/study_trait_profiles_wide.tsv",
+      "sha256": "dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2",
+      "size_bytes": 30596643
+    },
+    "experiments": {
+      "file": "data/derived/experiments.tsv",
+      "sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+      "size_bytes": 761423
+    },
+    "taxonomy_edges": {
+      "file": "data/kg-microbe/merged-kg_edges.tsv",
+      "sha256": "d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb",
+      "size_bytes": 1034256091
+    },
+    "raw_dump": {
+      "file": "data/raw/full_dump.csv",
+      "sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788",
+      "size_bytes": 16241290
+    },
+    "kg_provenance": {
+      "file": "data/kg-microbe/provenance.json",
+      "sha256": "49b598a018fce22d8b1d2ee5a6af65133015802260ea444abfcbe20c4bd1e6d2",
+      "size_bytes": 532
+    }
+  },
+  "corpus_identity": {
+    "matrix": {
+      "path": "data/derived/study_trait_profiles_wide.tsv",
+      "sha256": "dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2",
+      "bytes": 30596643,
+      "header_columns": 2635,
+      "identifier_columns": 3,
+      "mediadive_columns": 2290,
+      "retained_trait_columns": 342,
+      "profile_rows": 5629,
+      "metadata_columns": 0
+    },
+    "bugsigdb_vintage": "2026-04-24_00:41_UTC",
+    "kg_microbe": {
+      "release_tag": "20260120",
+      "provenance_path": "data/kg-microbe/provenance.json",
+      "provenance_source": "declared by download sidecar (not measured at matrix build time)",
+      "inputs": [
+        {
+          "name": "merged-kg_edges.tsv",
+          "declared_md5": "555ecf5ba5d89288cdc44e368375374f",
+          "declared_size": 1034256091,
+          "fetched_at": "2026-04-21T00:21:25+00:00",
+          "drive_file_id": "1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d",
+          "present": true,
+          "path": null,
+          "sha256": null,
+          "measured_size": null
+        },
+        {
+          "name": "merged-kg_nodes.tsv",
+          "declared_md5": "dd76b4656f9341db25a7c4afa96cd58e",
+          "declared_size": 209545218,
+          "fetched_at": "2026-04-21T00:21:08+00:00",
+          "drive_file_id": "1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY",
+          "present": true,
+          "path": null,
+          "sha256": null,
+          "measured_size": null
+        }
+      ]
+    },
+    "note": "A matrix is a join of the BugSigDB dump with a KG-Microbe build. Both sides are recorded because the vintage alone does not identify it."
+  },
+  "bugsigdb_vintage_source": "raw_dump_header",
+  "core_feature_filter": "exclude columns containing mediadive case-insensitively",
+  "producer": {
+    "code_commit": "112e2cff972a3ecde8df0da9bc2d3b7a99ba234a",
+    "script_sha256": "08e77d882c6b573b0c25d9d7a66b3ddb6e3dc8a265491cc00c0ce79585cca2f8",
+    "corpus_policy_sha256": "cf9e250049f80f250d9b9c0bdbbf7495053c0f123b15407a3e3a1b9206aee75e",
+    "profile_builder_sha256": "f949445b870d03d18fb1c60272b4a6267fa3bb08c139d7600114e1c140adc738",
+    "corpus_identity_sha256": "78f6e4ab99fca8e50e8785760e0e5ffa79c2838f6e48f3e48151799313506e76",
+    "trait_guilds_sha256": "7add3322478404ba8b2ef86fb839ecb1dd6fd335f7b9770cee220987561cb01f",
+    "taxonomy_parser_sha256": "545371d9a8f37d6e28214c9726dd5decde49ad5e1bc1f8a6bf8e79d27d641096",
+    "taxonomy_graph_sha256": "0ddd67d3bb4a4e41745829f9d122e186d0e14d139f7fb371367e6b21dde29b49",
+    "uv_lock_sha256": "e54339c6213df7dfa877d2a3e6c06ec8c61cb42131b2e7d86a4f1f1cbb4ad484",
+    "coverage_inputs_sha256": "557b562ad396457e3baa2f2c9f42cbb6bb86df255ba7f97c4cf9d7429695131b",
+    "population_tables_sha256": "0f02ea16594d06a7af1d986141e2a19c061ac9678bf74fe89a2aac629d9e3eca"
+  },
+  "outputs": {
+    "taxa_coverage_by_rank.tsv": {
+      "sha256": "751de152e846b086fc5fee28cda96596cf6116acb165ad86a55727d2dc9763eb",
+      "size_bytes": 1323
+    },
+    "profile_coverage_by_rank.tsv": {
+      "sha256": "dcc02d446782cad2f6cc3b763c7332ee4b0b894562096c708ff633ee5a5abe67",
+      "size_bytes": 978
+    },
+    "profile_trait_mapping_summary.tsv": {
+      "sha256": "dbaa6c76e10c463cda0281a45d5f896df06d3a3dbb302306990cf0d739bfc2d3",
+      "size_bytes": 271188
+    },
+    "taxa_kgmicrobe_coverage_details.tsv": {
+      "sha256": "77d3353417ed23ba4dddbe39f30f827541f6a68a57a497ff7c88a5f3c7871171",
+      "size_bytes": 234630
+    },
+    "top_zero_trait_bugsigdb_taxa.tsv": {
+      "sha256": "78605da65ad7df5b2fb59e9697a51af5015b10092e08a088255a3a4771f7aceb",
+      "size_bytes": 22593
+    },
+    "README.md": {
+      "sha256": "2e9e3ab67684801405b1568d11021d9c4765f44d2319a58050bfbdadd05d4141",
+      "size_bytes": 4680
+    },
+    "taxa_coverage_histogram_rank_stratified.png": {
+      "sha256": "1fb0d51ce8fc22b882cfce41fb5ed6647332bba31abd2c17e7bf85afab07211b",
+      "size_bytes": 489693
+    },
+    "taxa_coverage_histogram_rank_stratified.svg": {
+      "sha256": "0b188fbb314f5dd83b18e7f1b620452ae279993d07569b0797910f412d5c1618",
+      "size_bytes": 148605
+    },
+    "taxa_coverage_occurrences_vs_unique.png": {
+      "sha256": "c3ef6c473bc74377e9d67b2f3369363174cb0d87616b6a02ff4cf041e762eae8",
+      "size_bytes": 268895
+    },
+    "taxa_coverage_occurrences_vs_unique.svg": {
+      "sha256": "1a8f35e83f00ddf991b018c5d5b2062350e58bb75fca35011cde08c2230ec369",
+      "size_bytes": 96529
+    },
+    "taxa_profile_distribution_by_rank.png": {
+      "sha256": "9f2f5464e67f395e5399b669f21c0252f4156bdc3ec9d2070d299235e2a52b0c",
+      "size_bytes": 408561
+    },
+    "taxa_profile_distribution_by_rank.svg": {
+      "sha256": "d4de79afba475e397205703308ef0dd8ee4bc364e5bb2c0cfb40b203401253db",
+      "size_bytes": 159710
+    },
+    "histogram1_mapped_traits_and_taxa_per_profile.png": {
+      "sha256": "2bde3e01899d559da61f13fc011a0f23dd689ddd953b5da76c45d11be0acdf33",
+      "size_bytes": 455732
+    },
+    "histogram1_mapped_traits_and_taxa_per_profile.svg": {
+      "sha256": "a173476a4efba33b26c272762975077e23f2f2f66108d0aca15f7d78f62d4501",
+      "size_bytes": 165047
+    },
+    "histogram2_taxa_trait_counts_and_zero_trait_frequency.png": {
+      "sha256": "b2d36dcd0f3f198259b46a109327c046a2f15c1f32bdc976a709792ba58a1e79",
+      "size_bytes": 714771
+    },
+    "histogram2_taxa_trait_counts_and_zero_trait_frequency.svg": {
+      "sha256": "3b57c3cc9cec01855e040628105654c828d3a322b127ec41d00ae7d0e3678a88",
+      "size_bytes": 238732
+    },
+    "taxa_trait_count_distribution.png": {
+      "sha256": "7bb56edd9ec14d1312f95cff801ddc2b73da2b8e60a718f5a423795ae18ce1a6",
+      "size_bytes": 341408
+    },
+    "taxa_trait_count_distribution.svg": {
+      "sha256": "3155d5cb06f69705957214c57e490e74cb2024987463a3f7e99acf38683b8b20",
+      "size_bytes": 146870
+    }
+  },
+  "contrast_selection": {
+    "contrast_population": "disease_vs_healthy_tier1_2_subject_controls",
+    "input_direction_basis": "group_1_vs_group_0",
+    "output_direction_basis": "disease_vs_comparison",
+    "reoriented_experiments": 1,
+    "source": "explicit_selection"
+  }
+}
