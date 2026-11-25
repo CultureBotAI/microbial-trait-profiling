@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "recipe": "just taxa-coverage",
-  "generated_at": "2026-10-23T23:39:40.211871+00:00",
+  "generated_at": "2026-11-25T19:23:59.005896+00:00",
   "tables_only": false,
   "strain_rollup": "phenotype",
   "strain_rollup_evidence": {
@@ -27,6 +27,38 @@
     "selected_occurrences": 46865,
     "excluded_occurrences": 12621
   },
+  "taxonomy_diagnosis": {
+    "policy": "coverage-taxonomy-v1",
+    "roots": {
+      "NCBITaxon:2": "bacteria",
+      "NCBITaxon:2157": "archaea",
+      "NCBITaxon:2759": "eukaryota",
+      "NCBITaxon:10239": "viruses",
+      "NCBITaxon:12908": "unclassified_sequences",
+      "NCBITaxon:2787823": "unclassified_sequences"
+    },
+    "validation_population": "all selected reported taxa",
+    "parser_audit": {
+      "parser_contract": "kg-edge-export-v1",
+      "records": 6134514,
+      "header_continuations_reconstructed": 1,
+      "duplicate_agent_fields_preserved": 1,
+      "agent_field_continuations_reconstructed": 190505,
+      "excluded_records": 0,
+      "native_count_columns": [
+        "subject",
+        "predicate",
+        "object"
+      ],
+      "excluded_records_note": "excluded_records counts malformed KG edge records dropped by the strict edge parser (always 0); taxonomy_rank_class_edge_records_skipped counts well-formed NCBITaxon:<name> ontology rank-class subclass_of records skipped during organism-ancestry graph projection, while OBO-form rank-class subjects take the non-NCBITaxon skip (#1008, #1274).",
+      "taxonomy_edge_records": 882440,
+      "taxonomy_rank_class_edge_records_skipped": 41,
+      "unique_taxonomy_edges": 882440,
+      "taxonomy_node_count": 882441
+    },
+    "matrix_kg_identity": "not_verified",
+    "limitation": "The supplied taxonomy is hashed, not verified as the matrix's producing KG"
+  },
   "inputs": {
     "taxa": {
       "file": "data/derived/bugsigdb_taxa.tsv",
@@ -35,18 +67,23 @@
     },
     "matrix": {
       "file": "data/derived/taxa_trait_matrix.tsv",
-      "sha256": "45df0fe7120455a93361d79181953c338405160fff7a2e78d2a7d8d18584ec8e",
-      "size_bytes": 31582534
+      "sha256": "6638849b04137de73cad556446a1de024765b2a64301f841386fd9ed7bf389af",
+      "size_bytes": 31559093
     },
     "profiles": {
       "file": "data/derived/study_trait_profiles_wide.tsv",
-      "sha256": "43b2e2302b0edf4836a21e247329a6cbf3245036d350ab533325596de897f4d0",
-      "size_bytes": 30625375
+      "sha256": "dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2",
+      "size_bytes": 30596643
     },
     "experiments": {
       "file": "data/derived/experiments.tsv",
       "sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
       "size_bytes": 761423
+    },
+    "taxonomy_edges": {
+      "file": "data/kg-microbe/merged-kg_edges.tsv",
+      "sha256": "d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb",
+      "size_bytes": 1034256091
     },
     "raw_dump": {
       "file": "data/raw/full_dump.csv",
@@ -62,12 +99,12 @@
   "corpus_identity": {
     "matrix": {
       "path": "data/derived/study_trait_profiles_wide.tsv",
-      "sha256": "43b2e2302b0edf4836a21e247329a6cbf3245036d350ab533325596de897f4d0",
-      "bytes": 30625375,
-      "header_columns": 2637,
+      "sha256": "dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2",
+      "bytes": 30596643,
+      "header_columns": 2635,
       "identifier_columns": 3,
       "mediadive_columns": 2290,
-      "retained_trait_columns": 344,
+      "retained_trait_columns": 342,
       "profile_rows": 5629,
       "metadata_columns": 0
     },
@@ -106,13 +143,17 @@
   "bugsigdb_vintage_source": "raw_dump_header",
   "core_feature_filter": "exclude columns containing mediadive case-insensitively",
   "producer": {
-    "code_commit": "511c891229b659e207cfe0f4281a97c3fc039a80+dirty",
-    "script_sha256": "af6bbb5524d866a134d15345c959b0ff8cfed7f382a44b092dbb1074398f2935",
-    "corpus_policy_sha256": "8f5d8e4371834f2039510f754d9a6397a0f3bd93b849afb40e9b9cfcc22e74b8",
-    "profile_builder_sha256": "f90a77e5f68498d3e734088524c9fc5ea667c43d7a25b9923b4f8ae4921fd9d2",
-    "corpus_identity_sha256": "900fbcee740cbc8021994173711f02e7206580203c9cf6725fb66e22f1bcf99e",
-    "trait_guilds_sha256": "8945fb5c8f6928f5edabc2d162d2755825e923d0a7f9f2b78913ed550ecec89c",
-    "uv_lock_sha256": "1d3b96547698627125de773066562912773097dc47d981b898d117af4663267c"
+    "code_commit": "da35d9e5dd40483791667a9f07ed15eed5ac08b5",
+    "script_sha256": "08e77d882c6b573b0c25d9d7a66b3ddb6e3dc8a265491cc00c0ce79585cca2f8",
+    "corpus_policy_sha256": "cf9e250049f80f250d9b9c0bdbbf7495053c0f123b15407a3e3a1b9206aee75e",
+    "profile_builder_sha256": "f949445b870d03d18fb1c60272b4a6267fa3bb08c139d7600114e1c140adc738",
+    "corpus_identity_sha256": "78f6e4ab99fca8e50e8785760e0e5ffa79c2838f6e48f3e48151799313506e76",
+    "trait_guilds_sha256": "7add3322478404ba8b2ef86fb839ecb1dd6fd335f7b9770cee220987561cb01f",
+    "taxonomy_parser_sha256": "545371d9a8f37d6e28214c9726dd5decde49ad5e1bc1f8a6bf8e79d27d641096",
+    "taxonomy_graph_sha256": "0ddd67d3bb4a4e41745829f9d122e186d0e14d139f7fb371367e6b21dde29b49",
+    "uv_lock_sha256": "e54339c6213df7dfa877d2a3e6c06ec8c61cb42131b2e7d86a4f1f1cbb4ad484",
+    "coverage_inputs_sha256": "557b562ad396457e3baa2f2c9f42cbb6bb86df255ba7f97c4cf9d7429695131b",
+    "population_tables_sha256": "0f02ea16594d06a7af1d986141e2a19c061ac9678bf74fe89a2aac629d9e3eca"
   },
   "outputs": {
     "taxa_coverage_by_rank.tsv": {
@@ -120,24 +161,24 @@
       "size_bytes": 1481
     },
     "profile_coverage_by_rank.tsv": {
-      "sha256": "d9b3aebdb95bd94b388112bc7b001101e4f3f8dcaf10fea6287a028516f5cc28",
+      "sha256": "3b06d0d3e7cf269782bb5f14f402465743bc912aa28da2a8c0b7de518776554d",
       "size_bytes": 1077
     },
     "profile_trait_mapping_summary.tsv": {
-      "sha256": "1aeb1c565fdd8a537ee3c5084f7eff0530d1931c42f49b67b98eab4b73b8faf9",
-      "size_bytes": 811046
+      "sha256": "b37d205941f01c408cad38796f17396502481786d384cbb80fce39d1559753a8",
+      "size_bytes": 810975
     },
     "taxa_kgmicrobe_coverage_details.tsv": {
-      "sha256": "814128594c6d5d4640600fe8ffab2bd5d3a781c31740395ad601f91e11b3e420",
-      "size_bytes": 350586
+      "sha256": "355fc549f8c537b2cd4cd3a180e2d6f22f46527d646ec0c3ca934191dc44b368",
+      "size_bytes": 350553
     },
     "top_zero_trait_bugsigdb_taxa.tsv": {
-      "sha256": "12ca732f17ca1f244eaa8f48de802e295e845e0536bf0c8235e39ab65730bd05",
-      "size_bytes": 17586
+      "sha256": "b79e1f7edf95353370246b8f8409006a262e57883e9c6639838cdc8e44daafde",
+      "size_bytes": 22693
     },
     "README.md": {
-      "sha256": "7107800a7fce86040d769b8184f9e1544e0d8846549c9a1890bb623225a49090",
-      "size_bytes": 3617
+      "sha256": "ebc1a487d42e02efde1b9a9dbaf0fb68fe50adde9933dc24f6a3065aa8cf7c32",
+      "size_bytes": 4538
     },
     "taxa_coverage_histogram_rank_stratified.png": {
       "sha256": "595efca25e33e4fc91de8bf99a2eb682d511a01382e067a512cea50172b983ac",
@@ -156,36 +197,36 @@
       "size_bytes": 96970
     },
     "taxa_profile_distribution_by_rank.png": {
-      "sha256": "ac4093598a56ae94f1514bf98d44d93409721c8407b412c4172e553730d34aef",
-      "size_bytes": 448642
+      "sha256": "ae40bf3f0348deff66249c0fe6b83da60644fc19885a625f8602d53e0f220ab0",
+      "size_bytes": 447612
     },
     "taxa_profile_distribution_by_rank.svg": {
-      "sha256": "d807c054bddb754b647c2186cf667b93e2cd5694bda271ba0b1561d6626ff7b8",
-      "size_bytes": 278939
+      "sha256": "f41334d5106b982c4be879f6943264f8d64a9115217e5c822164736139db99b4",
+      "size_bytes": 279024
     },
     "histogram1_mapped_traits_and_taxa_per_profile.png": {
-      "sha256": "d389e6f0d734d09efeb5814856f694064cb3654a6b344afb8ebf4f6e43f6f30c",
-      "size_bytes": 484558
+      "sha256": "e6a2fc3a24574f91d17e4e199109feb253a08f172f3d95d16f62652707337f31",
+      "size_bytes": 486239
     },
     "histogram1_mapped_traits_and_taxa_per_profile.svg": {
-      "sha256": "cf7cbbfed69061e8d3082f37f3c3a3dd541a0050b3486e6b4cb1cbe75a8c52e4",
-      "size_bytes": 171384
+      "sha256": "4d053ae7a2a76453c89002356ed706980c341ed1c49b8dad9cd748b734ca9bd4",
+      "size_bytes": 171388
     },
     "histogram2_taxa_trait_counts_and_zero_trait_frequency.png": {
-      "sha256": "d9d067eca4b420e4c7d26b29ef7b2bc9bc1bb4f256a28165af72e25d2897838a",
-      "size_bytes": 725433
+      "sha256": "d5aeacc643f0f405eef7cedab7423e409111fdbc4aea6cae9b8ce2b588631c63",
+      "size_bytes": 725002
     },
     "histogram2_taxa_trait_counts_and_zero_trait_frequency.svg": {
-      "sha256": "799aaaefc5adfb6a4a40bbb1fcbbc2beafff7fc74377f628fcaaadcdb60e8968",
-      "size_bytes": 243519
+      "sha256": "d568809b6a7ccb1fa963e0570fbbbfd04e4eaad2e14576247e330c06ec25b9f4",
+      "size_bytes": 243522
     },
     "taxa_trait_count_distribution.png": {
-      "sha256": "af01a0dc4367d25a73cef3c78538ff912fe150f3de7d1fc3c37aa962876c72cc",
-      "size_bytes": 361690
+      "sha256": "221153a163b31d5027a0f4d5373f48ebd13bf7ec30c6e2303297ec2594f26fe0",
+      "size_bytes": 362263
     },
     "taxa_trait_count_distribution.svg": {
-      "sha256": "ba109c459d9a85dc8be5da195b30d04b88282a356d3fad436add4e047377893a",
-      "size_bytes": 163527
+      "sha256": "a384cdf50c143e6abfd0db39d704f096008446a9c7048ad78f9f2528288bd53a",
+      "size_bytes": 162944
     }
   }
 }

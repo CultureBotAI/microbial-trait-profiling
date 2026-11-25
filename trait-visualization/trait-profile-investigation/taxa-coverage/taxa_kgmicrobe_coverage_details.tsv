@@ -23,8 +23,8 @@ NCBITaxon:143393	[Eubacterium] sulci	species	4	4	5	5	5	True	rich_gte_3
 NCBITaxon:39498	[Eubacterium] yurii	species	5	5	5	5	2	True	rich_gte_3
 NCBITaxon:706562	[Lactobacillus] rogosae	species	2	2	7	7	5	True	sparse_1_2
 NCBITaxon:46228	[Ruminococcus] lactaris	species	6	6	34	34	21	True	rich_gte_3
-NCBITaxon:46123	Abiotrophia	genus	11	10	48	48	32	True	rich_gte_3
-NCBITaxon:46125	Abiotrophia defectiva	species	11	10	21	21	12	True	rich_gte_3
+NCBITaxon:46123	Abiotrophia	genus	10	9	48	48	32	True	rich_gte_3
+NCBITaxon:46125	Abiotrophia defectiva	species	10	9	21	21	12	True	rich_gte_3
 NCBITaxon:76631	Abiotrophia sp.	species	0	0	5	5	1	False	zero_traits
 NCBITaxon:1817405	Abyssicoccus albus	species	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:258514	Acetanaerobacterium	genus	18	17	13	13	10	True	rich_gte_3
@@ -39,15 +39,15 @@ NCBITaxon:288965	Acetivibrio clariflavus	species	28	27	2	2	2	True	rich_gte_3
 NCBITaxon:434	Acetobacter	genus	58	42	4	4	4	True	rich_gte_3
 NCBITaxon:1262684	Acetobacter sp. CAG:267	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1262685	Acetobacter sp. CAG:977	species	0	0	2	2	2	False	zero_traits
-NCBITaxon:433	Acetobacteraceae	family	146	101	9	8	8	True	rich_gte_3
-NCBITaxon:3120395	Acetobacterales	order	204	141	1	1	1	True	rich_gte_3
+NCBITaxon:433	Acetobacteraceae	family	145	100	9	8	8	True	rich_gte_3
+NCBITaxon:3120395	Acetobacterales	order	203	140	1	1	1	True	rich_gte_3
 NCBITaxon:33951	Acetobacterium	genus	18	10	2	2	1	True	rich_gte_3
 NCBITaxon:52689	Acetobacterium bakii	species	5	4	1	1	1	True	rich_gte_3
 NCBITaxon:1647173	Acetobacteroides	genus	5	2	1	1	1	True	rich_gte_3
 NCBITaxon:49894	Acetomicrobium	genus	56	52	1	1	1	True	rich_gte_3
-NCBITaxon:2147	Acholeplasma	genus	11	10	7	7	4	True	rich_gte_3
-NCBITaxon:2146	Acholeplasmataceae	family	14	13	4	4	3	True	rich_gte_3
-NCBITaxon:186329	Acholeplasmatales	order	16	15	2	2	1	True	rich_gte_3
+NCBITaxon:2147	Acholeplasma	genus	10	9	7	7	4	True	rich_gte_3
+NCBITaxon:2146	Acholeplasmataceae	family	13	12	4	4	3	True	rich_gte_3
+NCBITaxon:186329	Acholeplasmatales	order	15	14	2	2	1	True	rich_gte_3
 NCBITaxon:1151604	Acholeplasmatales bacterium canine oral taxon 172	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:222	Achromobacter	genus	47	34	20	20	16	True	rich_gte_3
 NCBITaxon:1287736	Achromobacter aegrifaciens	species	4	2	2	2	1	True	rich_gte_3
@@ -73,9 +73,9 @@ NCBITaxon:84993	Acidimicrobiales	order	72	61	4	4	4	True	rich_gte_3
 NCBITaxon:84992	Acidimicrobiia	class	72	61	31	31	24	True	rich_gte_3
 NCBITaxon:522	Acidiphilium	genus	29	25	1	1	1	True	rich_gte_3
 NCBITaxon:1262689	Acidiphilium sp. CAG:727	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:225058	Acidithiobacillaceae	family	48	35	1	1	1	True	rich_gte_3
-NCBITaxon:225057	Acidithiobacillales	order	75	60	1	1	1	True	rich_gte_3
-NCBITaxon:119977	Acidithiobacillus	genus	48	35	2	2	2	True	rich_gte_3
+NCBITaxon:225058	Acidithiobacillaceae	family	46	33	1	1	1	True	rich_gte_3
+NCBITaxon:225057	Acidithiobacillales	order	73	58	1	1	1	True	rich_gte_3
+NCBITaxon:119977	Acidithiobacillus	genus	46	33	2	2	2	True	rich_gte_3
 NCBITaxon:160808	Acidithiobacillus ferrivorans	species	10	7	1	1	1	True	rich_gte_3
 NCBITaxon:204434	Acidobacteriaceae	family	118	105	1	1	1	True	rich_gte_3
 NCBITaxon:57723	Acidobacteriota	phylum	150	126	25	25	17	True	rich_gte_3
@@ -105,13 +105,13 @@ NCBITaxon:2004644	Acinetobacter sp. WCHA45	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:108980	Acinetobacter ursingii	species	13	10	7	7	3	True	rich_gte_3
 NCBITaxon:70346	Acinetobacter variabilis	species	3	2	2	2	1	True	rich_gte_3
 NCBITaxon:1470176	Actinoalloteichus hoggarensis	species	2	1	1	1	1	True	sparse_1_2
-NCBITaxon:713	Actinobacillus	genus	41	32	41	41	26	True	rich_gte_3
+NCBITaxon:713	Actinobacillus	genus	40	31	41	41	26	True	rich_gte_3
 NCBITaxon:720	Actinobacillus lignieresii	species	9	7	2	2	1	True	rich_gte_3
 NCBITaxon:41114	Actinobacillus sp.	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:76833	Actinobaculum	genus	24	21	9	9	6	True	rich_gte_3
 NCBITaxon:712888	Actinobaculum sp. oral taxon 183	species	1	1	3	3	2	True	sparse_1_2
 NCBITaxon:1988	Actinomadura	genus	134	89	1	1	1	True	rich_gte_3
-NCBITaxon:1654	Actinomyces	genus	93	77	234	232	146	True	rich_gte_3
+NCBITaxon:1654	Actinomyces	genus	91	75	234	232	146	True	rich_gte_3
 NCBITaxon:1852361	Actinomyces bouchesdurhonensis	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:272548	Actinomyces dentalis	species	26	25	5	5	5	True	rich_gte_3
 NCBITaxon:52769	Actinomyces gerencseriae	species	12	9	8	8	7	True	rich_gte_3
@@ -125,7 +125,7 @@ NCBITaxon:544580	Actinomyces oris	species	13	9	17	17	15	True	rich_gte_3
 NCBITaxon:1852377	Actinomyces pacaensis	species	0	0	4	4	3	False	zero_traits
 NCBITaxon:111015	Actinomyces radicidentis	species	10	8	2	2	2	True	rich_gte_3
 NCBITaxon:52774	Actinomyces slackii	species	2	2	2	2	1	True	sparse_1_2
-NCBITaxon:29317	Actinomyces sp.	species	11	9	14	14	10	True	rich_gte_3
+NCBITaxon:29317	Actinomyces sp.	species	10	8	14	14	10	True	rich_gte_3
 NCBITaxon:1851395	Actinomyces sp. Chiba101	species	3	3	1	1	1	True	rich_gte_3
 NCBITaxon:1739406	Actinomyces sp. HMSC035G02	species	0	0	5	5	2	False	zero_traits
 NCBITaxon:1581133	Actinomyces sp. HMSC08A09	species	0	0	1	1	1	False	zero_traits
@@ -147,14 +147,14 @@ NCBITaxon:649739	Actinomyces sp. oral taxon 848	species	6	6	1	1	1	True	rich_gte_
 NCBITaxon:1227263	Actinomyces sp. oral taxon 877	species	1	1	2	2	2	True	sparse_1_2
 NCBITaxon:2081702	Actinomyces sp. oral taxon 897	species	0	0	3	3	2	False	zero_traits
 NCBITaxon:1288391	Actinomyces timonensis	species	36	35	4	4	1	True	rich_gte_3
-NCBITaxon:103621	Actinomyces urogenitalis	species	13	11	1	1	1	True	rich_gte_3
+NCBITaxon:103621	Actinomyces urogenitalis	species	12	10	1	1	1	True	rich_gte_3
 NCBITaxon:1656	Actinomyces viscosus	species	15	11	10	10	8	True	rich_gte_3
-NCBITaxon:2049	Actinomycetaceae	family	120	94	80	80	60	True	rich_gte_3
-NCBITaxon:2037	Actinomycetales	order	121	94	74	74	60	True	rich_gte_3
-NCBITaxon:1760	Actinomycetes	class	529	223	32	32	27	True	rich_gte_3
+NCBITaxon:2049	Actinomycetaceae	family	118	92	80	80	60	True	rich_gte_3
+NCBITaxon:2037	Actinomycetales	order	119	92	74	74	60	True	rich_gte_3
+NCBITaxon:1760	Actinomycetes	class	527	221	32	32	27	True	rich_gte_3
 NCBITaxon:1883427	Actinomycetes bacterium	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:402649	Actinomycetospora	genus	27	20	3	3	3	True	rich_gte_3
-NCBITaxon:201174	Actinomycetota	phylum	562	228	287	279	180	True	rich_gte_3
+NCBITaxon:201174	Actinomycetota	phylum	560	226	287	279	180	True	rich_gte_3
 NCBITaxon:1865	Actinoplanes	genus	85	60	1	1	1	True	rich_gte_3
 NCBITaxon:196914	Actinoplanes friuliensis	species	12	7	1	1	1	True	rich_gte_3
 NCBITaxon:622451	Actinopolysporaceae	family	77	62	1	1	1	True	rich_gte_3
@@ -172,19 +172,19 @@ NCBITaxon:2582829	Aedoeadaptatus nemausensis	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1871017	Aedoeadaptatus urinae	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:203861	Aegyptianella	genus	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:240233	Aeriscardovia	genus	30	28	1	1	1	True	rich_gte_3
-NCBITaxon:186827	Aerococcaceae	family	49	38	31	31	27	True	rich_gte_3
-NCBITaxon:1375	Aerococcus	genus	33	23	24	24	20	True	rich_gte_3
+NCBITaxon:186827	Aerococcaceae	family	47	36	31	31	27	True	rich_gte_3
+NCBITaxon:1375	Aerococcus	genus	31	21	24	24	20	True	rich_gte_3
 NCBITaxon:87541	Aerococcus christensenii	species	13	10	6	6	6	True	rich_gte_3
 NCBITaxon:119206	Aerococcus sanguinicola	species	14	10	1	1	1	True	rich_gte_3
 NCBITaxon:1872398	Aerococcus sp.	species	2	1	1	1	1	True	sparse_1_2
 NCBITaxon:1376	Aerococcus urinae	species	12	9	1	1	1	True	rich_gte_3
 NCBITaxon:51665	Aerococcus urinaeequi	species	14	12	3	3	2	True	rich_gte_3
-NCBITaxon:2040	Aeromicrobium	genus	114	96	2	2	2	True	rich_gte_3
-NCBITaxon:84642	Aeromonadaceae	family	144	115	15	15	9	True	rich_gte_3
-NCBITaxon:135624	Aeromonadales	order	163	123	25	25	18	True	rich_gte_3
-NCBITaxon:642	Aeromonas	genus	101	77	17	17	12	True	rich_gte_3
+NCBITaxon:2040	Aeromicrobium	genus	112	94	2	2	2	True	rich_gte_3
+NCBITaxon:84642	Aeromonadaceae	family	142	113	15	15	9	True	rich_gte_3
+NCBITaxon:135624	Aeromonadales	order	161	121	25	25	18	True	rich_gte_3
+NCBITaxon:642	Aeromonas	genus	99	75	17	17	12	True	rich_gte_3
 NCBITaxon:651	Aeromonas media	species	22	16	1	1	1	True	rich_gte_3
-NCBITaxon:654	Aeromonas veronii	species	21	13	2	2	2	True	rich_gte_3
+NCBITaxon:654	Aeromonas veronii	species	20	12	2	2	2	True	rich_gte_3
 NCBITaxon:2054427	Aestuariicoccus	genus	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:396388	Aestuariimicrobium	genus	43	40	1	1	1	True	rich_gte_3
 NCBITaxon:1647175	Aestuariispira	genus	0	0	1	1	1	False	zero_traits
@@ -202,9 +202,9 @@ NCBITaxon:2048137	Agathobaculum	genus	28	24	5	5	4	True	rich_gte_3
 NCBITaxon:1628085	Agathobaculum butyriciproducens	species	25	22	11	11	8	True	rich_gte_3
 NCBITaxon:39484	Agathobaculum desmolans	species	4	4	4	4	4	True	rich_gte_3
 NCBITaxon:2048138	Agathobaculum sp.	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:416916	Aggregatibacter	genus	27	19	78	78	53	True	rich_gte_3
-NCBITaxon:714	Aggregatibacter actinomycetemcomitans	species	21	14	8	8	3	True	rich_gte_3
-NCBITaxon:732	Aggregatibacter aphrophilus	species	17	17	12	12	10	True	rich_gte_3
+NCBITaxon:416916	Aggregatibacter	genus	26	18	78	78	53	True	rich_gte_3
+NCBITaxon:714	Aggregatibacter actinomycetemcomitans	species	20	13	8	8	3	True	rich_gte_3
+NCBITaxon:732	Aggregatibacter aphrophilus	species	16	16	12	12	10	True	rich_gte_3
 NCBITaxon:739	Aggregatibacter segnis	species	9	8	19	19	14	True	rich_gte_3
 NCBITaxon:1872413	Aggregatibacter sp.	species	0	0	4	4	3	False	zero_traits
 NCBITaxon:712148	Aggregatibacter sp. oral taxon 458	species	4	4	2	2	2	True	rich_gte_3
@@ -212,14 +212,14 @@ NCBITaxon:712150	Aggregatibacter sp. oral taxon 513	species	0	0	2	2	2	False	zero
 NCBITaxon:186829	Agitococcus	genus	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:110934	Agreia	genus	15	12	2	2	1	True	rich_gte_3
 NCBITaxon:2767875	Agrilactobacillus	genus	40	39	1	1	1	True	rich_gte_3
-NCBITaxon:357	Agrobacterium	genus	35	21	17	17	13	True	rich_gte_3
+NCBITaxon:357	Agrobacterium	genus	34	20	17	17	13	True	rich_gte_3
 NCBITaxon:358	Agrobacterium tumefaciens	species	16	16	1	1	1	True	rich_gte_3
 NCBITaxon:33877	Agromyces	genus	112	95	1	1	1	True	rich_gte_3
 NCBITaxon:239934	Akkermansia	genus	33	27	179	176	109	True	rich_gte_3
 NCBITaxon:239935	Akkermansia muciniphila	species	13	8	76	75	45	True	rich_gte_3
 NCBITaxon:1262691	Akkermansia sp. CAG:344	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:1647988	Akkermansiaceae	family	33	27	29	29	15	True	rich_gte_3
-NCBITaxon:506	Alcaligenaceae	family	169	134	41	41	37	True	rich_gte_3
+NCBITaxon:506	Alcaligenaceae	family	167	132	41	41	37	True	rich_gte_3
 NCBITaxon:507	Alcaligenes	genus	51	41	5	5	4	True	rich_gte_3
 NCBITaxon:511	Alcaligenes faecalis	species	25	18	2	2	2	True	rich_gte_3
 NCBITaxon:512	Alcaligenes sp.	species	10	8	1	1	1	True	rich_gte_3
@@ -231,9 +231,9 @@ NCBITaxon:179636	Alicycliphilus denitrificans	species	15	10	2	2	2	True	rich_gte_
 NCBITaxon:186823	Alicyclobacillaceae	family	108	90	3	3	2	True	rich_gte_3
 NCBITaxon:29330	Alicyclobacillus	genus	86	73	4	4	3	True	rich_gte_3
 NCBITaxon:1647178	Aliicoccus	genus	5	4	6	6	1	True	rich_gte_3
-NCBITaxon:511678	Aliivibrio	genus	38	30	1	1	1	True	rich_gte_3
-NCBITaxon:668	Aliivibrio fischeri	species	21	15	1	1	1	True	rich_gte_3
-NCBITaxon:111142	Alishewanella	genus	69	61	5	5	3	True	rich_gte_3
+NCBITaxon:511678	Aliivibrio	genus	36	28	1	1	1	True	rich_gte_3
+NCBITaxon:668	Aliivibrio fischeri	species	20	14	1	1	1	True	rich_gte_3
+NCBITaxon:111142	Alishewanella	genus	68	60	5	5	3	True	rich_gte_3
 NCBITaxon:239759	Alistipes	genus	45	33	212	210	130	True	rich_gte_3
 NCBITaxon:2585118	Alistipes communis	species	4	2	21	21	11	True	rich_gte_3
 NCBITaxon:2585119	Alistipes dispar	species	3	1	2	2	2	True	rich_gte_3
@@ -289,7 +289,7 @@ NCBITaxon:941907	Allosphingosinicella indica	species	31	31	1	1	1	True	rich_gte_3
 NCBITaxon:712875	alpha proteobacterium oral taxon A28	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:333750	Alphapapillomavirus	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:931244	Alphapapillomavirus 14	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:28211	Alphaproteobacteria	class	561	237	78	78	57	True	rich_gte_3
+NCBITaxon:28211	Alphaproteobacteria	class	559	235	78	78	57	True	rich_gte_3
 NCBITaxon:1502180	Alsobacter	genus	3	3	1	1	1	True	rich_gte_3
 NCBITaxon:361177	Altererythrobacter	genus	15	12	5	5	4	True	rich_gte_3
 NCBITaxon:361183	Altererythrobacter epoxidivorans	species	11	11	1	1	1	True	rich_gte_3
@@ -297,8 +297,8 @@ NCBITaxon:1870997	Alterileibacterium massiliense	species	3	1	2	2	1	True	rich_gte
 NCBITaxon:5598	Alternaria	genus	0	0	2	2	2	False	zero_traits
 NCBITaxon:5599	Alternaria alternata	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:1187941	Alternaria rosae	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:72275	Alteromonadaceae	family	142	133	6	6	6	True	rich_gte_3
-NCBITaxon:135622	Alteromonadales	order	206	175	6	6	5	True	rich_gte_3
+NCBITaxon:72275	Alteromonadaceae	family	140	131	6	6	6	True	rich_gte_3
+NCBITaxon:135622	Alteromonadales	order	204	173	6	6	5	True	rich_gte_3
 NCBITaxon:226	Alteromonas	genus	85	83	2	2	2	True	rich_gte_3
 NCBITaxon:194195	Alysiella	genus	15	8	5	5	3	True	rich_gte_3
 NCBITaxon:31971	Amedibacillus dolichus	species	8	5	10	10	9	True	rich_gte_3
@@ -311,11 +311,11 @@ NCBITaxon:83263	Aminobacter aminovorans	species	11	6	1	1	1	True	rich_gte_3
 NCBITaxon:374606	Aminobacter sp. MSH1	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:580880	Amorphus	genus	66	64	1	1	1	True	rich_gte_3
 NCBITaxon:50729	Ampelomyces	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:1813	Amycolatopsis	genus	128	98	4	4	3	True	rich_gte_3
+NCBITaxon:1813	Amycolatopsis	genus	126	96	4	4	3	True	rich_gte_3
 NCBITaxon:1804986	Amycolatopsis albispora	species	1	1	1	1	1	True	sparse_1_2
-NCBITaxon:1603	Amylolactobacillus amylophilus	species	12	9	1	1	1	True	rich_gte_3
+NCBITaxon:1603	Amylolactobacillus amylophilus	species	11	8	1	1	1	True	rich_gte_3
 NCBITaxon:151038	Anaeroarcus	genus	9	8	3	3	2	True	rich_gte_3
-NCBITaxon:704093	Anaerobacillus	genus	52	45	1	1	1	True	rich_gte_3
+NCBITaxon:704093	Anaerobacillus	genus	51	44	1	1	1	True	rich_gte_3
 NCBITaxon:1486725	Anaerobacterium	genus	3	2	2	2	2	True	rich_gte_3
 NCBITaxon:1297424	Anaerobacterium chartisolvens	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:13335	Anaerobiospirillum succiniciproducens	species	10	7	2	2	1	True	rich_gte_3
@@ -402,23 +402,23 @@ NCBITaxon:55079	Aneurinibacillus	genus	62	53	6	6	4	True	rich_gte_3
 NCBITaxon:1450761	Aneurinibacillus sp. XH2	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1935176	Angelakisella	genus	0	0	6	4	3	False	zero_traits
 NCBITaxon:1871018	Angelakisella massiliensis	species	0	0	4	4	3	False	zero_traits
-NCBITaxon:150247	Anoxybacillus	genus	73	66	12	12	11	True	rich_gte_3
+NCBITaxon:150247	Anoxybacillus	genus	71	64	12	12	11	True	rich_gte_3
 NCBITaxon:5794	Apicomplexa	phylum	0	0	1	1	1	False	zero_traits
 NCBITaxon:148814	Apilactobacillus kunkeei	species	11	9	1	1	1	True	rich_gte_3
 NCBITaxon:45402	Aquabacter	genus	7	5	1	1	1	True	rich_gte_3
-NCBITaxon:92793	Aquabacterium	genus	60	55	8	8	7	True	rich_gte_3
+NCBITaxon:92793	Aquabacterium	genus	59	54	8	8	7	True	rich_gte_3
 NCBITaxon:70582	Aquabacterium citratiphilum	species	10	8	1	1	1	True	rich_gte_3
 NCBITaxon:69278	Aquamicrobium	genus	45	39	1	1	1	True	rich_gte_3
 NCBITaxon:200783	Aquificota	phylum	124	85	1	1	1	True	rich_gte_3
 NCBITaxon:265718	Aquimonas	genus	28	28	2	2	1	True	rich_gte_3
 NCBITaxon:391952	Aquincola	genus	29	28	1	1	1	True	rich_gte_3
 NCBITaxon:43263	Aquipseudomonas alcaligenes	species	18	14	1	1	1	True	rich_gte_3
-NCBITaxon:407217	Aquitalea	genus	55	53	1	1	1	True	rich_gte_3
+NCBITaxon:407217	Aquitalea	genus	53	51	1	1	1	True	rich_gte_3
 NCBITaxon:1293573	Aquitalea pelogenes	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1590041	Aquitalea sp. USM4	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2801844	Arachnia	genus	17	9	27	27	11	True	rich_gte_3
 NCBITaxon:1750	Arachnia propionica	species	15	9	19	19	9	True	rich_gte_3
-NCBITaxon:28263	Arcanobacterium	genus	25	22	9	9	9	True	rich_gte_3
+NCBITaxon:28263	Arcanobacterium	genus	24	21	9	9	9	True	rich_gte_3
 NCBITaxon:72409	Arcanobacterium sp.	species	4	2	1	1	1	True	rich_gte_3
 NCBITaxon:1871014	Arcanobacterium urinimassiliense	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2232	Archaeoglobaceae	family	37	27	1	1	1	True	rich_gte_3
@@ -431,9 +431,9 @@ NCBITaxon:217140	Arcicella	genus	69	67	1	1	1	True	rich_gte_3
 NCBITaxon:28196	Arcobacter	genus	22	17	3	3	3	True	rich_gte_3
 NCBITaxon:2808963	Arcobacteraceae	family	74	66	1	1	1	True	rich_gte_3
 NCBITaxon:1784714	Arcticibacterium luteifluviistationis	species	1	1	1	1	1	True	sparse_1_2
-NCBITaxon:1382929	Ardenticatenales	order	39	37	7	7	2	True	rich_gte_3
+NCBITaxon:1382929	Ardenticatenales	order	38	36	7	7	2	True	rich_gte_3
 NCBITaxon:67819	Armatimonadota	phylum	20	18	5	5	3	True	rich_gte_3
-NCBITaxon:267408	Arsenicicoccus	genus	43	36	1	1	1	True	rich_gte_3
+NCBITaxon:267408	Arsenicicoccus	genus	41	34	1	1	1	True	rich_gte_3
 NCBITaxon:637	Arsenophonus	genus	15	8	1	1	1	True	rich_gte_3
 NCBITaxon:1663	Arthrobacter	genus	140	114	24	23	16	True	rich_gte_3
 NCBITaxon:172040	Arthrobacter russicus	species	14	12	2	2	1	True	rich_gte_3
@@ -455,7 +455,7 @@ NCBITaxon:1915376	Aspergillus reticulatus	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:33178	Aspergillus terreus	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2152	Asteroleplasma	genus	1	1	15	15	10	True	sparse_1_2
 NCBITaxon:76890	Asticcacaulis	genus	34	32	7	7	2	True	rich_gte_3
-NCBITaxon:565	Atlantibacter hermannii	species	13	9	1	1	1	True	rich_gte_3
+NCBITaxon:565	Atlantibacter hermannii	species	12	8	1	1	1	True	rich_gte_3
 NCBITaxon:136491	Atopobacter	genus	5	5	3	3	2	True	rich_gte_3
 NCBITaxon:1643824	Atopobiaceae	family	26	14	21	21	15	True	rich_gte_3
 NCBITaxon:1380	Atopobium	genus	14	10	114	114	75	True	rich_gte_3
@@ -470,15 +470,15 @@ NCBITaxon:292480	Atopostipes	genus	10	8	3	3	3	True	rich_gte_3
 NCBITaxon:1872652	Atopostipes sp.	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:502682	Aurantiacibacter gangjinensis	species	10	10	2	2	1	True	rich_gte_3
 NCBITaxon:708131	Aurantimicrobium minutum	species	1	1	1	1	1	True	sparse_1_2
-NCBITaxon:414371	Aureimonas	genus	90	80	1	1	1	True	rich_gte_3
+NCBITaxon:414371	Aureimonas	genus	89	79	1	1	1	True	rich_gte_3
 NCBITaxon:5579	Aureobasidium	genus	0	0	2	2	1	False	zero_traits
 NCBITaxon:1184606	Austwickia	genus	13	11	3	3	2	True	rich_gte_3
 NCBITaxon:356837	Azoarcus sp. DN11	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:748247	Azoarcus sp. KH32C	species	2	2	1	1	1	True	sparse_1_2
-NCBITaxon:146936	Azonexus	genus	35	33	1	1	1	True	rich_gte_3
+NCBITaxon:146936	Azonexus	genus	34	32	1	1	1	True	rich_gte_3
 NCBITaxon:281091	Azorhizobium doebereinerae	species	8	7	2	2	1	True	rich_gte_3
 NCBITaxon:146939	Azospira oryzae	species	18	15	1	1	1	True	rich_gte_3
-NCBITaxon:191	Azospirillum	genus	104	93	7	7	4	True	rich_gte_3
+NCBITaxon:191	Azospirillum	genus	103	92	7	7	4	True	rich_gte_3
 NCBITaxon:192	Azospirillum brasilense	species	22	16	1	1	1	True	rich_gte_3
 NCBITaxon:561521	Azospirillum palatum	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1896971	Azospirillum sp. 47_25	species	0	0	1	1	1	False	zero_traits
@@ -488,20 +488,20 @@ NCBITaxon:1262706	Azospirillum sp. CAG:260	species	0	0	3	3	2	False	zero_traits
 NCBITaxon:652764	Azospirillum sp. TSH100	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2202148	Azospirillum thermophilum	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:351	Azotobacter group	species	27	21	14	14	10	True	rich_gte_3
-NCBITaxon:186817	Bacillaceae	family	334	201	30	30	24	True	rich_gte_3
-NCBITaxon:1385	Bacillales	order	434	217	40	40	35	True	rich_gte_3
-NCBITaxon:539003	Bacillales Family X. Incertae Sedis	family	41	37	5	5	3	True	rich_gte_3
+NCBITaxon:186817	Bacillaceae	family	332	199	30	30	24	True	rich_gte_3
+NCBITaxon:1385	Bacillales	order	432	215	40	40	35	True	rich_gte_3
+NCBITaxon:539003	Bacillales Family X. Incertae Sedis	family	39	35	5	5	3	True	rich_gte_3
 NCBITaxon:2836	Bacillariophyta	phylum	0	0	2	2	2	False	zero_traits
-NCBITaxon:1783272	Bacillati	superkingdom	1208	273	1	1	1	True	rich_gte_3
-NCBITaxon:91061	Bacilli	class	513	221	168	168	124	True	rich_gte_3
+NCBITaxon:1783272	Bacillati	superkingdom	1206	271	1	1	1	True	rich_gte_3
+NCBITaxon:91061	Bacilli	class	511	219	168	168	124	True	rich_gte_3
 NCBITaxon:1903720	Bacilli bacterium	species	0	0	2	2	2	False	zero_traits
-NCBITaxon:1239	Bacillota	phylum	913	248	352	341	230	True	rich_gte_3
+NCBITaxon:1239	Bacillota	phylum	911	246	352	341	230	True	rich_gte_3
 NCBITaxon:1879010	Bacillota bacterium	species	0	0	7	7	4	False	zero_traits
-NCBITaxon:1386	Bacillus	genus	186	138	71	71	43	True	rich_gte_3
+NCBITaxon:1386	Bacillus	genus	184	136	71	71	43	True	rich_gte_3
 NCBITaxon:1390	Bacillus amyloliquefaciens	species	20	18	1	1	1	True	rich_gte_3
-NCBITaxon:1396	Bacillus cereus	species	29	22	6	6	5	True	rich_gte_3
-NCBITaxon:1402	Bacillus licheniformis	species	28	22	4	4	2	True	rich_gte_3
-NCBITaxon:64104	Bacillus pseudomycoides	species	23	21	1	1	1	True	rich_gte_3
+NCBITaxon:1396	Bacillus cereus	species	28	21	6	6	5	True	rich_gte_3
+NCBITaxon:1402	Bacillus licheniformis	species	27	21	4	4	2	True	rich_gte_3
+NCBITaxon:64104	Bacillus pseudomycoides	species	22	20	1	1	1	True	rich_gte_3
 NCBITaxon:1408	Bacillus pumilus	species	27	22	1	1	1	True	rich_gte_3
 NCBITaxon:1479	Bacillus smithii	species	11	9	1	1	1	True	rich_gte_3
 NCBITaxon:1409	Bacillus sp. (in: firmicutes)	species	9	9	7	7	4	True	rich_gte_3
@@ -510,10 +510,10 @@ NCBITaxon:712180	Bacillus sp. oral taxon F28	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:563169	Bacillus sp. SJ-10	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1449046	Bacillus sp. UNC41MFS5	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:756828	Bacillus sp. WP8	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1423	Bacillus subtilis	species	33	26	2	2	1	True	rich_gte_3
-NCBITaxon:1428	Bacillus thuringiensis	species	20	17	1	1	1	True	rich_gte_3
+NCBITaxon:1423	Bacillus subtilis	species	32	25	2	2	1	True	rich_gte_3
+NCBITaxon:1428	Bacillus thuringiensis	species	19	16	1	1	1	True	rich_gte_3
 NCBITaxon:492670	Bacillus velezensis	species	61	58	2	2	1	True	rich_gte_3
-NCBITaxon:1890302	Bacillus wiedmannii	species	20	18	2	2	2	True	rich_gte_3
+NCBITaxon:1890302	Bacillus wiedmannii	species	19	17	2	2	2	True	rich_gte_3
 NCBITaxon:1869227	bacterium	species	52	5	4	4	4	True	rich_gte_3
 NCBITaxon:2320108	bacterium 1xD8-27	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:234356	bacterium Ellin6055	species	0	0	1	1	1	False	zero_traits
@@ -529,7 +529,7 @@ NCBITaxon:1504822	bacterium OL-1	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:239775	bacterium PH2	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:815	Bacteroidaceae	family	119	93	137	137	87	True	rich_gte_3
 NCBITaxon:2212467	Bacteroidaceae bacterium	species	0	0	2	2	2	False	zero_traits
-NCBITaxon:171549	Bacteroidales	order	183	127	176	172	127	True	rich_gte_3
+NCBITaxon:171549	Bacteroidales	order	181	125	176	172	127	True	rich_gte_3
 NCBITaxon:2030927	Bacteroidales bacterium	species	0	0	5	5	5	False	zero_traits
 NCBITaxon:1897041	Bacteroidales bacterium 55_9	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1674815	Bacteroidales bacterium Bact_01	species	0	0	1	1	1	False	zero_traits
@@ -635,9 +635,9 @@ NCBITaxon:712909	Bacteroidetes bacterium oral taxon 507	species	0	0	2	2	2	False	
 NCBITaxon:712911	Bacteroidetes bacterium oral taxon 511	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:712912	Bacteroidetes bacterium oral taxon 516	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:652708	Bacteroidetes oral taxon 274	species	6	6	4	4	3	True	rich_gte_3
-NCBITaxon:200643	Bacteroidia	class	212	139	161	161	121	True	rich_gte_3
+NCBITaxon:200643	Bacteroidia	class	210	137	161	161	121	True	rich_gte_3
 NCBITaxon:1577241	Bacteroidia bacterium feline oral taxon 115	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:976	Bacteroidota	phylum	387	210	283	278	186	True	rich_gte_3
+NCBITaxon:976	Bacteroidota	phylum	385	208	283	278	186	True	rich_gte_3
 NCBITaxon:1898104	Bacteroidota bacterium	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:223787	Balnearium	genus	22	20	1	1	1	True	rich_gte_3
 NCBITaxon:397864	Barnesiella	genus	30	25	78	78	52	True	rich_gte_3
@@ -645,7 +645,7 @@ NCBITaxon:487174	Barnesiella intestinihominis	species	20	17	31	31	19	True	rich_g
 NCBITaxon:2033407	Barnesiella sp.	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:397865	Barnesiella viscericola	species	22	19	3	3	2	True	rich_gte_3
 NCBITaxon:2005519	Barnesiellaceae	family	34	27	30	30	26	True	rich_gte_3
-NCBITaxon:773	Bartonella	genus	53	44	2	2	2	True	rich_gte_3
+NCBITaxon:773	Bartonella	genus	52	43	2	2	2	True	rich_gte_3
 NCBITaxon:56426	Bartonella clarridgeiae	species	8	8	1	1	1	True	rich_gte_3
 NCBITaxon:85701	Bartonella tribocorum	species	11	10	1	1	1	True	rich_gte_3
 NCBITaxon:423460	Basidiobolus meristosporus	species	0	0	1	1	1	False	zero_traits
@@ -660,12 +660,12 @@ NCBITaxon:1962306	Bergeyella sp.	species	2	2	3	3	3	True	sparse_1_2
 NCBITaxon:712187	Bergeyella sp. oral taxon 322	species	0	0	5	5	4	False	zero_traits
 NCBITaxon:712188	Bergeyella sp. oral taxon 422	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:333922	Betapapillomavirus	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:28216	Betaproteobacteria	class	407	229	74	74	59	True	rich_gte_3
+NCBITaxon:28216	Betaproteobacteria	class	405	227	74	74	59	True	rich_gte_3
 NCBITaxon:84756	Beutenbergia	genus	16	14	3	3	2	True	rich_gte_3
 NCBITaxon:941338	Bhargavaea	genus	67	66	1	1	1	True	rich_gte_3
-NCBITaxon:31953	Bifidobacteriaceae	family	99	82	156	156	102	True	rich_gte_3
-NCBITaxon:85004	Bifidobacteriales	order	99	82	68	68	55	True	rich_gte_3
-NCBITaxon:1678	Bifidobacterium	genus	86	71	321	318	191	True	rich_gte_3
+NCBITaxon:31953	Bifidobacteriaceae	family	98	81	156	156	102	True	rich_gte_3
+NCBITaxon:85004	Bifidobacteriales	order	98	81	68	68	55	True	rich_gte_3
+NCBITaxon:1678	Bifidobacterium	genus	85	70	321	318	191	True	rich_gte_3
 NCBITaxon:638619	Bifidobacterium actinocoloniiforme	species	6	4	1	1	1	True	rich_gte_3
 NCBITaxon:1680	Bifidobacterium adolescentis	species	34	28	46	46	31	True	rich_gte_3
 NCBITaxon:1329411	Bifidobacterium aesculapii	species	5	3	1	1	1	True	rich_gte_3
@@ -716,7 +716,7 @@ NCBITaxon:1748772	Blastocatellaceae	family	37	36	1	1	1	True	rich_gte_3
 NCBITaxon:1562566	Blastocatellia	class	59	56	1	1	1	True	rich_gte_3
 NCBITaxon:38501	Blastococcus	genus	61	44	5	5	5	True	rich_gte_3
 NCBITaxon:12967	Blastocystis	genus	0	0	3	3	1	False	zero_traits
-NCBITaxon:150203	Blastomonas	genus	48	41	2	2	2	True	rich_gte_3
+NCBITaxon:150203	Blastomonas	genus	47	40	2	2	2	True	rich_gte_3
 NCBITaxon:229219	Blastomyces	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:1681229	Blastomyces gilchristii	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:6973	Blattella germanica	species	0	0	2	2	1	False	zero_traits
@@ -765,7 +765,7 @@ NCBITaxon:1416806	Bordetella genomosp. 8	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:520	Bordetella pertussis	species	16	14	1	1	1	True	rich_gte_3
 NCBITaxon:1643685	Borreliaceae	family	28	25	1	1	1	True	rich_gte_3
 NCBITaxon:208480	Bowdeniella nasicola	species	8	7	1	1	1	True	rich_gte_3
-NCBITaxon:43668	Brachybacterium	genus	100	90	13	13	9	True	rich_gte_3
+NCBITaxon:43668	Brachybacterium	genus	98	88	13	13	9	True	rich_gte_3
 NCBITaxon:219301	Brachybacterium muris	species	16	12	2	2	2	True	rich_gte_3
 NCBITaxon:173362	Brachybacterium paraconglomeratum	species	10	8	2	2	2	True	rich_gte_3
 NCBITaxon:29521	Brachyspira	genus	18	14	3	3	3	True	rich_gte_3
@@ -784,9 +784,9 @@ NCBITaxon:376	Bradyrhizobium sp.	species	13	8	3	3	2	True	rich_gte_3
 NCBITaxon:288000	Bradyrhizobium sp. BTAi1	species	6	6	2	2	1	True	rich_gte_3
 NCBITaxon:1297865	Bradyrhizobium sp. OHSU_III	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:114615	Bradyrhizobium sp. ORS 278	species	7	7	1	1	1	True	rich_gte_3
-NCBITaxon:71655	Brenneria	genus	46	44	3	3	1	True	rich_gte_3
+NCBITaxon:71655	Brenneria	genus	44	42	3	3	1	True	rich_gte_3
 NCBITaxon:5007	Brettanomyces bruxellensis	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:55080	Brevibacillus	genus	100	84	3	3	2	True	rich_gte_3
+NCBITaxon:55080	Brevibacillus	genus	98	82	3	3	2	True	rich_gte_3
 NCBITaxon:1465	Brevibacillus laterosporus	species	12	10	1	1	1	True	rich_gte_3
 NCBITaxon:85019	Brevibacteriaceae	family	142	125	13	13	11	True	rich_gte_3
 NCBITaxon:1696	Brevibacterium	genus	142	125	30	30	20	True	rich_gte_3
@@ -795,14 +795,14 @@ NCBITaxon:1703	Brevibacterium linens	species	14	9	3	3	1	True	rich_gte_3
 NCBITaxon:170994	Brevibacterium paucivorans	species	11	8	1	1	1	True	rich_gte_3
 NCBITaxon:479117	Brevibacterium ravenspurgense	species	32	29	1	1	1	True	rich_gte_3
 NCBITaxon:1136497	Brevibacterium siliguriense	species	35	35	2	2	1	True	rich_gte_3
-NCBITaxon:41275	Brevundimonas	genus	110	90	33	33	26	True	rich_gte_3
+NCBITaxon:41275	Brevundimonas	genus	108	88	33	33	26	True	rich_gte_3
 NCBITaxon:293	Brevundimonas diminuta	species	13	9	4	4	4	True	rich_gte_3
 NCBITaxon:657642	Brevundimonas olei	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1871086	Brevundimonas sp.	species	12	4	1	1	1	True	rich_gte_3
 NCBITaxon:74313	Brevundimonas subvibrioides	species	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:363631	Brevundimonas terrae	species	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:1325724	Brevundimonas vancanneytii	species	18	18	1	1	1	True	rich_gte_3
-NCBITaxon:2755	Brochothrix	genus	17	15	3	3	3	True	rich_gte_3
+NCBITaxon:2755	Brochothrix	genus	16	14	3	3	3	True	rich_gte_3
 NCBITaxon:1993875	Brochothrix sp.	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2756	Brochothrix thermosphacta	species	15	14	1	1	1	True	rich_gte_3
 NCBITaxon:234	Brucella	genus	106	92	4	4	4	True	rich_gte_3
@@ -813,7 +813,7 @@ NCBITaxon:911113	Bryobacter	genus	48	45	1	1	1	True	rich_gte_3
 NCBITaxon:1962910	Bryobacteraceae	family	53	48	1	1	1	True	rich_gte_3
 NCBITaxon:332160	Bryobacterales	order	57	51	1	1	1	True	rich_gte_3
 NCBITaxon:32199	Buchnera	genus	4	4	2	2	2	True	rich_gte_3
-NCBITaxon:82978	Budvicia	genus	29	27	1	1	1	True	rich_gte_3
+NCBITaxon:82978	Budvicia	genus	27	25	1	1	1	True	rich_gte_3
 NCBITaxon:118747	Bulleidia	genus	10	8	38	38	28	True	rich_gte_3
 NCBITaxon:118748	Bulleidia extructa	species	10	8	4	4	4	True	rich_gte_3
 NCBITaxon:2704657	Bulleidia sp.	species	0	0	1	1	1	False	zero_traits
@@ -829,12 +829,12 @@ NCBITaxon:95485	Burkholderia stabilis	species	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:57975	Burkholderia thailandensis	species	17	12	1	1	1	True	rich_gte_3
 NCBITaxon:101571	Burkholderia ubonensis	species	13	12	2	2	1	True	rich_gte_3
 NCBITaxon:60552	Burkholderia vietnamiensis	species	17	11	2	2	1	True	rich_gte_3
-NCBITaxon:119060	Burkholderiaceae	family	199	160	50	50	40	True	rich_gte_3
-NCBITaxon:80840	Burkholderiales	order	333	211	102	101	73	True	rich_gte_3
+NCBITaxon:119060	Burkholderiaceae	family	197	158	50	50	40	True	rich_gte_3
+NCBITaxon:80840	Burkholderiales	order	331	209	102	101	73	True	rich_gte_3
 NCBITaxon:1891238	Burkholderiales bacterium	species	0	0	4	4	2	False	zero_traits
 NCBITaxon:469610	Burkholderiales bacterium 1_1_47	species	6	6	13	13	8	True	rich_gte_3
 NCBITaxon:864051	Burkholderiales bacterium JOSHI_001	species	5	5	1	1	1	True	rich_gte_3
-NCBITaxon:82976	Buttiauxella	genus	15	7	4	4	3	True	rich_gte_3
+NCBITaxon:82976	Buttiauxella	genus	14	6	4	4	3	True	rich_gte_3
 NCBITaxon:2811711	butyrate-producing bacterium	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:105839	butyrate-producing bacterium A2-175	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:245005	butyrate-producing bacterium M21/2	species	0	0	2	2	1	False	zero_traits
@@ -887,7 +887,7 @@ NCBITaxon:1158982	Calidifontibacter	genus	5	5	2	2	1	True	rich_gte_3
 NCBITaxon:908809	Caloramator mitchellensis	species	37	35	2	2	1	True	rich_gte_3
 NCBITaxon:1302151	Caloranaerobacter sp. TR13	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1186	Calothrix	genus	9	8	1	1	1	True	rich_gte_3
-NCBITaxon:194	Campylobacter	genus	64	53	104	104	70	True	rich_gte_3
+NCBITaxon:194	Campylobacter	genus	63	52	104	104	70	True	rich_gte_3
 NCBITaxon:449520	Campylobacter canadensis	species	19	18	2	2	2	True	rich_gte_3
 NCBITaxon:195	Campylobacter coli	species	15	11	4	4	2	True	rich_gte_3
 NCBITaxon:199	Campylobacter concisus	species	11	9	8	8	8	True	rich_gte_3
@@ -901,9 +901,9 @@ NCBITaxon:204	Campylobacter showae	species	23	18	11	10	9	True	rich_gte_3
 NCBITaxon:205	Campylobacter sp.	species	3	2	8	8	5	True	rich_gte_3
 NCBITaxon:712200	Campylobacter sp. oral taxon 044	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:827	Campylobacter ureolyticus	species	16	13	11	11	9	True	rich_gte_3
-NCBITaxon:72294	Campylobacteraceae	family	64	53	24	24	19	True	rich_gte_3
-NCBITaxon:213849	Campylobacterales	order	165	114	31	31	23	True	rich_gte_3
-NCBITaxon:29547	Campylobacterota	phylum	192	120	32	32	23	True	rich_gte_3
+NCBITaxon:72294	Campylobacteraceae	family	63	52	24	24	19	True	rich_gte_3
+NCBITaxon:213849	Campylobacterales	order	163	112	31	31	23	True	rich_gte_3
+NCBITaxon:29547	Campylobacterota	phylum	190	118	32	32	23	True	rich_gte_3
 NCBITaxon:5475	Candida	genus	0	0	4	4	4	False	zero_traits
 NCBITaxon:5476	Candida albicans	species	0	0	6	6	5	False	zero_traits
 NCBITaxon:42374	Candida dubliniensis	species	0	0	2	2	2	False	zero_traits
@@ -1019,13 +1019,13 @@ NCBITaxon:1921511	Candidatus Udaeobacter	genus	0	0	2	2	2	False	zero_traits
 NCBITaxon:568987	Candidatus Williamhamiltonella	genus	4	4	1	1	1	True	rich_gte_3
 NCBITaxon:138072	Candidatus Williamhamiltonella defendens	species	4	4	1	1	1	True	rich_gte_3
 NCBITaxon:134550	Candidatus Xiphinematobacter	genus	0	0	2	2	2	False	zero_traits
-NCBITaxon:1016	Capnocytophaga	genus	32	23	79	79	53	True	rich_gte_3
+NCBITaxon:1016	Capnocytophaga	genus	30	21	79	79	53	True	rich_gte_3
 NCBITaxon:28188	Capnocytophaga canimorsus	species	11	9	1	1	1	True	rich_gte_3
 NCBITaxon:1017	Capnocytophaga gingivalis	species	14	10	15	15	9	True	rich_gte_3
-NCBITaxon:45242	Capnocytophaga granulosa	species	16	13	11	11	5	True	rich_gte_3
-NCBITaxon:45243	Capnocytophaga haemolytica	species	10	7	7	7	5	True	rich_gte_3
+NCBITaxon:45242	Capnocytophaga granulosa	species	15	12	11	11	5	True	rich_gte_3
+NCBITaxon:45243	Capnocytophaga haemolytica	species	9	6	7	7	5	True	rich_gte_3
 NCBITaxon:327575	Capnocytophaga leadbetteri	species	16	15	12	12	8	True	rich_gte_3
-NCBITaxon:1018	Capnocytophaga ochracea	species	15	11	11	11	5	True	rich_gte_3
+NCBITaxon:1018	Capnocytophaga ochracea	species	14	10	11	11	5	True	rich_gte_3
 NCBITaxon:44737	Capnocytophaga sp.	species	3	3	4	4	4	True	rich_gte_3
 NCBITaxon:936370	Capnocytophaga sp. CM59	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:706435	Capnocytophaga sp. oral taxon 329	species	6	6	1	1	1	True	rich_gte_3
@@ -1039,14 +1039,14 @@ NCBITaxon:135615	Cardiobacteriales	order	66	55	6	6	6	True	rich_gte_3
 NCBITaxon:2717	Cardiobacterium	genus	9	6	42	42	26	True	rich_gte_3
 NCBITaxon:2718	Cardiobacterium hominis	species	7	6	13	13	7	True	rich_gte_3
 NCBITaxon:194702	Cardiobacterium valvarum	species	8	5	7	7	5	True	rich_gte_3
-NCBITaxon:186828	Carnobacteriaceae	family	132	96	38	38	33	True	rich_gte_3
-NCBITaxon:2747	Carnobacterium	genus	58	43	12	12	10	True	rich_gte_3
+NCBITaxon:186828	Carnobacteriaceae	family	130	94	38	38	33	True	rich_gte_3
+NCBITaxon:2747	Carnobacterium	genus	56	41	12	12	10	True	rich_gte_3
 NCBITaxon:2748	Carnobacterium divergens	species	10	7	1	1	1	True	rich_gte_3
-NCBITaxon:2751	Carnobacterium maltaromaticum	species	22	16	3	3	3	True	rich_gte_3
+NCBITaxon:2751	Carnobacterium maltaromaticum	species	21	15	3	3	3	True	rich_gte_3
 NCBITaxon:48221	Carnobacterium sp.	species	5	3	2	2	1	True	rich_gte_3
-NCBITaxon:186818	Caryophanaceae	family	162	139	18	18	16	True	rich_gte_3
+NCBITaxon:186818	Caryophanaceae	family	160	137	18	18	16	True	rich_gte_3
 NCBITaxon:1715793	Casaltella	genus	0	0	2	2	2	False	zero_traits
-NCBITaxon:359336	Castellaniella	genus	83	76	4	4	2	True	rich_gte_3
+NCBITaxon:359336	Castellaniella	genus	82	75	4	4	2	True	rich_gte_3
 NCBITaxon:300418	Catellicoccus	genus	12	11	1	1	1	True	rich_gte_3
 NCBITaxon:2316203	Catenibacillus	genus	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:673271	Catenibacillus scindens	species	5	3	1	1	1	True	rich_gte_3
@@ -1066,21 +1066,21 @@ NCBITaxon:75	Caulobacter	genus	28	17	7	7	5	True	rich_gte_3
 NCBITaxon:1679497	Caulobacter flavus	species	5	2	1	1	1	True	rich_gte_3
 NCBITaxon:88688	Caulobacter segnis	species	13	10	2	2	2	True	rich_gte_3
 NCBITaxon:155892	Caulobacter vibrioides	species	12	9	1	1	1	True	rich_gte_3
-NCBITaxon:76892	Caulobacteraceae	family	146	113	27	26	21	True	rich_gte_3
-NCBITaxon:204458	Caulobacterales	order	146	113	14	14	12	True	rich_gte_3
+NCBITaxon:76892	Caulobacteraceae	family	144	111	27	26	21	True	rich_gte_3
+NCBITaxon:204458	Caulobacterales	order	144	111	14	14	12	True	rich_gte_3
 NCBITaxon:158483	Cedecea	genus	13	9	15	15	2	True	rich_gte_3
 NCBITaxon:158484	Cedecea davisae	species	11	8	15	15	1	True	rich_gte_3
 NCBITaxon:186532	Ceduovirus	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:85016	Cellulomonadaceae	family	127	96	3	3	2	True	rich_gte_3
-NCBITaxon:1707	Cellulomonas	genus	115	93	3	3	3	True	rich_gte_3
+NCBITaxon:85016	Cellulomonadaceae	family	125	94	3	3	2	True	rich_gte_3
+NCBITaxon:1707	Cellulomonas	genus	113	91	3	3	3	True	rich_gte_3
 NCBITaxon:104264	Cellulophaga	genus	67	62	2	2	1	True	rich_gte_3
 NCBITaxon:1246649	Cellulosibacter	genus	13	13	1	1	1	True	rich_gte_3
 NCBITaxon:698776	Cellulosilyticum	genus	16	15	2	2	1	True	rich_gte_3
 NCBITaxon:425254	Cellulosilyticum ruminicola	species	8	8	1	1	1	True	rich_gte_3
-NCBITaxon:157920	Cellulosimicrobium	genus	79	65	1	1	1	True	rich_gte_3
+NCBITaxon:157920	Cellulosimicrobium	genus	78	64	1	1	1	True	rich_gte_3
 NCBITaxon:10	Cellvibrio	genus	18	13	8	8	6	True	rich_gte_3
 NCBITaxon:39650	Cellvibrio mixtus	species	1	1	1	1	1	True	sparse_1_2
-NCBITaxon:1706371	Cellvibrionaceae	family	110	97	1	1	1	True	rich_gte_3
+NCBITaxon:1706371	Cellvibrionaceae	family	109	96	1	1	1	True	rich_gte_3
 NCBITaxon:82202	Centipeda	genus	10	7	12	12	11	True	rich_gte_3
 NCBITaxon:82203	Centipeda periodontii	species	10	7	2	2	2	True	rich_gte_3
 NCBITaxon:183790	Cercis gigantea (nom. inval.)	species	0	0	1	1	1	False	zero_traits
@@ -1092,9 +1092,9 @@ NCBITaxon:34395	Chaetothyriales	order	0	0	1	1	1	False	zero_traits
 NCBITaxon:449972	Chelativorans	genus	43	38	1	1	1	True	rich_gte_3
 NCBITaxon:230666	Chitinibacter	genus	62	59	1	1	1	True	rich_gte_3
 NCBITaxon:79328	Chitinophaga	genus	99	87	2	2	1	True	rich_gte_3
-NCBITaxon:563835	Chitinophagaceae	family	155	137	15	15	10	True	rich_gte_3
-NCBITaxon:1853229	Chitinophagales	order	155	137	2	2	2	True	rich_gte_3
-NCBITaxon:1853228	Chitinophagia	class	155	137	1	1	1	True	rich_gte_3
+NCBITaxon:563835	Chitinophagaceae	family	153	135	15	15	10	True	rich_gte_3
+NCBITaxon:1853229	Chitinophagales	order	153	135	2	2	2	True	rich_gte_3
+NCBITaxon:1853228	Chitinophagia	class	153	135	1	1	1	True	rich_gte_3
 NCBITaxon:810	Chlamydia	genus	12	8	7	7	5	True	rich_gte_3
 NCBITaxon:813	Chlamydia trachomatis	species	7	6	4	4	4	True	rich_gte_3
 NCBITaxon:809	Chlamydiaceae	family	12	8	1	1	1	True	rich_gte_3
@@ -1105,7 +1105,7 @@ NCBITaxon:1090	Chlorobiota	phylum	29	27	3	3	2	True	rich_gte_3
 NCBITaxon:1096	Chlorobium phaeobacteroides	species	9	9	1	1	1	True	rich_gte_3
 NCBITaxon:32064	Chloroflexales	order	41	36	2	2	1	True	rich_gte_3
 NCBITaxon:32061	Chloroflexia	class	72	63	5	5	4	True	rich_gte_3
-NCBITaxon:200795	Chloroflexota	phylum	138	111	14	14	9	True	rich_gte_3
+NCBITaxon:200795	Chloroflexota	phylum	136	109	14	14	9	True	rich_gte_3
 NCBITaxon:990721	Christensenella	genus	45	35	21	21	19	True	rich_gte_3
 NCBITaxon:270498	Christensenella hongkongensis	species	6	3	1	1	1	True	rich_gte_3
 NCBITaxon:626937	Christensenella minuta	species	40	34	2	2	2	True	rich_gte_3
@@ -1115,20 +1115,20 @@ NCBITaxon:990719	Christensenellaceae	family	45	35	82	79	54	True	rich_gte_3
 NCBITaxon:2054177	Christensenellaceae bacterium	species	0	0	4	4	3	False	zero_traits
 NCBITaxon:3082768	Christensenellales	order	45	35	9	9	8	True	rich_gte_3
 NCBITaxon:2126553	Christiangramia fulva	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1046	Chromatiaceae	family	143	118	5	4	3	True	rich_gte_3
-NCBITaxon:135613	Chromatiales	order	236	160	2	2	1	True	rich_gte_3
-NCBITaxon:1499392	Chromobacteriaceae	family	136	122	3	3	2	True	rich_gte_3
-NCBITaxon:535	Chromobacterium	genus	92	80	1	1	1	True	rich_gte_3
-NCBITaxon:536	Chromobacterium violaceum	species	32	26	1	1	1	True	rich_gte_3
+NCBITaxon:1046	Chromatiaceae	family	141	116	5	4	3	True	rich_gte_3
+NCBITaxon:135613	Chromatiales	order	234	158	2	2	1	True	rich_gte_3
+NCBITaxon:1499392	Chromobacteriaceae	family	134	120	3	3	2	True	rich_gte_3
+NCBITaxon:535	Chromobacterium	genus	91	79	1	1	1	True	rich_gte_3
+NCBITaxon:536	Chromobacterium violaceum	species	31	25	1	1	1	True	rich_gte_3
 NCBITaxon:1118	Chroococcales	order	22	18	1	1	1	True	rich_gte_3
 NCBITaxon:54298	Chroococcidiopsis	genus	10	9	1	1	1	True	rich_gte_3
-NCBITaxon:59732	Chryseobacterium	genus	132	117	31	31	21	True	rich_gte_3
+NCBITaxon:59732	Chryseobacterium	genus	131	116	31	31	21	True	rich_gte_3
 NCBITaxon:1265445	Chryseobacterium camelliae	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1813611	Chryseobacterium cucumeris	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1324352	Chryseobacterium gallinarum	species	5	4	1	1	1	True	rich_gte_3
 NCBITaxon:250	Chryseobacterium gleum	species	10	8	1	1	1	True	rich_gte_3
 NCBITaxon:1069980	Chryseobacterium gwangjuense	species	8	8	1	1	1	True	rich_gte_3
-NCBITaxon:253	Chryseobacterium indologenes	species	10	9	1	1	1	True	rich_gte_3
+NCBITaxon:253	Chryseobacterium indologenes	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:1493872	Chryseobacterium shandongense	species	4	4	1	1	1	True	rich_gte_3
 NCBITaxon:1871047	Chryseobacterium sp.	species	10	3	4	4	3	True	rich_gte_3
 NCBITaxon:2039166	Chryseobacterium sp. 6424	species	0	0	1	1	1	False	zero_traits
@@ -1137,20 +1137,20 @@ NCBITaxon:878220	Chryseobacterium sp. StRB126	species	0	0	2	2	1	False	zero_trait
 NCBITaxon:536441	Chryseobacterium taklimakanense	species	31	31	1	1	1	True	rich_gte_3
 NCBITaxon:307480	Chryseobacterium vrystaatense	species	35	34	1	1	1	True	rich_gte_3
 NCBITaxon:295577	Chthoniobacter	genus	18	17	1	1	1	True	rich_gte_3
-NCBITaxon:544	Citrobacter	genus	54	40	72	72	48	True	rich_gte_3
+NCBITaxon:544	Citrobacter	genus	52	38	72	72	48	True	rich_gte_3
 NCBITaxon:35703	Citrobacter amalonaticus	species	9	5	2	2	2	True	rich_gte_3
 NCBITaxon:57706	Citrobacter braakii	species	9	5	3	3	2	True	rich_gte_3
 NCBITaxon:67824	Citrobacter farmeri	species	9	7	1	1	1	True	rich_gte_3
-NCBITaxon:546	Citrobacter freundii	species	22	13	34	34	11	True	rich_gte_3
+NCBITaxon:546	Citrobacter freundii	species	21	12	34	34	11	True	rich_gte_3
 NCBITaxon:2077147	Citrobacter freundii complex sp. CFNIH3	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2077149	Citrobacter freundii complex sp. CFNIH9	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:545	Citrobacter koseri	species	17	11	17	17	4	True	rich_gte_3
-NCBITaxon:1639133	Citrobacter portucalensis	species	27	25	11	11	1	True	rich_gte_3
+NCBITaxon:545	Citrobacter koseri	species	16	10	17	17	4	True	rich_gte_3
+NCBITaxon:1639133	Citrobacter portucalensis	species	26	24	11	11	1	True	rich_gte_3
 NCBITaxon:1896336	Citrobacter sp.	species	7	1	12	12	5	True	rich_gte_3
 NCBITaxon:543888	Citrobacter sp. CK3	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:349544	Citrobacter sp. I91-10	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:67827	Citrobacter werkmanii	species	9	8	2	2	1	True	rich_gte_3
-NCBITaxon:133448	Citrobacter youngae	species	11	10	18	18	3	True	rich_gte_3
+NCBITaxon:133448	Citrobacter youngae	species	10	9	18	18	3	True	rich_gte_3
 NCBITaxon:1634516	Citromicrobium sp. JL477	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:452563	Cladosporiaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:5498	Cladosporium	genus	0	0	1	1	1	False	zero_traits
@@ -1164,7 +1164,7 @@ NCBITaxon:508459	Cloacibacillus	genus	47	44	13	13	11	True	rich_gte_3
 NCBITaxon:508460	Cloacibacillus evryensis	species	31	29	3	3	3	True	rich_gte_3
 NCBITaxon:1197717	Cloacibacillus porcorum	species	38	37	4	4	4	True	rich_gte_3
 NCBITaxon:501783	Cloacibacterium	genus	39	38	9	9	8	True	rich_gte_3
-NCBITaxon:186801	Clostridia	class	564	205	215	208	156	True	rich_gte_3
+NCBITaxon:186801	Clostridia	class	562	203	215	208	156	True	rich_gte_3
 NCBITaxon:2044939	Clostridia bacterium	species	0	0	18	18	8	False	zero_traits
 NCBITaxon:1697794	Clostridia bacterium UC5.1-1D1	species	0	0	3	3	3	False	zero_traits
 NCBITaxon:1697791	Clostridia bacterium UC5.1-2G4	species	0	0	1	1	1	False	zero_traits
@@ -1330,10 +1330,10 @@ NCBITaxon:1262850	Collinsella sp. CAG:166	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2018038	Collinsella sp. TF06-26	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:147206	Collinsella stercoris	species	10	8	6	6	6	True	rich_gte_3
 NCBITaxon:626935	Collinsella tanakaei	species	24	19	5	5	4	True	rich_gte_3
-NCBITaxon:28228	Colwellia	genus	55	52	4	4	2	True	rich_gte_3
-NCBITaxon:267889	Colwelliaceae	family	84	80	4	4	2	True	rich_gte_3
-NCBITaxon:80864	Comamonadaceae	family	228	174	51	50	34	True	rich_gte_3
-NCBITaxon:283	Comamonas	genus	104	88	34	34	28	True	rich_gte_3
+NCBITaxon:28228	Colwellia	genus	53	50	4	4	2	True	rich_gte_3
+NCBITaxon:267889	Colwelliaceae	family	82	78	4	4	2	True	rich_gte_3
+NCBITaxon:80864	Comamonadaceae	family	226	172	51	50	34	True	rich_gte_3
+NCBITaxon:283	Comamonas	genus	102	86	34	34	28	True	rich_gte_3
 NCBITaxon:225991	Comamonas aquatica	species	11	8	1	1	1	True	rich_gte_3
 NCBITaxon:225992	Comamonas kerstersii	species	12	11	2	2	2	True	rich_gte_3
 NCBITaxon:34028	Comamonas sp.	species	11	6	1	1	1	True	rich_gte_3
@@ -1377,8 +1377,8 @@ NCBITaxon:84999	Coriobacteriales	order	55	38	82	82	65	True	rich_gte_3
 NCBITaxon:84998	Coriobacteriia	class	91	69	53	52	41	True	rich_gte_3
 NCBITaxon:33870	Coriobacterium	genus	11	8	6	6	5	True	rich_gte_3
 NCBITaxon:33871	Coriobacterium glomerans	species	10	8	1	1	1	True	rich_gte_3
-NCBITaxon:1653	Corynebacteriaceae	family	147	118	50	49	41	True	rich_gte_3
-NCBITaxon:1716	Corynebacterium	genus	147	118	215	214	116	True	rich_gte_3
+NCBITaxon:1653	Corynebacteriaceae	family	145	116	50	49	41	True	rich_gte_3
+NCBITaxon:1716	Corynebacterium	genus	145	116	215	214	116	True	rich_gte_3
 NCBITaxon:38284	Corynebacterium accolens	species	18	15	4	4	3	True	rich_gte_3
 NCBITaxon:38285	Corynebacterium acetoacidophilum	species	3	3	2	2	1	True	rich_gte_3
 NCBITaxon:38286	Corynebacterium afermentans	species	19	13	2	2	1	True	rich_gte_3
@@ -1386,38 +1386,38 @@ NCBITaxon:43765	Corynebacterium amycolatum	species	22	18	3	3	2	True	rich_gte_3
 NCBITaxon:163202	Corynebacterium appendicis	species	13	10	1	1	1	True	rich_gte_3
 NCBITaxon:42817	Corynebacterium argentoratense	species	14	11	2	2	2	True	rich_gte_3
 NCBITaxon:191610	Corynebacterium atypicum	species	12	10	2	2	2	True	rich_gte_3
-NCBITaxon:169292	Corynebacterium aurimucosum	species	20	16	8	8	7	True	rich_gte_3
+NCBITaxon:169292	Corynebacterium aurimucosum	species	19	15	8	8	7	True	rich_gte_3
 NCBITaxon:36808	Corynebacterium bovis	species	18	14	3	3	2	True	rich_gte_3
 NCBITaxon:1721	Corynebacterium callunae	species	17	13	1	1	1	True	rich_gte_3
 NCBITaxon:161896	Corynebacterium camporealensis	species	15	12	1	1	1	True	rich_gte_3
 NCBITaxon:160386	Corynebacterium casei	species	15	12	1	1	1	True	rich_gte_3
 NCBITaxon:53374	Corynebacterium coyleae	species	16	14	1	1	1	True	rich_gte_3
 NCBITaxon:2014528	Corynebacterium dentalis	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1717	Corynebacterium diphtheriae	species	18	14	3	3	2	True	rich_gte_3
+NCBITaxon:1717	Corynebacterium diphtheriae	species	17	13	3	3	2	True	rich_gte_3
 NCBITaxon:1121358	Corynebacterium doosanense	species	17	14	1	1	1	True	rich_gte_3
 NCBITaxon:61592	Corynebacterium durum	species	13	10	19	19	13	True	rich_gte_3
-NCBITaxon:1050174	Corynebacterium epidermidicanis	species	15	13	1	1	1	True	rich_gte_3
+NCBITaxon:1050174	Corynebacterium epidermidicanis	species	14	12	1	1	1	True	rich_gte_3
 NCBITaxon:28028	Corynebacterium flavescens	species	14	12	1	1	1	True	rich_gte_3
-NCBITaxon:39791	Corynebacterium glucuronolyticum	species	19	14	1	1	1	True	rich_gte_3
+NCBITaxon:39791	Corynebacterium glucuronolyticum	species	18	13	1	1	1	True	rich_gte_3
 NCBITaxon:1718	Corynebacterium glutamicum	species	25	17	3	3	2	True	rich_gte_3
-NCBITaxon:1223514	Corynebacterium humireducens	species	41	39	1	1	1	True	rich_gte_3
+NCBITaxon:1223514	Corynebacterium humireducens	species	39	37	1	1	1	True	rich_gte_3
 NCBITaxon:1232427	Corynebacterium ihumii	species	4	3	1	1	1	True	rich_gte_3
 NCBITaxon:156978	Corynebacterium imitans	species	12	10	6	6	4	True	rich_gte_3
 NCBITaxon:1414719	Corynebacterium jeddahense	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:38289	Corynebacterium jeikeium	species	18	14	5	5	4	True	rich_gte_3
-NCBITaxon:161879	Corynebacterium kroppenstedtii	species	14	12	9	9	6	True	rich_gte_3
+NCBITaxon:161879	Corynebacterium kroppenstedtii	species	13	11	9	9	6	True	rich_gte_3
 NCBITaxon:38290	Corynebacterium macginleyi	species	16	14	6	6	2	True	rich_gte_3
 NCBITaxon:441501	Corynebacterium massiliense	species	11	8	1	1	1	True	rich_gte_3
 NCBITaxon:43768	Corynebacterium matruchotii	species	15	11	14	14	8	True	rich_gte_3
 NCBITaxon:57171	Corynebacterium mucifaciens	species	14	11	2	2	1	True	rich_gte_3
 NCBITaxon:29321	Corynebacterium otitidis	species	19	14	1	1	1	True	rich_gte_3
-NCBITaxon:161895	Corynebacterium phocae	species	13	9	2	2	1	True	rich_gte_3
+NCBITaxon:161895	Corynebacterium phocae	species	12	8	2	2	1	True	rich_gte_3
 NCBITaxon:43769	Corynebacterium propinquum	species	18	14	2	2	2	True	rich_gte_3
 NCBITaxon:38303	Corynebacterium pseudogenitalium	species	8	7	3	3	3	True	rich_gte_3
 NCBITaxon:598660	Corynebacterium pyruviciproducens	species	22	20	3	3	2	True	rich_gte_3
 NCBITaxon:258224	Corynebacterium resistens	species	12	9	1	1	1	True	rich_gte_3
 NCBITaxon:156976	Corynebacterium riegelii	species	15	11	2	2	2	True	rich_gte_3
-NCBITaxon:146827	Corynebacterium simulans	species	17	12	6	6	4	True	rich_gte_3
+NCBITaxon:146827	Corynebacterium simulans	species	16	11	6	6	4	True	rich_gte_3
 NCBITaxon:161899	Corynebacterium singulare	species	14	11	4	4	2	True	rich_gte_3
 NCBITaxon:1720	Corynebacterium sp.	species	16	8	22	22	8	True	rich_gte_3
 NCBITaxon:1487956	Corynebacterium sp. ATCC 6931	species	0	0	2	2	1	False	zero_traits
@@ -1437,9 +1437,9 @@ NCBITaxon:118968	Coxiellaceae	family	18	16	4	4	4	True	rich_gte_3
 NCBITaxon:1871336	Criibacterium bergeronii	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:450378	Croceicoccus marinus	species	22	22	2	2	1	True	rich_gte_3
 NCBITaxon:1348774	Croceicoccus naphthovorans	species	3	1	1	1	1	True	rich_gte_3
-NCBITaxon:413496	Cronobacter	genus	46	40	9	9	7	True	rich_gte_3
-NCBITaxon:413497	Cronobacter dublinensis	species	37	33	2	2	1	True	rich_gte_3
-NCBITaxon:28141	Cronobacter sakazakii	species	18	13	3	3	3	True	rich_gte_3
+NCBITaxon:413496	Cronobacter	genus	44	38	9	9	7	True	rich_gte_3
+NCBITaxon:413497	Cronobacter dublinensis	species	36	32	2	2	1	True	rich_gte_3
+NCBITaxon:28141	Cronobacter sakazakii	species	17	12	3	3	3	True	rich_gte_3
 NCBITaxon:130795	Crossiella	genus	18	13	7	7	2	True	rich_gte_3
 NCBITaxon:205841	Cryocola	genus	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:246874	Cryomorphaceae	family	4	4	1	1	1	True	rich_gte_3
@@ -1451,9 +1451,9 @@ NCBITaxon:5207	Cryptococcus neoformans	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2896	Cryptomonadaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:1841857	Culturomica massiliensis	species	2	1	1	1	1	True	sparse_1_2
 NCBITaxon:1796618	Cuneatibacter caecimuris	species	5	3	1	1	1	True	rich_gte_3
-NCBITaxon:106589	Cupriavidus	genus	68	47	16	16	13	True	rich_gte_3
+NCBITaxon:106589	Cupriavidus	genus	67	46	16	16	13	True	rich_gte_3
 NCBITaxon:68895	Cupriavidus basilensis	species	15	8	1	1	1	True	rich_gte_3
-NCBITaxon:119219	Cupriavidus metallidurans	species	12	10	1	1	1	True	rich_gte_3
+NCBITaxon:119219	Cupriavidus metallidurans	species	11	9	1	1	1	True	rich_gte_3
 NCBITaxon:106590	Cupriavidus necator	species	33	22	1	1	1	True	rich_gte_3
 NCBITaxon:164546	Cupriavidus taiwanensis	species	17	16	2	2	2	True	rich_gte_3
 NCBITaxon:1891920	Curtobacterium sp. ER1/6	species	0	0	1	1	1	False	zero_traits
@@ -1474,13 +1474,13 @@ NCBITaxon:4903	Cyberlindnera jadinii	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:5410	Cystofilobasidium	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:665099	Cytobacillus oceanisediminis	species	45	43	1	1	1	True	rich_gte_3
 NCBITaxon:978	Cytophaga	genus	21	14	3	3	3	True	rich_gte_3
-NCBITaxon:89373	Cytophagaceae	family	86	74	2	2	2	True	rich_gte_3
+NCBITaxon:89373	Cytophagaceae	family	84	72	2	2	2	True	rich_gte_3
 NCBITaxon:1230097	Cytospora leucostoma	species	0	0	5	5	1	False	zero_traits
 NCBITaxon:35753	Dactylosporangium	genus	84	66	2	2	2	True	rich_gte_3
 NCBITaxon:237557	Davidiella	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:4959	Debaryomyces hansenii	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1853546	Debaryomyces sp.	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:73029	Dechloromonas	genus	52	46	6	6	6	True	rich_gte_3
+NCBITaxon:73029	Dechloromonas	genus	50	44	6	6	6	True	rich_gte_3
 NCBITaxon:191394	Deferribacteraceae	family	50	47	5	5	5	True	rich_gte_3
 NCBITaxon:191393	Deferribacterales	order	77	68	2	2	2	True	rich_gte_3
 NCBITaxon:68337	Deferribacteres	class	77	68	5	5	5	True	rich_gte_3
@@ -1493,15 +1493,15 @@ NCBITaxon:51514	Dehalobacterium	genus	0	0	15	15	11	False	zero_traits
 NCBITaxon:51515	Dehalobacterium formicoaceticum	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:1202465	Dehalococcoidales	order	16	16	1	1	1	True	rich_gte_3
 NCBITaxon:670486	Dehalogenimonas	genus	9	9	1	1	1	True	rich_gte_3
-NCBITaxon:183710	Deinococcaceae	family	139	117	4	4	3	True	rich_gte_3
-NCBITaxon:118964	Deinococcales	order	139	117	2	2	2	True	rich_gte_3
-NCBITaxon:188787	Deinococci	class	179	134	7	7	6	True	rich_gte_3
-NCBITaxon:1297	Deinococcota	phylum	179	134	13	13	8	True	rich_gte_3
-NCBITaxon:1298	Deinococcus	genus	135	113	16	16	12	True	rich_gte_3
+NCBITaxon:183710	Deinococcaceae	family	137	115	4	4	3	True	rich_gte_3
+NCBITaxon:118964	Deinococcales	order	137	115	2	2	2	True	rich_gte_3
+NCBITaxon:188787	Deinococci	class	177	132	7	7	6	True	rich_gte_3
+NCBITaxon:1297	Deinococcota	phylum	177	132	13	13	8	True	rich_gte_3
+NCBITaxon:1298	Deinococcus	genus	133	111	16	16	12	True	rich_gte_3
 NCBITaxon:1768108	Deinococcus actinosclerus	species	5	5	2	2	2	True	rich_gte_3
 NCBITaxon:310783	Deinococcus deserti	species	33	32	1	1	1	True	rich_gte_3
 NCBITaxon:317577	Deinococcus ficus	species	50	49	1	1	1	True	rich_gte_3
-NCBITaxon:502394	Deinococcus gobiensis	species	31	29	1	1	1	True	rich_gte_3
+NCBITaxon:502394	Deinococcus gobiensis	species	29	27	1	1	1	True	rich_gte_3
 NCBITaxon:57498	Deinococcus grandis	species	8	6	1	1	1	True	rich_gte_3
 NCBITaxon:309887	Deinococcus maricopensis	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:55148	Deinococcus proteolyticus	species	10	8	1	1	1	True	rich_gte_3
@@ -1516,16 +1516,16 @@ NCBITaxon:1886637	Delftia sp.	species	6	1	3	3	2	True	rich_gte_3
 NCBITaxon:1920191	Delftia sp. HK171	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:180282	Delftia tsuruhatensis	species	27	23	3	3	2	True	rich_gte_3
 NCBITaxon:28221	Deltaproteobacteria	class	41	37	44	44	36	True	rich_gte_3
-NCBITaxon:1042322	Demequinaceae	family	75	68	1	1	1	True	rich_gte_3
+NCBITaxon:1042322	Demequinaceae	family	73	66	1	1	1	True	rich_gte_3
 NCBITaxon:63958	Demetria	genus	16	13	1	1	1	True	rich_gte_3
 NCBITaxon:59507	Denitrobacter	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:79603	Denitrobacterium	genus	10	7	1	1	1	True	rich_gte_3
 NCBITaxon:79604	Denitrobacterium detoxificans	species	10	7	1	1	1	True	rich_gte_3
 NCBITaxon:2570834	Densospora	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:36739	Dermabacter	genus	47	43	12	12	8	True	rich_gte_3
+NCBITaxon:36739	Dermabacter	genus	46	42	12	12	8	True	rich_gte_3
 NCBITaxon:1667168	Dermabacter jinjuensis	species	25	24	1	1	1	True	rich_gte_3
 NCBITaxon:1630135	Dermabacter vaginalis	species	25	24	1	1	1	True	rich_gte_3
-NCBITaxon:85020	Dermabacteraceae	family	118	106	11	10	7	True	rich_gte_3
+NCBITaxon:85020	Dermabacteraceae	family	116	104	11	10	7	True	rich_gte_3
 NCBITaxon:145357	Dermacoccaceae	family	110	96	4	4	3	True	rich_gte_3
 NCBITaxon:57495	Dermacoccus	genus	38	31	12	12	8	True	rich_gte_3
 NCBITaxon:1274	Dermacoccus nishinomiyaensis	species	12	7	1	1	1	True	rich_gte_3
@@ -1615,7 +1615,7 @@ NCBITaxon:767018	Diaporthaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:5114	Diaporthales	order	0	0	1	1	1	False	zero_traits
 NCBITaxon:36922	Diaporthe	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:869	Dichelobacter	genus	9	7	1	1	1	True	rich_gte_3
-NCBITaxon:204037	Dickeya	genus	37	32	1	1	1	True	rich_gte_3
+NCBITaxon:204037	Dickeya	genus	35	30	1	1	1	True	rich_gte_3
 NCBITaxon:556	Dickeya chrysanthemi	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:1778540	Dickeya fangzhongdai	species	5	4	1	1	1	True	rich_gte_3
 NCBITaxon:5782	Dictyostelium	genus	0	0	1	1	1	False	zero_traits
@@ -1659,8 +1659,8 @@ NCBITaxon:94254	Dyadobacter fermentans	species	21	19	1	1	1	True	rich_gte_3
 NCBITaxon:231454	Dyella	genus	90	78	4	4	4	True	rich_gte_3
 NCBITaxon:363848	Dyella ginsengisoli	species	41	40	1	1	1	True	rich_gte_3
 NCBITaxon:311235	Dyella koreensis	species	36	35	1	1	1	True	rich_gte_3
-NCBITaxon:2005520	Dysgonomonadaceae	family	92	81	2	2	2	True	rich_gte_3
-NCBITaxon:156973	Dysgonomonas	genus	35	28	8	8	7	True	rich_gte_3
+NCBITaxon:2005520	Dysgonomonadaceae	family	90	79	2	2	2	True	rich_gte_3
+NCBITaxon:156973	Dysgonomonas	genus	34	27	8	8	7	True	rich_gte_3
 NCBITaxon:156974	Dysgonomonas gade	species	12	9	3	3	2	True	rich_gte_3
 NCBITaxon:2591381	Dysosmobacter	genus	4	3	6	6	4	True	rich_gte_3
 NCBITaxon:2763041	Dysosmobacter hominis	species	0	0	3	3	2	False	zero_traits
@@ -1670,8 +1670,8 @@ NCBITaxon:137993	Ectobacillus funiculus	species	21	19	1	1	1	True	rich_gte_3
 NCBITaxon:300	Ectopseudomonas mendocina	species	25	23	2	2	2	True	rich_gte_3
 NCBITaxon:301	Ectopseudomonas oleovorans	species	18	10	4	4	2	True	rich_gte_3
 NCBITaxon:330	Ectopseudomonas oleovorans	species	5	5	2	2	2	True	rich_gte_3
-NCBITaxon:72276	Ectothiorhodospiraceae	family	143	105	1	1	1	True	rich_gte_3
-NCBITaxon:635	Edwardsiella	genus	28	19	2	2	2	True	rich_gte_3
+NCBITaxon:72276	Ectothiorhodospiraceae	family	141	103	1	1	1	True	rich_gte_3
+NCBITaxon:635	Edwardsiella	genus	27	18	2	2	2	True	rich_gte_3
 NCBITaxon:84111	Eggerthella	genus	16	10	107	105	67	True	rich_gte_3
 NCBITaxon:84112	Eggerthella lenta	species	16	10	44	44	33	True	rich_gte_3
 NCBITaxon:242230	Eggerthella sinensis	species	5	3	1	1	1	True	rich_gte_3
@@ -1686,8 +1686,8 @@ NCBITaxon:1643822	Eggerthellales	order	74	59	1	1	1	True	rich_gte_3
 NCBITaxon:1279384	Eggerthia	genus	15	12	9	9	5	True	rich_gte_3
 NCBITaxon:31973	Eggerthia catenaformis	species	15	12	7	7	2	True	rich_gte_3
 NCBITaxon:943	Ehrlichia	genus	13	13	1	1	1	True	rich_gte_3
-NCBITaxon:538	Eikenella	genus	17	13	21	21	18	True	rich_gte_3
-NCBITaxon:539	Eikenella corrodens	species	17	13	19	18	12	True	rich_gte_3
+NCBITaxon:538	Eikenella	genus	16	12	21	21	18	True	rich_gte_3
+NCBITaxon:539	Eikenella corrodens	species	16	12	19	18	12	True	rich_gte_3
 NCBITaxon:2766967	Eikenella glucosivorans	species	2	1	1	1	1	True	sparse_1_2
 NCBITaxon:1434000	Eilatimonas	genus	29	27	3	3	2	True	rich_gte_3
 NCBITaxon:1432051	Eisenbergiella	genus	9	3	28	28	21	True	rich_gte_3
@@ -1720,15 +1720,15 @@ NCBITaxon:1472761	Enorma massiliensis	species	9	8	4	4	2	True	rich_gte_3
 NCBITaxon:106591	Ensifer	genus	27	11	1	1	1	True	rich_gte_3
 NCBITaxon:106592	Ensifer adhaerens	species	11	7	1	1	1	True	rich_gte_3
 NCBITaxon:1164863	Enteractinococcus	genus	62	60	1	1	1	True	rich_gte_3
-NCBITaxon:547	Enterobacter	genus	57	45	112	111	67	True	rich_gte_3
-NCBITaxon:61645	Enterobacter asburiae	species	16	12	3	3	3	True	rich_gte_3
-NCBITaxon:881260	Enterobacter bugandensis	species	17	14	4	4	4	True	rich_gte_3
-NCBITaxon:69218	Enterobacter cancerogenus	species	13	9	7	7	5	True	rich_gte_3
+NCBITaxon:547	Enterobacter	genus	55	43	112	111	67	True	rich_gte_3
+NCBITaxon:61645	Enterobacter asburiae	species	15	11	3	3	3	True	rich_gte_3
+NCBITaxon:881260	Enterobacter bugandensis	species	16	13	4	4	4	True	rich_gte_3
+NCBITaxon:69218	Enterobacter cancerogenus	species	12	8	7	7	5	True	rich_gte_3
 NCBITaxon:2494701	Enterobacter chengduensis	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:550	Enterobacter cloacae	species	24	17	20	20	15	True	rich_gte_3
+NCBITaxon:550	Enterobacter cloacae	species	23	16	20	20	15	True	rich_gte_3
 NCBITaxon:2027919	Enterobacter cloacae complex sp.	species	0	0	3	3	3	False	zero_traits
 NCBITaxon:158836	Enterobacter hormaechei	species	18	12	19	19	11	True	rich_gte_3
-NCBITaxon:208224	Enterobacter kobei	species	13	8	4	4	3	True	rich_gte_3
+NCBITaxon:208224	Enterobacter kobei	species	12	7	4	4	3	True	rich_gte_3
 NCBITaxon:299767	Enterobacter ludwigii	species	12	8	2	2	2	True	rich_gte_3
 NCBITaxon:539813	Enterobacter mori	species	23	20	2	2	2	True	rich_gte_3
 NCBITaxon:2478464	Enterobacter oligotrophicus	species	0	0	1	1	1	False	zero_traits
@@ -1746,10 +1746,10 @@ NCBITaxon:418640	Enterobacter sp. NJ-64	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1827481	Enterobacter sp. ODB01	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2707174	Enterobacter sp. T2	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1859066	Enterobacter sp. UPIB	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:91347	Enterobacterales	order	209	165	114	114	82	True	rich_gte_3
+NCBITaxon:91347	Enterobacterales	order	207	163	114	114	82	True	rich_gte_3
 NCBITaxon:1225789	Enterobacteria phage SfI	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:55884	Enterobacteria phage SfV	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:543	Enterobacteriaceae	family	178	143	268	256	164	True	rich_gte_3
+NCBITaxon:543	Enterobacteriaceae	family	176	141	268	256	164	True	rich_gte_3
 NCBITaxon:693444	Enterobacteriaceae bacterium strain FGI 57	species	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:2719313	Enterocloster	genus	43	33	10	10	3	True	rich_gte_3
 NCBITaxon:358742	Enterocloster aldenensis	species	13	10	12	12	7	True	rich_gte_3
@@ -1758,23 +1758,23 @@ NCBITaxon:208479	Enterocloster bolteae	species	15	11	32	30	22	True	rich_gte_3
 NCBITaxon:358743	Enterocloster citroniae	species	11	8	20	20	13	True	rich_gte_3
 NCBITaxon:1531	Enterocloster clostridioformis	species	18	12	30	30	14	True	rich_gte_3
 NCBITaxon:460384	Enterocloster lavalensis	species	27	25	3	3	2	True	rich_gte_3
-NCBITaxon:81852	Enterococcaceae	family	119	98	93	92	61	True	rich_gte_3
+NCBITaxon:81852	Enterococcaceae	family	117	96	93	92	61	True	rich_gte_3
 NCBITaxon:423410	Enterococcaceae bacterium RF39	species	0	0	9	9	6	False	zero_traits
-NCBITaxon:1350	Enterococcus	genus	104	90	197	197	128	True	rich_gte_3
-NCBITaxon:33945	Enterococcus avium	species	16	9	3	3	3	True	rich_gte_3
-NCBITaxon:37734	Enterococcus casseliflavus	species	17	13	4	4	3	True	rich_gte_3
+NCBITaxon:1350	Enterococcus	genus	102	88	197	197	128	True	rich_gte_3
+NCBITaxon:33945	Enterococcus avium	species	15	8	3	3	3	True	rich_gte_3
+NCBITaxon:37734	Enterococcus casseliflavus	species	16	12	4	4	3	True	rich_gte_3
 NCBITaxon:44008	Enterococcus cecorum	species	13	10	4	4	4	True	rich_gte_3
-NCBITaxon:53345	Enterococcus durans	species	12	9	11	11	7	True	rich_gte_3
-NCBITaxon:1351	Enterococcus faecalis	species	28	18	19	19	17	True	rich_gte_3
-NCBITaxon:1352	Enterococcus faecium	species	21	15	18	18	15	True	rich_gte_3
-NCBITaxon:1353	Enterococcus gallinarum	species	17	11	2	2	2	True	rich_gte_3
+NCBITaxon:53345	Enterococcus durans	species	11	8	11	11	7	True	rich_gte_3
+NCBITaxon:1351	Enterococcus faecalis	species	27	17	19	19	17	True	rich_gte_3
+NCBITaxon:1352	Enterococcus faecium	species	20	14	18	18	15	True	rich_gte_3
+NCBITaxon:1353	Enterococcus gallinarum	species	16	10	2	2	2	True	rich_gte_3
 NCBITaxon:160453	Enterococcus gilvus	species	8	6	5	5	3	True	rich_gte_3
 NCBITaxon:155618	Enterococcus haemoperoxidus	species	13	11	1	1	1	True	rich_gte_3
 NCBITaxon:249189	Enterococcus hermanniensis	species	23	21	2	2	1	True	rich_gte_3
 NCBITaxon:1354	Enterococcus hirae	species	12	9	2	2	1	True	rich_gte_3
-NCBITaxon:246144	Enterococcus italicus	species	37	35	1	1	1	True	rich_gte_3
+NCBITaxon:246144	Enterococcus italicus	species	36	34	1	1	1	True	rich_gte_3
 NCBITaxon:53346	Enterococcus mundtii	species	11	8	1	1	1	True	rich_gte_3
-NCBITaxon:71452	Enterococcus raffinosus	species	14	11	3	3	2	True	rich_gte_3
+NCBITaxon:71452	Enterococcus raffinosus	species	13	10	3	3	2	True	rich_gte_3
 NCBITaxon:762845	Enterococcus rivorum	species	8	6	1	1	1	True	rich_gte_3
 NCBITaxon:41997	Enterococcus saccharolyticus	species	33	30	1	1	1	True	rich_gte_3
 NCBITaxon:35783	Enterococcus sp.	species	10	7	12	12	6	True	rich_gte_3
@@ -1786,42 +1786,42 @@ NCBITaxon:580024	Enterorhabdus	genus	0	0	38	38	12	False	zero_traits
 NCBITaxon:33925	Entomoplasmataceae	family	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:104397	Epicoccum	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:40637	Epidinium	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:2782229	Epilithonimonas	genus	83	76	1	1	1	True	rich_gte_3
-NCBITaxon:420404	Epilithonimonas hominis	species	51	48	2	2	1	True	rich_gte_3
-NCBITaxon:3031852	Epsilonproteobacteria	class	182	117	9	9	8	True	rich_gte_3
+NCBITaxon:2782229	Epilithonimonas	genus	82	75	1	1	1	True	rich_gte_3
+NCBITaxon:420404	Epilithonimonas hominis	species	50	47	2	2	1	True	rich_gte_3
+NCBITaxon:3031852	Epsilonproteobacteria	class	180	115	9	9	8	True	rich_gte_3
 NCBITaxon:171412	Eremococcus	genus	13	11	4	4	4	True	rich_gte_3
-NCBITaxon:551	Erwinia	genus	52	44	24	24	14	True	rich_gte_3
+NCBITaxon:551	Erwinia	genus	50	42	24	24	14	True	rich_gte_3
 NCBITaxon:552	Erwinia amylovora	species	13	11	1	1	1	True	rich_gte_3
-NCBITaxon:68334	Erwinia aphidicola	species	12	10	2	2	1	True	rich_gte_3
-NCBITaxon:182337	Erwinia billingiae	species	10	9	2	2	2	True	rich_gte_3
+NCBITaxon:68334	Erwinia aphidicola	species	11	9	2	2	1	True	rich_gte_3
+NCBITaxon:182337	Erwinia billingiae	species	9	8	2	2	2	True	rich_gte_3
 NCBITaxon:796334	Erwinia oleae	species	4	3	1	1	1	True	rich_gte_3
 NCBITaxon:55212	Erwinia rhapontici	species	6	5	1	1	1	True	rich_gte_3
 NCBITaxon:441667	Erwinia soli	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1903409	Erwiniaceae	family	114	97	3	3	2	True	rich_gte_3
-NCBITaxon:1647	Erysipelothrix	genus	40	31	5	5	4	True	rich_gte_3
+NCBITaxon:1903409	Erwiniaceae	family	112	95	3	3	2	True	rich_gte_3
+NCBITaxon:1647	Erysipelothrix	genus	39	30	5	5	4	True	rich_gte_3
 NCBITaxon:1514105	Erysipelothrix larvae	species	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:380638	Erysipelothrix muris	species	0	0	2	2	1	False	zero_traits
-NCBITaxon:1648	Erysipelothrix rhusiopathiae	species	13	10	1	1	1	True	rich_gte_3
+NCBITaxon:1648	Erysipelothrix rhusiopathiae	species	12	9	1	1	1	True	rich_gte_3
 NCBITaxon:2714929	Erysipelothrix sp. HDW6B	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:128827	Erysipelotrichaceae	family	57	38	146	139	105	True	rich_gte_3
+NCBITaxon:128827	Erysipelotrichaceae	family	56	37	146	139	105	True	rich_gte_3
 NCBITaxon:2049044	Erysipelotrichaceae bacterium	species	0	0	5	5	4	False	zero_traits
 NCBITaxon:658657	Erysipelotrichaceae bacterium 21_3	species	2	2	4	4	4	True	sparse_1_2
 NCBITaxon:457422	Erysipelotrichaceae bacterium 2_2_44A	species	2	2	6	6	6	True	sparse_1_2
 NCBITaxon:658659	Erysipelotrichaceae bacterium 3_1_53	species	4	4	1	1	1	True	rich_gte_3
 NCBITaxon:552396	Erysipelotrichaceae bacterium 5_2_54FAA	species	5	5	2	2	2	True	rich_gte_3
 NCBITaxon:469614	Erysipelotrichaceae bacterium 6_1_45	species	2	2	3	3	3	True	sparse_1_2
-NCBITaxon:526525	Erysipelotrichales	order	73	47	65	65	53	True	rich_gte_3
-NCBITaxon:526524	Erysipelotrichia	class	73	47	54	53	47	True	rich_gte_3
+NCBITaxon:526525	Erysipelotrichales	order	72	46	65	65	53	True	rich_gte_3
+NCBITaxon:526524	Erysipelotrichia	class	72	46	54	53	47	True	rich_gte_3
 NCBITaxon:264095	Erythricium	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:264096	Erythricium laetum	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1041	Erythrobacter	genus	64	57	1	1	1	True	rich_gte_3
 NCBITaxon:39960	Erythrobacter litoralis	species	21	20	1	1	1	True	rich_gte_3
 NCBITaxon:1112	Erythrobacter neustonensis	species	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:335929	Erythrobacteraceae	family	125	108	5	5	4	True	rich_gte_3
-NCBITaxon:561	Escherichia	genus	83	59	153	148	91	True	rich_gte_3
-NCBITaxon:208962	Escherichia albertii	species	15	11	8	8	5	True	rich_gte_3
-NCBITaxon:562	Escherichia coli	species	81	59	114	114	67	True	rich_gte_3
-NCBITaxon:564	Escherichia fergusonii	species	14	10	6	6	3	True	rich_gte_3
+NCBITaxon:561	Escherichia	genus	81	57	153	148	91	True	rich_gte_3
+NCBITaxon:208962	Escherichia albertii	species	14	10	8	8	5	True	rich_gte_3
+NCBITaxon:562	Escherichia coli	species	79	57	114	114	67	True	rich_gte_3
+NCBITaxon:564	Escherichia fergusonii	species	13	9	6	6	3	True	rich_gte_3
 NCBITaxon:1499973	Escherichia marmotae	species	3	2	5	5	4	True	rich_gte_3
 NCBITaxon:1124654	Escherichia phage TL-2011b	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1884818	Escherichia sp.	species	5	2	11	11	5	True	rich_gte_3
@@ -1837,7 +1837,7 @@ NCBITaxon:253238	Ethanoligenens	genus	42	40	6	6	5	True	rich_gte_3
 NCBITaxon:253239	Ethanoligenens harbinense	species	42	40	3	3	3	True	rich_gte_3
 NCBITaxon:186806	Eubacteriaceae	family	89	56	41	41	31	True	rich_gte_3
 NCBITaxon:2049045	Eubacteriaceae bacterium	species	0	0	2	2	2	False	zero_traits
-NCBITaxon:186802	Eubacteriales	order	414	190	279	267	169	True	rich_gte_3
+NCBITaxon:186802	Eubacteriales	order	413	189	279	267	169	True	rich_gte_3
 NCBITaxon:1689146	Eubacteriales Family III. Incertae Sedis	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:1689151	Eubacteriales Family IV. Incertae Sedis	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:543313	Eubacteriales Family XII. Incertae Sedis	family	51	43	3	3	2	True	rich_gte_3
@@ -1879,7 +1879,7 @@ NCBITaxon:39496	Eubacterium ventriosum	species	6	4	54	54	36	True	rich_gte_3
 NCBITaxon:39497	Eubacterium xylanophilum	species	3	3	12	12	10	True	rich_gte_3
 NCBITaxon:2211178	Evtepia	genus	0	0	4	4	3	False	zero_traits
 NCBITaxon:2211183	Evtepia gabavorous	species	0	0	5	5	4	False	zero_traits
-NCBITaxon:33986	Exiguobacterium	genus	92	80	8	8	8	True	rich_gte_3
+NCBITaxon:33986	Exiguobacterium	genus	90	78	8	8	8	True	rich_gte_3
 NCBITaxon:1224749	Exiguobacterium sp. ZWU0009	species	3	3	1	1	1	True	rich_gte_3
 NCBITaxon:91928	Exophiala spinifera	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:93612	Exserohilum turcicum	species	0	0	1	1	1	False	zero_traits
@@ -1928,12 +1928,12 @@ NCBITaxon:34059	Faucicola atlantae	species	9	8	2	2	1	True	rich_gte_3
 NCBITaxon:34062	Faucicola osloensis	species	15	10	4	4	4	True	rich_gte_3
 NCBITaxon:1686313	Fenollaria	genus	8	5	20	19	8	True	rich_gte_3
 NCBITaxon:938288	Fenollaria massiliensis	species	6	5	9	9	3	True	rich_gte_3
-NCBITaxon:1562970	Fermentimonas caenicola	species	24	23	1	1	1	True	rich_gte_3
+NCBITaxon:1562970	Fermentimonas caenicola	species	23	22	1	1	1	True	rich_gte_3
 NCBITaxon:44012	Ferrimonas balearica	species	13	11	1	1	1	True	rich_gte_3
 NCBITaxon:1964357	Fibrobacter sp. UWB3	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:833	Fibrobacter succinogenes	species	8	8	1	1	1	True	rich_gte_3
 NCBITaxon:65842	Fibrobacterota	phylum	17	13	1	1	1	True	rich_gte_3
-NCBITaxon:1329200	Fictibacillus	genus	99	92	2	2	2	True	rich_gte_3
+NCBITaxon:1329200	Fictibacillus	genus	97	90	2	2	2	True	rich_gte_3
 NCBITaxon:44259	Filifactor	genus	10	8	46	46	33	True	rich_gte_3
 NCBITaxon:143361	Filifactor alocis	species	7	7	19	19	12	True	rich_gte_3
 NCBITaxon:29374	Filifactor villosus	species	6	4	3	3	2	True	rich_gte_3
@@ -1976,21 +1976,21 @@ NCBITaxon:1262991	Firmicutes bacterium CAG:882	species	0	0	4	4	4	False	zero_trai
 NCBITaxon:1262989	Firmicutes bacterium CAG:94	species	0	0	4	4	2	False	zero_traits
 NCBITaxon:1262988	Firmicutes bacterium CAG:95	species	0	0	6	6	3	False	zero_traits
 NCBITaxon:1897037	Firmicutes bacterium CAG_194_44_15	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1522056	Flaviflexus	genus	39	38	2	2	2	True	rich_gte_3
+NCBITaxon:1522056	Flaviflexus	genus	37	36	2	2	2	True	rich_gte_3
 NCBITaxon:398041	Flavisolibacter	genus	35	33	1	1	1	True	rich_gte_3
 NCBITaxon:1492898	Flavisolibacter tropicus	species	3	3	1	1	1	True	rich_gte_3
 NCBITaxon:1210116	Flavitalea	genus	6	6	1	1	1	True	rich_gte_3
-NCBITaxon:49546	Flavobacteriaceae	family	230	174	45	45	36	True	rich_gte_3
+NCBITaxon:49546	Flavobacteriaceae	family	228	172	45	45	36	True	rich_gte_3
 NCBITaxon:531844	Flavobacteriaceae bacterium 3519-10	species	2	2	1	1	1	True	sparse_1_2
-NCBITaxon:200644	Flavobacteriales	order	247	176	37	37	29	True	rich_gte_3
-NCBITaxon:117743	Flavobacteriia	class	247	176	23	23	20	True	rich_gte_3
-NCBITaxon:237	Flavobacterium	genus	161	136	20	20	19	True	rich_gte_3
+NCBITaxon:200644	Flavobacteriales	order	245	174	37	37	29	True	rich_gte_3
+NCBITaxon:117743	Flavobacteriia	class	245	174	23	23	20	True	rich_gte_3
+NCBITaxon:237	Flavobacterium	genus	159	134	20	20	19	True	rich_gte_3
 NCBITaxon:459526	Flavobacterium anhuiense	species	47	45	1	1	1	True	rich_gte_3
 NCBITaxon:996	Flavobacterium columnare	species	27	23	1	1	1	True	rich_gte_3
 NCBITaxon:206041	Flavobacterium gelidilacus	species	8	7	2	2	1	True	rich_gte_3
 NCBITaxon:96345	Flavobacterium psychrophilum	species	24	21	1	1	1	True	rich_gte_3
 NCBITaxon:239	Flavobacterium sp.	species	12	4	1	1	1	True	rich_gte_3
-NCBITaxon:29536	Flavobacterium succinicans	species	17	14	1	1	1	True	rich_gte_3
+NCBITaxon:29536	Flavobacterium succinicans	species	16	13	1	1	1	True	rich_gte_3
 NCBITaxon:946234	Flavonifractor	genus	19	11	87	87	57	True	rich_gte_3
 NCBITaxon:292800	Flavonifractor plautii	species	18	11	41	41	27	True	rich_gte_3
 NCBITaxon:2049025	Flavonifractor sp.	species	6	2	2	2	1	True	rich_gte_3
@@ -2003,9 +2003,9 @@ NCBITaxon:1417852	Flintibacter butyricus	species	7	3	1	1	1	True	rich_gte_3
 NCBITaxon:1918624	Flintibacter sp.	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:332102	Fluviicola	genus	20	18	1	1	1	True	rich_gte_3
 NCBITaxon:191579	Fluviicola taffensis	species	20	18	1	1	1	True	rich_gte_3
-NCBITaxon:995014	Fontibacillus	genus	52	50	2	2	2	True	rich_gte_3
+NCBITaxon:995014	Fontibacillus	genus	51	49	2	2	2	True	rich_gte_3
 NCBITaxon:1434004	Fonticella	genus	27	25	4	2	1	True	rich_gte_3
-NCBITaxon:225842	Formosa	genus	60	58	2	2	2	True	rich_gte_3
+NCBITaxon:225842	Formosa	genus	58	56	2	2	2	True	rich_gte_3
 NCBITaxon:85013	Frankiales	order	34	30	1	1	1	True	rich_gte_3
 NCBITaxon:1434006	Fretibacterium	genus	24	21	18	18	11	True	rich_gte_3
 NCBITaxon:651822	Fretibacterium fastidiosum	species	24	21	14	14	10	True	rich_gte_3
@@ -2015,7 +2015,7 @@ NCBITaxon:546871	Friedmanniella luteola	species	31	28	1	1	1	True	rich_gte_3
 NCBITaxon:1335048	Frigidibacter mobilis	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1335631	Frischella	genus	26	23	1	1	1	True	rich_gte_3
 NCBITaxon:1918511	Frisingicoccus	genus	5	3	2	2	2	True	rich_gte_3
-NCBITaxon:2767881	Fructilactobacillus	genus	42	28	1	1	1	True	rich_gte_3
+NCBITaxon:2767881	Fructilactobacillus	genus	41	27	1	1	1	True	rich_gte_3
 NCBITaxon:1625	Fructilactobacillus sanfranciscensis	species	13	10	3	3	2	True	rich_gte_3
 NCBITaxon:177411	Fucophilus	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:231049	Furfurilactobacillus rossiae	species	23	21	1	1	1	True	rich_gte_3
@@ -2026,9 +2026,9 @@ NCBITaxon:1150298	Fusicatenibacter saccharivorans	species	30	25	35	35	20	True	ri
 NCBITaxon:2773922	Fusicatenibacter sp.	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:712973	Fusobacteria bacterium oral taxon A71	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:203492	Fusobacteriaceae	family	56	37	77	77	61	True	rich_gte_3
-NCBITaxon:203491	Fusobacteriales	order	89	57	68	68	58	True	rich_gte_3
-NCBITaxon:203490	Fusobacteriia	class	89	57	73	73	58	True	rich_gte_3
-NCBITaxon:32066	Fusobacteriota	phylum	89	57	102	102	73	True	rich_gte_3
+NCBITaxon:203491	Fusobacteriales	order	88	56	68	68	58	True	rich_gte_3
+NCBITaxon:203490	Fusobacteriia	class	88	56	73	73	58	True	rich_gte_3
+NCBITaxon:32066	Fusobacteriota	phylum	88	56	102	102	73	True	rich_gte_3
 NCBITaxon:848	Fusobacterium	genus	22	13	249	248	168	True	rich_gte_3
 NCBITaxon:76859	Fusobacterium animalis	species	10	10	5	5	3	True	rich_gte_3
 NCBITaxon:285729	Fusobacterium canifelinum	species	7	4	3	3	3	True	rich_gte_3
@@ -2057,25 +2057,25 @@ NCBITaxon:1154586	Gaiella	genus	2	2	5	5	4	True	sparse_1_2
 NCBITaxon:1154585	Gaiellaceae	family	2	2	2	2	2	True	sparse_1_2
 NCBITaxon:750	Gallibacterium anatis	species	10	8	1	1	1	True	rich_gte_3
 NCBITaxon:162290	Gallicola	genus	5	4	11	11	8	True	rich_gte_3
-NCBITaxon:1236	Gammaproteobacteria	class	608	255	150	147	104	True	rich_gte_3
+NCBITaxon:1236	Gammaproteobacteria	class	606	253	150	147	104	True	rich_gte_3
 NCBITaxon:5314	Ganoderma	genus	0	0	2	2	1	False	zero_traits
-NCBITaxon:2701	Gardnerella	genus	29	26	55	55	35	True	rich_gte_3
+NCBITaxon:2701	Gardnerella	genus	28	25	55	55	35	True	rich_gte_3
 NCBITaxon:2914925	Gardnerella greenwoodii	species	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:2914924	Gardnerella pickettii	species	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:2049026	Gardnerella sp.	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2792979	Gardnerella swidsinskii	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:2702	Gardnerella vaginalis	species	29	26	35	34	24	True	rich_gte_3
+NCBITaxon:2702	Gardnerella vaginalis	species	28	25	35	34	24	True	rich_gte_3
 NCBITaxon:1774136	Garicola	genus	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:2763655	Gehongia tenuis	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:189326	Gelria	genus	3	3	1	1	1	True	rich_gte_3
-NCBITaxon:1378	Gemella	genus	17	13	149	149	91	True	rich_gte_3
+NCBITaxon:1378	Gemella	genus	16	12	149	149	91	True	rich_gte_3
 NCBITaxon:84136	Gemella bergeri	species	6	6	1	1	1	True	rich_gte_3
-NCBITaxon:1379	Gemella haemolysans	species	12	11	17	17	11	True	rich_gte_3
-NCBITaxon:29391	Gemella morbillorum	species	13	10	22	21	17	True	rich_gte_3
+NCBITaxon:1379	Gemella haemolysans	species	11	10	17	17	11	True	rich_gte_3
+NCBITaxon:29391	Gemella morbillorum	species	12	9	22	21	17	True	rich_gte_3
 NCBITaxon:1179782	Gemella parahaemolysans	species	1	1	3	3	1	True	sparse_1_2
-NCBITaxon:84135	Gemella sanguinis	species	8	8	24	24	14	True	rich_gte_3
+NCBITaxon:84135	Gemella sanguinis	species	7	7	24	24	14	True	rich_gte_3
 NCBITaxon:1966354	Gemella sp.	species	0	0	11	11	4	False	zero_traits
-NCBITaxon:539738	Gemellaceae	family	17	13	28	28	19	True	rich_gte_3
+NCBITaxon:539738	Gemellaceae	family	16	12	28	28	19	True	rich_gte_3
 NCBITaxon:502393	Gemelliphila asaccharolytica	species	6	6	8	8	7	True	rich_gte_3
 NCBITaxon:113	Gemmata	genus	10	8	1	1	1	True	rich_gte_3
 NCBITaxon:114	Gemmata obscuriglobus	species	9	8	1	1	1	True	rich_gte_3
@@ -2087,9 +2087,9 @@ NCBITaxon:173479	Gemmatimonas	genus	14	11	4	4	3	True	rich_gte_3
 NCBITaxon:204475	Gemmiger	genus	10	6	56	56	36	True	rich_gte_3
 NCBITaxon:745368	Gemmiger formicilis	species	5	5	21	21	17	True	rich_gte_3
 NCBITaxon:1965662	Gemmiger sp. An87	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:204456	Gemmobacter	genus	66	57	2	2	1	True	rich_gte_3
+NCBITaxon:204456	Gemmobacter	genus	64	55	2	2	1	True	rich_gte_3
 NCBITaxon:483547	Geoalkalibacter subterraneus	species	45	43	1	1	1	True	rich_gte_3
-NCBITaxon:129337	Geobacillus	genus	90	78	12	12	11	True	rich_gte_3
+NCBITaxon:129337	Geobacillus	genus	88	76	12	12	11	True	rich_gte_3
 NCBITaxon:1921421	Geobacillus genomosp. 3	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1629723	Geobacillus sp. 12AMOR1	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1233873	Geobacillus sp. GHH01	species	6	6	1	1	1	True	rich_gte_3
@@ -2098,22 +2098,22 @@ NCBITaxon:471223	Geobacillus sp. WCH70	species	6	6	1	1	1	True	rich_gte_3
 NCBITaxon:581103	Geobacillus sp. Y4.1MC1	species	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:129338	Geobacillus subterraneus	species	15	12	1	1	1	True	rich_gte_3
 NCBITaxon:33940	Geobacillus thermodenitrificans	species	16	13	1	1	1	True	rich_gte_3
-NCBITaxon:33941	Geobacillus thermoleovorans	species	24	22	1	1	1	True	rich_gte_3
+NCBITaxon:33941	Geobacillus thermoleovorans	species	22	20	1	1	1	True	rich_gte_3
 NCBITaxon:28231	Geobacter	genus	36	29	2	2	2	True	rich_gte_3
 NCBITaxon:443143	Geobacter sp. M18	species	6	6	2	2	2	True	rich_gte_3
 NCBITaxon:443144	Geobacter sp. M21	species	5	5	1	1	1	True	rich_gte_3
 NCBITaxon:35554	Geobacter sulfurreducens	species	13	11	1	1	1	True	rich_gte_3
 NCBITaxon:85030	Geodermatophilaceae	family	137	107	6	6	6	True	rich_gte_3
 NCBITaxon:1860	Geodermatophilus	genus	85	69	2	2	2	True	rich_gte_3
-NCBITaxon:1236988	Geofilum	genus	16	16	3	3	2	True	rich_gte_3
-NCBITaxon:154116	Georgenia	genus	107	97	1	1	1	True	rich_gte_3
+NCBITaxon:1236988	Geofilum	genus	15	15	3	3	2	True	rich_gte_3
+NCBITaxon:154116	Georgenia	genus	105	95	1	1	1	True	rich_gte_3
 NCBITaxon:390806	Geosporobacter subterraneus	species	37	35	1	1	1	True	rich_gte_3
 NCBITaxon:1203471	Geotalea daltonii	species	32	30	1	1	1	True	rich_gte_3
 NCBITaxon:44675	Geothrix	genus	15	13	3	3	2	True	rich_gte_3
 NCBITaxon:581038	Gerres decacanthus	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1193503	Gilliamella	genus	20	16	7	7	2	True	rich_gte_3
 NCBITaxon:2094023	Glaesserella	genus	12	10	1	1	1	True	rich_gte_3
-NCBITaxon:66228	Gleimia europaea	species	13	10	2	2	2	True	rich_gte_3
+NCBITaxon:66228	Gleimia europaea	species	12	9	2	2	2	True	rich_gte_3
 NCBITaxon:13075	Globicatella	genus	21	18	2	2	1	True	rich_gte_3
 NCBITaxon:681950	Glomerellaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:658196	Glomus cerebriforme	species	0	0	1	1	1	False	zero_traits
@@ -2145,11 +2145,11 @@ NCBITaxon:397456	Gulbenkiania	genus	44	42	3	3	2	True	rich_gte_3
 NCBITaxon:749906	gut metagenome	species	0	0	8	8	3	False	zero_traits
 NCBITaxon:4467	Gymnostachys anceps	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:366614	Haematobacter	genus	7	7	3	3	1	True	rich_gte_3
-NCBITaxon:724	Haemophilus	genus	25	20	307	307	164	True	rich_gte_3
+NCBITaxon:724	Haemophilus	genus	24	19	307	307	164	True	rich_gte_3
 NCBITaxon:726	Haemophilus haemolyticus	species	9	7	14	14	8	True	rich_gte_3
-NCBITaxon:727	Haemophilus influenzae	species	22	18	19	19	11	True	rich_gte_3
+NCBITaxon:727	Haemophilus influenzae	species	21	17	19	19	11	True	rich_gte_3
 NCBITaxon:735	Haemophilus parahaemolyticus	species	8	7	11	11	8	True	rich_gte_3
-NCBITaxon:729	Haemophilus parainfluenzae	species	13	12	89	89	59	True	rich_gte_3
+NCBITaxon:729	Haemophilus parainfluenzae	species	12	11	89	89	59	True	rich_gte_3
 NCBITaxon:736	Haemophilus paraphrohaemolyticus	species	5	4	5	5	3	True	rich_gte_3
 NCBITaxon:249188	Haemophilus pittmaniae	species	7	6	11	11	6	True	rich_gte_3
 NCBITaxon:740	Haemophilus sp.	species	6	6	3	3	2	True	rich_gte_3
@@ -2160,8 +2160,8 @@ NCBITaxon:1608898	Haemophilus sp. HMSC71H05	species	0	0	7	7	3	False	zero_traits
 NCBITaxon:712309	Haemophilus sp. oral taxon 035	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:712310	Haemophilus sp. oral taxon 036	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1078480	Haemophilus sputorum	species	7	6	10	10	7	True	rich_gte_3
-NCBITaxon:568	Hafnia	genus	28	20	13	13	3	True	rich_gte_3
-NCBITaxon:569	Hafnia alvei	species	17	10	3	3	2	True	rich_gte_3
+NCBITaxon:568	Hafnia	genus	27	19	13	13	3	True	rich_gte_3
+NCBITaxon:569	Hafnia alvei	species	16	9	3	3	2	True	rich_gte_3
 NCBITaxon:1873498	Hafnia sp.	species	2	1	10	10	1	True	sparse_1_2
 NCBITaxon:392825	Halalkalibacillus	genus	33	30	2	2	1	True	rich_gte_3
 NCBITaxon:86665	Halalkalibacterium halodurans	species	16	13	1	1	1	True	rich_gte_3
@@ -2178,13 +2178,13 @@ NCBITaxon:109244	Haloanella	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:1570	Halobacillus halophilus	species	23	20	1	1	1	True	rich_gte_3
 NCBITaxon:402384	Halobacillus mangrovi	species	34	33	1	1	1	True	rich_gte_3
 NCBITaxon:156205	Halobacillus trueperi	species	35	34	1	1	1	True	rich_gte_3
-NCBITaxon:2235	Halobacteriales	order	135	72	1	1	1	True	rich_gte_3
+NCBITaxon:2235	Halobacteriales	order	134	71	1	1	1	True	rich_gte_3
 NCBITaxon:46466	Halocella	genus	4	3	2	2	2	True	rich_gte_3
 NCBITaxon:1425377	Haloechinothrix	genus	61	54	3	3	2	True	rich_gte_3
 NCBITaxon:2251	Haloferax	genus	43	35	1	1	1	True	rich_gte_3
 NCBITaxon:574899	Haloferula	genus	31	30	2	2	1	True	rich_gte_3
-NCBITaxon:28256	Halomonadaceae	family	186	138	10	10	7	True	rich_gte_3
-NCBITaxon:2745	Halomonas	genus	146	121	29	29	17	True	rich_gte_3
+NCBITaxon:28256	Halomonadaceae	family	184	136	10	10	7	True	rich_gte_3
+NCBITaxon:2745	Halomonas	genus	144	119	29	29	17	True	rich_gte_3
 NCBITaxon:1486246	Halomonas sp.	species	10	3	1	1	1	True	rich_gte_3
 NCBITaxon:56688	Halorubrum	genus	56	33	1	1	1	True	rich_gte_3
 NCBITaxon:1879286	Halorubrum sp.	species	5	1	1	1	1	True	rich_gte_3
@@ -2192,7 +2192,7 @@ NCBITaxon:1892380	Harryflintia	genus	19	17	6	6	6	True	rich_gte_3
 NCBITaxon:1849041	Harryflintia acetispora	species	19	17	4	4	2	True	rich_gte_3
 NCBITaxon:1769729	Hathewaya	genus	27	20	1	1	1	True	rich_gte_3
 NCBITaxon:1498	Hathewaya histolytica	species	16	12	2	2	1	True	rich_gte_3
-NCBITaxon:31983	Helcococcus	genus	20	18	5	5	4	True	rich_gte_3
+NCBITaxon:31983	Helcococcus	genus	19	17	5	5	4	True	rich_gte_3
 NCBITaxon:209	Helicobacter	genus	33	29	34	34	21	True	rich_gte_3
 NCBITaxon:210	Helicobacter pylori	species	21	18	4	4	3	True	rich_gte_3
 NCBITaxon:59617	Helicobacter rodentium	species	5	5	3	3	1	True	rich_gte_3
@@ -2200,19 +2200,19 @@ NCBITaxon:218	Helicobacter sp.	species	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:76936	Helicobacter typhlonius	species	4	4	1	1	1	True	rich_gte_3
 NCBITaxon:72293	Helicobacteraceae	family	44	37	22	22	16	True	rich_gte_3
 NCBITaxon:31984	Heliobacteriaceae	family	14	10	1	1	1	True	rich_gte_3
-NCBITaxon:963	Herbaspirillum	genus	89	77	33	33	13	True	rich_gte_3
+NCBITaxon:963	Herbaspirillum	genus	88	76	33	33	13	True	rich_gte_3
 NCBITaxon:180195	Herbaspirillum autotrophicum	species	15	12	1	1	1	True	rich_gte_3
 NCBITaxon:92645	Herbaspirillum frisingense	species	16	13	1	1	1	True	rich_gte_3
 NCBITaxon:341045	Herbaspirillum hiltneri	species	33	32	1	1	1	True	rich_gte_3
-NCBITaxon:1890675	Herbaspirillum sp.	species	13	9	3	3	2	True	rich_gte_3
+NCBITaxon:1890675	Herbaspirillum sp.	species	12	8	3	3	2	True	rich_gte_3
 NCBITaxon:1663717	Herbinix	genus	23	22	1	1	1	True	rich_gte_3
 NCBITaxon:1679721	Herbinix luporum	species	22	21	1	1	1	True	rich_gte_3
 NCBITaxon:303379	Herminiimonas	genus	60	54	1	1	1	True	rich_gte_3
 NCBITaxon:43219	Herpotrichiellaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:241189	Hespellia	genus	24	22	3	3	2	True	rich_gte_3
 NCBITaxon:209389	Heyndrickxia acidicola	species	38	37	1	1	1	True	rich_gte_3
-NCBITaxon:1398	Heyndrickxia coagulans	species	23	19	7	4	2	True	rich_gte_3
-NCBITaxon:214906	Histophilus	genus	16	15	2	2	1	True	rich_gte_3
+NCBITaxon:1398	Heyndrickxia coagulans	species	22	18	7	4	2	True	rich_gte_3
+NCBITaxon:214906	Histophilus	genus	15	14	2	2	1	True	rich_gte_3
 NCBITaxon:274591	Hoeflea	genus	59	57	1	1	1	True	rich_gte_3
 NCBITaxon:1573535	Holdemanella	genus	13	8	69	69	46	True	rich_gte_3
 NCBITaxon:1735	Holdemanella biformis	species	10	8	27	27	20	True	rich_gte_3
@@ -2251,7 +2251,7 @@ NCBITaxon:2764322	Hydrogeniiclostridium mannosilyticum	species	1	1	1	1	1	True	sp
 NCBITaxon:223785	Hydrogenimonas	genus	9	7	3	3	2	True	rich_gte_3
 NCBITaxon:596767	Hydrogenoanaerobacterium	genus	36	34	14	14	10	True	rich_gte_3
 NCBITaxon:474960	Hydrogenoanaerobacterium saccharovorans	species	36	34	1	1	1	True	rich_gte_3
-NCBITaxon:47420	Hydrogenophaga	genus	70	62	3	3	3	True	rich_gte_3
+NCBITaxon:47420	Hydrogenophaga	genus	69	61	3	3	3	True	rich_gte_3
 NCBITaxon:206349	Hydrogenophilaceae	family	48	39	7	7	5	True	rich_gte_3
 NCBITaxon:119069	Hydrogenophilales	order	48	39	4	4	3	True	rich_gte_3
 NCBITaxon:2008785	Hydrogenophilia	class	49	40	2	2	1	True	rich_gte_3
@@ -2265,16 +2265,16 @@ NCBITaxon:1411621	Hymenobacter sedentarius	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1356852	Hymenobacter sp. APR13	species	5	5	1	1	1	True	rich_gte_3
 NCBITaxon:1385663	Hymenobacter sp. DG25A	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1385664	Hymenobacter sp. DG25B	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:45401	Hyphomicrobiaceae	family	64	46	6	6	4	True	rich_gte_3
-NCBITaxon:356	Hyphomicrobiales	order	374	211	41	40	27	True	rich_gte_3
+NCBITaxon:45401	Hyphomicrobiaceae	family	63	45	6	6	4	True	rich_gte_3
+NCBITaxon:356	Hyphomicrobiales	order	372	209	41	40	27	True	rich_gte_3
 NCBITaxon:81	Hyphomicrobium	genus	30	19	4	4	4	True	rich_gte_3
 NCBITaxon:69657	Hyphomonadaceae	family	93	89	1	1	1	True	rich_gte_3
 NCBITaxon:5125	Hypocreales	order	0	0	2	2	2	False	zero_traits
 NCBITaxon:467975	Iamia	genus	39	38	1	1	1	True	rich_gte_3
 NCBITaxon:135575	Idiomarina	genus	47	41	1	1	1	True	rich_gte_3
-NCBITaxon:267893	Idiomarinaceae	family	104	97	3	3	3	True	rich_gte_3
-NCBITaxon:795747	Ignavibacteria	class	50	46	1	1	1	True	rich_gte_3
-NCBITaxon:795748	Ignavibacteriales	order	50	46	1	1	1	True	rich_gte_3
+NCBITaxon:267893	Idiomarinaceae	family	102	95	3	3	3	True	rich_gte_3
+NCBITaxon:795747	Ignavibacteria	class	49	45	1	1	1	True	rich_gte_3
+NCBITaxon:795748	Ignavibacteriales	order	49	45	1	1	1	True	rich_gte_3
 NCBITaxon:1926667	Ihubacter	genus	0	0	2	2	1	False	zero_traits
 NCBITaxon:1852368	Ihuprevotella massiliensis	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1937007	Ileibacterium	genus	9	7	1	1	1	True	rich_gte_3
@@ -2291,12 +2291,12 @@ NCBITaxon:1673721	Intestinimonas massiliensis (ex Afouda et al. 2020)	species	2	
 NCBITaxon:3062493	Intestinimonas massiliensis (ex Liu et al. 2021)	species	0	0	6	6	1	False	zero_traits
 NCBITaxon:1965293	Intestinimonas sp.	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1640371	Intestinimonas sp. FSAA-17	species	0	0	2	2	1	False	zero_traits
-NCBITaxon:85021	Intrasporangiaceae	family	148	115	9	8	6	True	rich_gte_3
+NCBITaxon:85021	Intrasporangiaceae	family	146	113	9	8	6	True	rich_gte_3
 NCBITaxon:1915058	Iodobacter sp.	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:142587	Isobaculum	genus	7	5	5	5	3	True	rich_gte_3
-NCBITaxon:139208	Isoptericola variabilis	species	16	14	2	2	2	True	rich_gte_3
+NCBITaxon:139208	Isoptericola variabilis	species	15	13	2	2	2	True	rich_gte_3
 NCBITaxon:1763524	Isosphaeraceae	family	63	59	1	1	1	True	rich_gte_3
-NCBITaxon:53457	Janibacter	genus	96	83	5	5	4	True	rich_gte_3
+NCBITaxon:53457	Janibacter	genus	94	81	5	5	4	True	rich_gte_3
 NCBITaxon:857417	Janibacter indicus	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:262209	Janibacter melonis	species	35	31	2	2	1	True	rich_gte_3
 NCBITaxon:29580	Janthinobacterium	genus	30	19	9	9	7	True	rich_gte_3
@@ -2305,7 +2305,7 @@ NCBITaxon:1938606	Janthinobacterium sp. LM6	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1434010	Jatrophihabitans	genus	45	39	1	1	1	True	rich_gte_3
 NCBITaxon:1470540	Jeotgalibaca	genus	3	3	2	2	2	True	rich_gte_3
 NCBITaxon:708126	Jeotgalibaca dankookensis	species	1	1	1	1	1	True	sparse_1_2
-NCBITaxon:227979	Jeotgalicoccus	genus	68	64	5	5	4	True	rich_gte_3
+NCBITaxon:227979	Jeotgalicoccus	genus	66	62	5	5	4	True	rich_gte_3
 NCBITaxon:43994	Johnsonella	genus	6	6	26	26	15	True	rich_gte_3
 NCBITaxon:43995	Johnsonella ignava	species	6	6	7	7	6	True	rich_gte_3
 NCBITaxon:3059423	Johnsonella sp.	species	0	0	1	1	1	False	zero_traits
@@ -2333,21 +2333,21 @@ NCBITaxon:2212473	Kiritimatiellia bacterium	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:2063	Kitasatospora	genus	81	66	3	3	2	True	rich_gte_3
 NCBITaxon:2018025	Kitasatospora sp. MMS16-BH015	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:85011	Kitasatosporales	order	208	143	1	1	1	True	rich_gte_3
-NCBITaxon:160674	Klebsiella	genus	22	17	14	14	12	True	rich_gte_3
-NCBITaxon:570	Klebsiella	genus	47	35	127	127	82	True	rich_gte_3
-NCBITaxon:548	Klebsiella aerogenes	species	22	16	15	15	13	True	rich_gte_3
+NCBITaxon:160674	Klebsiella	genus	21	16	14	14	12	True	rich_gte_3
+NCBITaxon:570	Klebsiella	genus	46	34	127	127	82	True	rich_gte_3
+NCBITaxon:548	Klebsiella aerogenes	species	21	15	15	15	13	True	rich_gte_3
 NCBITaxon:39824	Klebsiella granulomatis	species	1	1	4	4	3	True	sparse_1_2
-NCBITaxon:1134687	Klebsiella michiganensis	species	16	13	5	5	3	True	rich_gte_3
-NCBITaxon:54291	Klebsiella ornithinolytica	species	14	11	3	3	2	True	rich_gte_3
-NCBITaxon:571	Klebsiella oxytoca	species	30	22	22	22	9	True	rich_gte_3
-NCBITaxon:573	Klebsiella pneumoniae	species	28	19	51	51	24	True	rich_gte_3
+NCBITaxon:1134687	Klebsiella michiganensis	species	15	12	5	5	3	True	rich_gte_3
+NCBITaxon:54291	Klebsiella ornithinolytica	species	13	10	3	3	2	True	rich_gte_3
+NCBITaxon:571	Klebsiella oxytoca	species	29	21	22	22	9	True	rich_gte_3
+NCBITaxon:573	Klebsiella pneumoniae	species	27	18	51	51	24	True	rich_gte_3
 NCBITaxon:1463165	Klebsiella quasipneumoniae	species	10	6	8	8	6	True	rich_gte_3
 NCBITaxon:576	Klebsiella sp.	species	9	3	14	14	3	True	rich_gte_3
 NCBITaxon:1581110	Klebsiella sp. HMSC16C06	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1934254	Klebsiella sp. M5al	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:749535	Klebsiella sp. MS 92-3	species	1	1	1	1	1	True	sparse_1_2
-NCBITaxon:244366	Klebsiella variicola	species	21	16	13	13	11	True	rich_gte_3
-NCBITaxon:579	Kluyvera	genus	23	13	7	7	7	True	rich_gte_3
+NCBITaxon:244366	Klebsiella variicola	species	20	15	13	13	11	True	rich_gte_3
+NCBITaxon:579	Kluyvera	genus	22	12	7	7	7	True	rich_gte_3
 NCBITaxon:4910	Kluyveromyces	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:4911	Kluyveromyces marxianus	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:57493	Kocuria	genus	109	92	22	22	13	True	rich_gte_3
@@ -2360,7 +2360,7 @@ NCBITaxon:388357	Kocuria turfanensis	species	32	30	1	1	1	True	rich_gte_3
 NCBITaxon:1434011	Komagataeibacter	genus	57	39	2	2	1	True	rich_gte_3
 NCBITaxon:460517	Komagataella	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:460519	Komagataella phaffii	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1330547	Kosakonia	genus	89	83	3	3	2	True	rich_gte_3
+NCBITaxon:1330547	Kosakonia	genus	88	82	3	3	2	True	rich_gte_3
 NCBITaxon:349312	Krasilnikovia	genus	8	4	1	1	1	True	rich_gte_3
 NCBITaxon:182639	Kribbella	genus	104	88	1	1	1	True	rich_gte_3
 NCBITaxon:1274351	Kroppenstedtia	genus	13	8	1	1	1	True	rich_gte_3
@@ -2374,7 +2374,7 @@ NCBITaxon:33943	Kyrpidia tusciae	species	13	12	1	1	1	True	rich_gte_3
 NCBITaxon:57499	Kytococcus	genus	19	15	6	6	3	True	rich_gte_3
 NCBITaxon:1276	Kytococcus sedentarius	species	17	14	5	5	4	True	rich_gte_3
 NCBITaxon:1391654	Labilithrix luteola	species	6	3	1	1	1	True	rich_gte_3
-NCBITaxon:204476	Labrys	genus	96	89	1	1	1	True	rich_gte_3
+NCBITaxon:204476	Labrys	genus	94	87	1	1	1	True	rich_gte_3
 NCBITaxon:1164882	Lachnoanaerobaculum	genus	17	14	46	45	30	True	rich_gte_3
 NCBITaxon:979627	Lachnoanaerobaculum orale	species	9	8	5	5	4	True	rich_gte_3
 NCBITaxon:467210	Lachnoanaerobaculum saburreum	species	7	5	9	9	5	True	rich_gte_3
@@ -2398,7 +2398,7 @@ NCBITaxon:39485	Lachnospira eligens	species	10	8	86	86	52	True	rich_gte_3
 NCBITaxon:28051	Lachnospira multipara	species	7	6	4	4	1	True	rich_gte_3
 NCBITaxon:28052	Lachnospira pectinoschiza	species	3	3	21	21	16	True	rich_gte_3
 NCBITaxon:2049031	Lachnospira sp.	species	5	1	6	6	5	True	rich_gte_3
-NCBITaxon:186803	Lachnospiraceae	family	167	102	464	439	252	True	rich_gte_3
+NCBITaxon:186803	Lachnospiraceae	family	166	101	464	439	252	True	rich_gte_3
 NCBITaxon:1898203	Lachnospiraceae bacterium	species	5	1	31	31	21	True	rich_gte_3
 NCBITaxon:2683688	Lachnospiraceae bacterium 1 4 56FAA	species	0	0	3	3	2	False	zero_traits
 NCBITaxon:1235800	Lachnospiraceae bacterium 10-1	species	1	1	5	5	2	True	sparse_1_2
@@ -2435,7 +2435,7 @@ NCBITaxon:2293831	Lachnospiraceae bacterium OF09-6	species	0	0	3	3	2	False	zero_
 NCBITaxon:2292272	Lachnospiraceae bacterium OM04-12BH	species	0	0	4	4	2	False	zero_traits
 NCBITaxon:712991	Lachnospiraceae bacterium oral taxon 500	species	3	3	6	6	4	True	rich_gte_3
 NCBITaxon:1952023	Lachnospiraceae bacterium UBA3282	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:3085636	Lachnospirales	order	182	106	25	25	18	True	rich_gte_3
+NCBITaxon:3085636	Lachnospirales	order	181	105	25	25	18	True	rich_gte_3
 NCBITaxon:1763508	Lachnotalea	genus	28	26	2	2	1	True	rich_gte_3
 NCBITaxon:1763509	Lachnotalea glycerini	species	28	26	1	1	1	True	rich_gte_3
 NCBITaxon:2021453	Lachnotalea sp.	species	0	0	2	2	1	False	zero_traits
@@ -2444,46 +2444,46 @@ NCBITaxon:253257	Lacrimispora amygdalina	species	9	8	6	6	3	True	rich_gte_3
 NCBITaxon:29354	Lacrimispora celerecrescens	species	11	6	1	1	1	True	rich_gte_3
 NCBITaxon:84030	Lacrimispora saccharolytica	species	16	14	8	8	7	True	rich_gte_3
 NCBITaxon:29370	Lacrimispora sphenoides	species	15	7	6	6	5	True	rich_gte_3
-NCBITaxon:2759736	Lacticaseibacillus	genus	74	66	7	7	4	True	rich_gte_3
-NCBITaxon:1597	Lacticaseibacillus paracasei	species	15	12	14	14	6	True	rich_gte_3
-NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	26	20	8	8	6	True	rich_gte_3
+NCBITaxon:2759736	Lacticaseibacillus	genus	73	65	7	7	4	True	rich_gte_3
+NCBITaxon:1597	Lacticaseibacillus paracasei	species	14	11	14	14	6	True	rich_gte_3
+NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	25	19	8	8	6	True	rich_gte_3
 NCBITaxon:57037	Lacticaseibacillus zeae	species	9	8	7	7	3	True	rich_gte_3
 NCBITaxon:633405	Lacticigenium	genus	42	41	3	3	2	True	rich_gte_3
 NCBITaxon:2161814	Lactimicrobium massiliense	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:2767842	Lactiplantibacillus	genus	54	51	3	3	3	True	rich_gte_3
-NCBITaxon:1589	Lactiplantibacillus pentosus	species	17	14	1	1	1	True	rich_gte_3
-NCBITaxon:1590	Lactiplantibacillus plantarum	species	26	23	8	8	8	True	rich_gte_3
+NCBITaxon:2767842	Lactiplantibacillus	genus	53	50	3	3	3	True	rich_gte_3
+NCBITaxon:1589	Lactiplantibacillus pentosus	species	16	13	1	1	1	True	rich_gte_3
+NCBITaxon:1590	Lactiplantibacillus plantarum	species	25	22	8	8	8	True	rich_gte_3
 NCBITaxon:1508421	Lactivibrio	genus	5	3	1	1	1	True	rich_gte_3
-NCBITaxon:33958	Lactobacillaceae	family	169	120	199	199	128	True	rich_gte_3
+NCBITaxon:33958	Lactobacillaceae	family	167	118	199	199	128	True	rich_gte_3
 NCBITaxon:81850	Lactobacillaceae	family	0	0	17	17	14	False	zero_traits
-NCBITaxon:186826	Lactobacillales	order	238	140	161	161	109	True	rich_gte_3
+NCBITaxon:186826	Lactobacillales	order	236	138	161	161	109	True	rich_gte_3
 NCBITaxon:1993866	Lactobacillales bacterium	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1578	Lactobacillus	genus	99	75	381	380	236	True	rich_gte_3
-NCBITaxon:1579	Lactobacillus acidophilus	species	16	12	7	7	7	True	rich_gte_3
-NCBITaxon:1604	Lactobacillus amylovorus	species	31	28	3	3	3	True	rich_gte_3
+NCBITaxon:1578	Lactobacillus	genus	97	73	381	380	236	True	rich_gte_3
+NCBITaxon:1579	Lactobacillus acidophilus	species	15	11	7	7	7	True	rich_gte_3
+NCBITaxon:1604	Lactobacillus amylovorus	species	30	27	3	3	3	True	rich_gte_3
 NCBITaxon:303541	Lactobacillus apis	species	10	9	1	1	1	True	rich_gte_3
-NCBITaxon:47770	Lactobacillus crispatus	species	17	11	24	24	16	True	rich_gte_3
-NCBITaxon:1584	Lactobacillus delbrueckii	species	31	25	11	11	8	True	rich_gte_3
+NCBITaxon:47770	Lactobacillus crispatus	species	16	10	24	24	16	True	rich_gte_3
+NCBITaxon:1584	Lactobacillus delbrueckii	species	30	24	11	11	8	True	rich_gte_3
 NCBITaxon:1537158	Lactobacillus delbrueckii subsp. jakobsenii	species	12	11	1	1	1	True	rich_gte_3
 NCBITaxon:420645	Lactobacillus equicursoris	species	30	26	1	1	1	True	rich_gte_3
 NCBITaxon:88164	Lactobacillus fornicalis	species	2	2	1	1	1	True	sparse_1_2
-NCBITaxon:52242	Lactobacillus gallinarum	species	11	8	1	1	1	True	rich_gte_3
-NCBITaxon:1596	Lactobacillus gasseri	species	17	13	35	35	24	True	rich_gte_3
+NCBITaxon:52242	Lactobacillus gallinarum	species	10	7	1	1	1	True	rich_gte_3
+NCBITaxon:1596	Lactobacillus gasseri	species	16	12	35	35	24	True	rich_gte_3
 NCBITaxon:96565	Lactobacillus hamsteri	species	7	4	1	1	1	True	rich_gte_3
-NCBITaxon:1587	Lactobacillus helveticus	species	28	24	6	6	4	True	rich_gte_3
+NCBITaxon:1587	Lactobacillus helveticus	species	27	23	6	6	4	True	rich_gte_3
 NCBITaxon:1203033	Lactobacillus hominis	species	41	40	1	1	1	True	rich_gte_3
-NCBITaxon:147802	Lactobacillus iners	species	14	11	39	38	25	True	rich_gte_3
+NCBITaxon:147802	Lactobacillus iners	species	13	10	39	38	25	True	rich_gte_3
 NCBITaxon:151781	Lactobacillus intestinalis	species	9	7	1	1	1	True	rich_gte_3
-NCBITaxon:109790	Lactobacillus jensenii	species	13	13	8	8	7	True	rich_gte_3
-NCBITaxon:33959	Lactobacillus johnsonii	species	15	11	9	9	8	True	rich_gte_3
+NCBITaxon:109790	Lactobacillus jensenii	species	12	12	8	8	7	True	rich_gte_3
+NCBITaxon:33959	Lactobacillus johnsonii	species	14	10	9	9	8	True	rich_gte_3
 NCBITaxon:267818	Lactobacillus kefiranofaciens	species	21	15	1	1	1	True	rich_gte_3
 NCBITaxon:1591	Lactobacillus sp.	species	9	5	22	22	12	True	rich_gte_3
 NCBITaxon:765944	Lactobacillus sp. T17/4F	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:508451	Lactobacillus taiwanensis	species	33	32	4	4	2	True	rich_gte_3
 NCBITaxon:227945	Lactobacillus ultunensis	species	31	30	1	1	1	True	rich_gte_3
-NCBITaxon:1357	Lactococcus	genus	55	38	96	95	70	True	rich_gte_3
-NCBITaxon:1363	Lactococcus garvieae	species	20	16	3	3	2	True	rich_gte_3
-NCBITaxon:1358	Lactococcus lactis	species	26	17	24	24	17	True	rich_gte_3
+NCBITaxon:1357	Lactococcus	genus	54	37	96	95	70	True	rich_gte_3
+NCBITaxon:1363	Lactococcus garvieae	species	19	15	3	3	2	True	rich_gte_3
+NCBITaxon:1358	Lactococcus lactis	species	25	16	24	24	17	True	rich_gte_3
 NCBITaxon:1940789	Lactococcus petauri	species	6	2	1	1	1	True	rich_gte_3
 NCBITaxon:44273	Lactococcus sp.	species	4	3	1	1	1	True	rich_gte_3
 NCBITaxon:420345	Lactonifactor	genus	7	6	7	7	5	True	rich_gte_3
@@ -2498,13 +2498,13 @@ NCBITaxon:2767353	Lancefieldella	genus	12	10	2	2	2	True	rich_gte_3
 NCBITaxon:1382	Lancefieldella parvula	species	11	9	19	19	13	True	rich_gte_3
 NCBITaxon:1383	Lancefieldella rimae	species	10	8	7	7	7	True	rich_gte_3
 NCBITaxon:3088136	Lancefieldella sp.	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:2767884	Lapidilactobacillus	genus	42	39	1	1	1	True	rich_gte_3
+NCBITaxon:2767884	Lapidilactobacillus	genus	41	38	1	1	1	True	rich_gte_3
 NCBITaxon:402170	Lapillicoccus	genus	36	32	1	1	1	True	rich_gte_3
 NCBITaxon:168471	Laribacter hongkongensis	species	15	13	1	1	1	True	rich_gte_3
 NCBITaxon:45133	Lasiodiplodia theobromae	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:2767885	Latilactobacillus	genus	25	22	1	1	1	True	rich_gte_3
+NCBITaxon:2767885	Latilactobacillus	genus	24	21	1	1	1	True	rich_gte_3
 NCBITaxon:28038	Latilactobacillus curvatus	species	15	12	3	3	3	True	rich_gte_3
-NCBITaxon:1599	Latilactobacillus sakei	species	20	17	2	2	2	True	rich_gte_3
+NCBITaxon:1599	Latilactobacillus sakei	species	19	16	2	2	2	True	rich_gte_3
 NCBITaxon:47670	Lautropia	genus	9	6	65	65	44	True	rich_gte_3
 NCBITaxon:47671	Lautropia mirabilis	species	9	6	27	27	17	True	rich_gte_3
 NCBITaxon:1847725	Lawsonella	genus	13	12	24	24	12	True	rich_gte_3
@@ -2520,19 +2520,19 @@ NCBITaxon:2282309	Leclercia sp. W17	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:186794	Lederbergvirus	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:445	Legionella	genus	49	46	2	2	2	True	rich_gte_3
 NCBITaxon:444	Legionellaceae	family	49	46	6	6	5	True	rich_gte_3
-NCBITaxon:118969	Legionellales	order	54	50	4	4	3	True	rich_gte_3
+NCBITaxon:118969	Legionellales	order	53	49	4	4	3	True	rich_gte_3
 NCBITaxon:110932	Leifsonia	genus	71	61	1	1	1	True	rich_gte_3
 NCBITaxon:1577896	Leisingera sp. ANG-Vp	species	4	4	1	1	1	True	rich_gte_3
-NCBITaxon:1330545	Lelliottia	genus	17	10	4	4	2	True	rich_gte_3
-NCBITaxon:61646	Lelliottia amnigena	species	16	10	3	3	2	True	rich_gte_3
+NCBITaxon:1330545	Lelliottia	genus	16	9	4	4	2	True	rich_gte_3
+NCBITaxon:61646	Lelliottia amnigena	species	15	9	3	3	2	True	rich_gte_3
 NCBITaxon:1907578	Lelliottia jeotgali	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:69220	Lelliottia nimipressuralis	species	7	5	2	2	2	True	rich_gte_3
 NCBITaxon:2153385	Lelliottia sp. WB101	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:82980	Leminorella	genus	10	7	1	1	1	True	rich_gte_3
-NCBITaxon:175304	Lentibacillus	genus	91	83	4	4	3	True	rich_gte_3
+NCBITaxon:175304	Lentibacillus	genus	89	81	4	4	3	True	rich_gte_3
 NCBITaxon:1472767	Lentibacillus amyloliquefaciens	species	1	1	2	2	1	True	sparse_1_2
 NCBITaxon:340214	Lentibacillus kapialis	species	44	42	1	1	1	True	rich_gte_3
-NCBITaxon:2767893	Lentilactobacillus	genus	55	49	1	1	1	True	rich_gte_3
+NCBITaxon:2767893	Lentilactobacillus	genus	54	48	1	1	1	True	rich_gte_3
 NCBITaxon:1649463	Lentilitoribacter	genus	2	2	2	2	1	True	sparse_1_2
 NCBITaxon:1840213	Lentimicrobiaceae	family	25	22	2	2	2	True	rich_gte_3
 NCBITaxon:1840214	Lentimicrobium	genus	25	22	5	5	3	True	rich_gte_3
@@ -2566,59 +2566,59 @@ NCBITaxon:712365	Leptotrichia sp. oral taxon 417	species	0	0	2	2	2	False	zero_tr
 NCBITaxon:1227267	Leptotrichia sp. oral taxon 879	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:109328	Leptotrichia trevisanii	species	9	7	8	8	4	True	rich_gte_3
 NCBITaxon:157687	Leptotrichia wadei	species	14	11	9	9	6	True	rich_gte_3
-NCBITaxon:1129771	Leptotrichiaceae	family	53	38	46	46	42	True	rich_gte_3
+NCBITaxon:1129771	Leptotrichiaceae	family	52	37	46	46	42	True	rich_gte_3
 NCBITaxon:55968	Leucobacter	genus	93	84	2	2	2	True	rich_gte_3
-NCBITaxon:1243	Leuconostoc	genus	73	68	36	36	25	True	rich_gte_3
-NCBITaxon:33964	Leuconostoc citreum	species	17	15	1	1	1	True	rich_gte_3
+NCBITaxon:1243	Leuconostoc	genus	71	66	36	36	25	True	rich_gte_3
+NCBITaxon:33964	Leuconostoc citreum	species	16	14	1	1	1	True	rich_gte_3
 NCBITaxon:255248	Leuconostoc garlicum	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:115778	Leuconostoc gasicomitatum	species	12	12	1	1	1	True	rich_gte_3
 NCBITaxon:1244	Leuconostoc gelidum	species	15	12	1	1	1	True	rich_gte_3
 NCBITaxon:136609	Leuconostoc kimchii	species	6	6	2	2	1	True	rich_gte_3
-NCBITaxon:1246	Leuconostoc lactis	species	22	19	5	5	4	True	rich_gte_3
-NCBITaxon:1245	Leuconostoc mesenteroides	species	35	30	1	1	1	True	rich_gte_3
-NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	15	13	1	1	1	True	rich_gte_3
+NCBITaxon:1246	Leuconostoc lactis	species	21	18	5	5	4	True	rich_gte_3
+NCBITaxon:1245	Leuconostoc mesenteroides	species	34	29	1	1	1	True	rich_gte_3
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	14	12	1	1	1	True	rich_gte_3
 NCBITaxon:1403934	Leuconostoc sp. DORA_2	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:5277	Leucosporidium	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:2767886	Levilactobacillus	genus	73	67	2	2	1	True	rich_gte_3
-NCBITaxon:1580	Levilactobacillus brevis	species	19	16	1	1	1	True	rich_gte_3
+NCBITaxon:2767886	Levilactobacillus	genus	71	65	2	2	1	True	rich_gte_3
+NCBITaxon:1580	Levilactobacillus brevis	species	18	15	1	1	1	True	rich_gte_3
 NCBITaxon:1776379	Leyella lascolaii	species	4	1	1	1	1	True	rich_gte_3
 NCBITaxon:363265	Leyella stercorea	species	21	17	28	27	23	True	rich_gte_3
 NCBITaxon:34019	Liberibacter	genus	10	9	1	1	1	True	rich_gte_3
-NCBITaxon:2767887	Ligilactobacillus	genus	74	62	14	14	7	True	rich_gte_3
+NCBITaxon:2767887	Ligilactobacillus	genus	73	61	14	14	7	True	rich_gte_3
 NCBITaxon:1605	Ligilactobacillus animalis	species	13	10	1	1	1	True	rich_gte_3
 NCBITaxon:1606	Ligilactobacillus aviarius	species	9	4	2	2	1	True	rich_gte_3
-NCBITaxon:1623	Ligilactobacillus ruminis	species	17	13	22	22	14	True	rich_gte_3
-NCBITaxon:1624	Ligilactobacillus salivarius	species	18	14	18	18	16	True	rich_gte_3
+NCBITaxon:1623	Ligilactobacillus ruminis	species	16	12	22	22	14	True	rich_gte_3
+NCBITaxon:1624	Ligilactobacillus salivarius	species	17	13	18	18	16	True	rich_gte_3
 NCBITaxon:131079	Limnobacter	genus	31	29	2	2	2	True	rich_gte_3
 NCBITaxon:665874	Limnohabitans	genus	49	45	4	4	3	True	rich_gte_3
-NCBITaxon:2742598	Limosilactobacillus	genus	77	63	16	15	9	True	rich_gte_3
+NCBITaxon:2742598	Limosilactobacillus	genus	76	62	16	15	9	True	rich_gte_3
 NCBITaxon:227943	Limosilactobacillus antri	species	32	30	1	1	1	True	rich_gte_3
-NCBITaxon:181675	Limosilactobacillus coleohominis	species	11	10	3	3	3	True	rich_gte_3
-NCBITaxon:1613	Limosilactobacillus fermentum	species	17	14	17	17	13	True	rich_gte_3
+NCBITaxon:181675	Limosilactobacillus coleohominis	species	10	9	3	3	3	True	rich_gte_3
+NCBITaxon:1613	Limosilactobacillus fermentum	species	16	13	17	17	13	True	rich_gte_3
 NCBITaxon:227942	Limosilactobacillus gastricus	species	36	35	1	1	1	True	rich_gte_3
 NCBITaxon:97478	Limosilactobacillus mucosae	species	12	9	9	9	9	True	rich_gte_3
-NCBITaxon:1632	Limosilactobacillus oris	species	14	12	4	4	2	True	rich_gte_3
+NCBITaxon:1632	Limosilactobacillus oris	species	13	11	4	4	2	True	rich_gte_3
 NCBITaxon:47493	Limosilactobacillus panis	species	7	6	3	3	1	True	rich_gte_3
-NCBITaxon:35787	Limosilactobacillus pontis	species	15	10	1	1	1	True	rich_gte_3
-NCBITaxon:1598	Limosilactobacillus reuteri	species	21	14	19	19	13	True	rich_gte_3
+NCBITaxon:35787	Limosilactobacillus pontis	species	14	9	1	1	1	True	rich_gte_3
+NCBITaxon:1598	Limosilactobacillus reuteri	species	20	13	19	19	13	True	rich_gte_3
 NCBITaxon:1633	Limosilactobacillus vaginalis	species	16	13	9	9	8	True	rich_gte_3
 NCBITaxon:82688	Liquorilactobacillus nagelii	species	12	11	2	2	1	True	rich_gte_3
-NCBITaxon:1637	Listeria	genus	66	59	6	6	5	True	rich_gte_3
-NCBITaxon:1639	Listeria monocytogenes	species	20	15	3	3	3	True	rich_gte_3
-NCBITaxon:186820	Listeriaceae	family	68	60	3	3	3	True	rich_gte_3
+NCBITaxon:1637	Listeria	genus	64	57	6	6	5	True	rich_gte_3
+NCBITaxon:1639	Listeria monocytogenes	species	19	14	3	3	3	True	rich_gte_3
+NCBITaxon:186820	Listeriaceae	family	66	58	3	3	3	True	rich_gte_3
 NCBITaxon:475961	Longilinea	genus	10	10	2	2	2	True	rich_gte_3
 NCBITaxon:1804994	Longimicrobium	genus	29	28	1	1	1	True	rich_gte_3
 NCBITaxon:349314	Luedemannella	genus	10	4	1	1	1	True	rich_gte_3
 NCBITaxon:83614	Luteimonas	genus	103	92	3	3	1	True	rich_gte_3
 NCBITaxon:745364	Luteipulveratus	genus	16	16	3	3	2	True	rich_gte_3
 NCBITaxon:33983	Luteococcus	genus	24	15	1	1	1	True	rich_gte_3
-NCBITaxon:400634	Lysinibacillus	genus	74	67	8	8	8	True	rich_gte_3
+NCBITaxon:400634	Lysinibacillus	genus	73	66	8	8	8	True	rich_gte_3
 NCBITaxon:28031	Lysinibacillus fusiformis	species	14	11	1	1	1	True	rich_gte_3
 NCBITaxon:2081964	Lysinibacillus sp. B2A1	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1421	Lysinibacillus sphaericus	species	22	18	2	2	2	True	rich_gte_3
-NCBITaxon:68	Lysobacter	genus	98	87	13	13	10	True	rich_gte_3
-NCBITaxon:32033	Lysobacteraceae	family	175	141	31	30	26	True	rich_gte_3
-NCBITaxon:135614	Lysobacterales	order	195	152	19	19	19	True	rich_gte_3
+NCBITaxon:68	Lysobacter	genus	96	85	13	13	10	True	rich_gte_3
+NCBITaxon:32033	Lysobacteraceae	family	173	139	31	30	26	True	rich_gte_3
+NCBITaxon:135614	Lysobacterales	order	193	150	19	19	19	True	rich_gte_3
 NCBITaxon:69966	Macrococcoides caseolyticum	species	12	10	1	1	1	True	rich_gte_3
 NCBITaxon:69965	Macrococcus	genus	18	15	1	1	1	True	rich_gte_3
 NCBITaxon:884684	Mageeibacillus indolicus	species	3	3	3	3	3	True	rich_gte_3
@@ -2638,18 +2638,18 @@ NCBITaxon:76776	Malassezia slooffiae	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2011732	Malassezia sp.	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:162474	Malasseziales	order	0	0	2	2	2	False	zero_traits
 NCBITaxon:1538075	Malasseziomycetes	class	0	0	1	1	1	False	zero_traits
-NCBITaxon:451512	Mangrovibacter	genus	27	26	2	2	2	True	rich_gte_3
-NCBITaxon:75984	Mannheimia	genus	21	17	2	2	2	True	rich_gte_3
+NCBITaxon:451512	Mangrovibacter	genus	25	24	2	2	2	True	rich_gte_3
+NCBITaxon:75984	Mannheimia	genus	20	16	2	2	2	True	rich_gte_3
 NCBITaxon:879276	Mannheimia caviae	species	5	4	2	2	2	True	rich_gte_3
 NCBITaxon:2081794	Mannheimia sp.	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:568214	Marihabitans	genus	30	28	3	3	2	True	rich_gte_3
-NCBITaxon:1573805	Marinifilaceae	family	47	43	16	16	10	True	rich_gte_3
+NCBITaxon:1573805	Marinifilaceae	family	45	41	16	16	10	True	rich_gte_3
 NCBITaxon:527198	Mariniflexile	genus	45	44	1	1	1	True	rich_gte_3
-NCBITaxon:558415	Marinilabiliaceae	family	77	67	2	2	2	True	rich_gte_3
-NCBITaxon:1970189	Marinilabiliales	order	115	97	1	1	1	True	rich_gte_3
+NCBITaxon:558415	Marinilabiliaceae	family	76	66	2	2	2	True	rich_gte_3
+NCBITaxon:1970189	Marinilabiliales	order	113	95	1	1	1	True	rich_gte_3
 NCBITaxon:306546	Marinimicrobium agarilyticum	species	44	43	1	1	1	True	rich_gte_3
 NCBITaxon:1573806	Mariniphaga	genus	8	5	1	1	1	True	rich_gte_3
-NCBITaxon:2742	Marinobacter	genus	126	113	2	2	2	True	rich_gte_3
+NCBITaxon:2742	Marinobacter	genus	124	111	2	2	2	True	rich_gte_3
 NCBITaxon:2743	Marinobacter nauticus	species	48	44	1	1	1	True	rich_gte_3
 NCBITaxon:1671721	Marinobacter sp. CP1	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:479370	Marinobacter sp. NP39	species	0	0	1	1	1	False	zero_traits
@@ -2660,7 +2660,7 @@ NCBITaxon:28253	Marinomonas	genus	99	94	1	1	1	True	rich_gte_3
 NCBITaxon:936476	Marinomonas posidonica	species	5	5	1	1	1	True	rich_gte_3
 NCBITaxon:86795	Marmoricola	genus	9	6	4	4	4	True	rich_gte_3
 NCBITaxon:1852369	Marseillibacter massiliensis	species	0	0	4	4	4	False	zero_traits
-NCBITaxon:1486262	Martelella endophytica	species	11	11	1	1	1	True	rich_gte_3
+NCBITaxon:1486262	Martelella endophytica	species	10	10	1	1	1	True	rich_gte_3
 NCBITaxon:248744	Marvinbryantia	genus	11	10	24	24	18	True	rich_gte_3
 NCBITaxon:168384	Marvinbryantia formatexigens	species	11	10	2	2	2	True	rich_gte_3
 NCBITaxon:149698	Massilia	genus	100	93	17	17	14	True	rich_gte_3
@@ -2710,7 +2710,7 @@ NCBITaxon:1649468	Melaminivora	genus	6	5	1	1	1	True	rich_gte_3
 NCBITaxon:5260	Melampsora	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:203908	Melampsora laricis-populina	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:5259	Melampsoraceae	family	0	0	1	1	1	False	zero_traits
-NCBITaxon:1134403	Melioribacter	genus	32	30	1	1	1	True	rich_gte_3
+NCBITaxon:1134403	Melioribacter	genus	31	29	1	1	1	True	rich_gte_3
 NCBITaxon:33969	Melissococcus	genus	10	9	5	5	3	True	rich_gte_3
 NCBITaxon:33970	Melissococcus plutonius	species	10	9	1	1	1	True	rich_gte_3
 NCBITaxon:1935200	Merdibacter	genus	0	0	2	2	2	False	zero_traits
@@ -2739,7 +2739,7 @@ NCBITaxon:5529	Metarhizium	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:183925	Methanobacteria	class	61	33	3	3	3	True	rich_gte_3
 NCBITaxon:2159	Methanobacteriaceae	family	58	32	7	7	7	True	rich_gte_3
 NCBITaxon:2158	Methanobacteriales	order	61	33	3	3	3	True	rich_gte_3
-NCBITaxon:28890	Methanobacteriota	phylum	315	117	22	22	15	True	rich_gte_3
+NCBITaxon:28890	Methanobacteriota	phylum	314	116	22	22	15	True	rich_gte_3
 NCBITaxon:2172	Methanobrevibacter	genus	27	15	33	33	22	True	rich_gte_3
 NCBITaxon:66851	Methanobrevibacter oralis	species	10	8	1	1	1	True	rich_gte_3
 NCBITaxon:2173	Methanobrevibacter smithii	species	14	11	15	15	11	True	rich_gte_3
@@ -2770,15 +2770,15 @@ NCBITaxon:2067957	Methylobacterium sp. DM1	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:73778	Methylocaldum	genus	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:1221209	Methylomarinum	genus	32	30	1	1	1	True	rich_gte_3
 NCBITaxon:40222	Methylophaga	genus	54	46	1	1	1	True	rich_gte_3
-NCBITaxon:32011	Methylophilaceae	family	79	62	1	1	1	True	rich_gte_3
+NCBITaxon:32011	Methylophilaceae	family	77	60	1	1	1	True	rich_gte_3
 NCBITaxon:2282523	Methylorubrum	genus	39	28	2	2	2	True	rich_gte_3
 NCBITaxon:408	Methylorubrum extorquens	species	18	11	4	4	1	True	rich_gte_3
 NCBITaxon:223967	Methylorubrum populi	species	20	20	1	1	1	True	rich_gte_3
-NCBITaxon:359407	Methylotenera	genus	27	24	1	1	1	True	rich_gte_3
+NCBITaxon:359407	Methylotenera	genus	25	22	1	1	1	True	rich_gte_3
 NCBITaxon:378210	Methyloversatilis	genus	12	8	1	1	1	True	rich_gte_3
 NCBITaxon:349221	Micavibrio aeruginosavorus	species	3	3	1	1	1	True	rich_gte_3
-NCBITaxon:85023	Microbacteriaceae	family	204	155	21	21	14	True	rich_gte_3
-NCBITaxon:33882	Microbacterium	genus	158	132	24	23	17	True	rich_gte_3
+NCBITaxon:85023	Microbacteriaceae	family	202	153	21	21	14	True	rich_gte_3
+NCBITaxon:33882	Microbacterium	genus	156	130	24	23	17	True	rich_gte_3
 NCBITaxon:36805	Microbacterium aurum	species	16	14	1	1	1	True	rich_gte_3
 NCBITaxon:33917	Microbacterium barkeri	species	14	11	1	1	1	True	rich_gte_3
 NCBITaxon:415217	Microbacterium lacus	species	8	3	4	4	1	True	rich_gte_3
@@ -2786,8 +2786,8 @@ NCBITaxon:300019	Microbacterium paludicola	species	45	43	2	2	1	True	rich_gte_3
 NCBITaxon:2010	Microbispora rosea subsp. aerata	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:337004	Microcella	genus	36	29	2	2	1	True	rich_gte_3
 NCBITaxon:279828	Microcella alkaliphila	species	7	6	2	2	1	True	rich_gte_3
-NCBITaxon:1268	Micrococcaceae	family	208	155	61	60	49	True	rich_gte_3
-NCBITaxon:85006	Micrococcales	order	298	187	16	15	13	True	rich_gte_3
+NCBITaxon:1268	Micrococcaceae	family	206	153	61	60	49	True	rich_gte_3
+NCBITaxon:85006	Micrococcales	order	296	185	16	15	13	True	rich_gte_3
 NCBITaxon:1269	Micrococcus	genus	85	71	33	33	24	True	rich_gte_3
 NCBITaxon:1391911	Micrococcus aloeverae	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1270	Micrococcus luteus	species	34	24	7	7	6	True	rich_gte_3
@@ -2812,7 +2812,7 @@ NCBITaxon:187979	Mitsuokella jalaludinii	species	10	8	5	5	4	True	rich_gte_3
 NCBITaxon:52226	Mitsuokella multacida	species	13	8	16	16	11	True	rich_gte_3
 NCBITaxon:2049034	Mitsuokella sp.	species	2	2	3	3	2	True	sparse_1_2
 NCBITaxon:712391	Mitsuokella sp. oral taxon 521	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:984996	Mobilicoccus	genus	35	31	1	1	1	True	rich_gte_3
+NCBITaxon:984996	Mobilicoccus	genus	34	30	1	1	1	True	rich_gte_3
 NCBITaxon:2050	Mobiluncus	genus	19	13	24	24	15	True	rich_gte_3
 NCBITaxon:2051	Mobiluncus curtisii	species	12	10	6	6	2	True	rich_gte_3
 NCBITaxon:2052	Mobiluncus mulieris	species	15	12	10	10	3	True	rich_gte_3
@@ -2827,7 +2827,7 @@ NCBITaxon:86332	Mogibacterium pumilum	species	5	5	2	2	1	True	rich_gte_3
 NCBITaxon:2049035	Mogibacterium sp.	species	0	0	3	3	2	False	zero_traits
 NCBITaxon:35519	Mogibacterium timidum	species	9	6	3	3	2	True	rich_gte_3
 NCBITaxon:86333	Mogibacterium vescum	species	6	6	1	1	1	True	rich_gte_3
-NCBITaxon:31969	Mollicutes	class	36	31	31	31	24	True	rich_gte_3
+NCBITaxon:31969	Mollicutes	class	35	30	31	31	24	True	rich_gte_3
 NCBITaxon:37628	Mollicutes bacterium	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:3085657	Monoglobaceae	family	5	3	8	8	5	True	rich_gte_3
 NCBITaxon:3085656	Monoglobales	order	5	3	3	3	3	True	rich_gte_3
@@ -2842,9 +2842,9 @@ NCBITaxon:468	Moraxellaceae	family	151	120	59	59	49	True	rich_gte_3
 NCBITaxon:108061	Morganella	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:581	Morganella	genus	24	17	21	21	18	True	rich_gte_3
 NCBITaxon:582	Morganella morganii	species	20	13	5	5	5	True	rich_gte_3
-NCBITaxon:1903414	Morganellaceae	family	108	86	3	3	3	True	rich_gte_3
+NCBITaxon:1903414	Morganellaceae	family	106	84	3	3	3	True	rich_gte_3
 NCBITaxon:111292	Moritella abyssi	species	4	4	1	1	1	True	rich_gte_3
-NCBITaxon:267891	Moritellaceae	family	66	64	1	1	1	True	rich_gte_3
+NCBITaxon:267891	Moritellaceae	family	64	62	1	1	1	True	rich_gte_3
 NCBITaxon:212742	Morococcus	genus	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:1056807	Morococcus cerebrosus	species	5	3	3	3	3	True	rich_gte_3
 NCBITaxon:4855	Mortierella	genus	0	0	1	1	1	False	zero_traits
@@ -2866,9 +2866,9 @@ NCBITaxon:1918540	Muribaculum	genus	9	3	6	6	4	True	rich_gte_3
 NCBITaxon:2530390	Muribaculum gordoncarteri	species	4	2	2	2	1	True	rich_gte_3
 NCBITaxon:1796646	Muribaculum intestinale	species	7	3	3	3	2	True	rich_gte_3
 NCBITaxon:253183	Myceligenerans	genus	60	52	2	2	1	True	rich_gte_3
-NCBITaxon:1762	Mycobacteriaceae	family	136	96	3	3	2	True	rich_gte_3
-NCBITaxon:85007	Mycobacteriales	order	247	165	22	22	19	True	rich_gte_3
-NCBITaxon:1763	Mycobacterium	genus	81	56	14	14	10	True	rich_gte_3
+NCBITaxon:1762	Mycobacteriaceae	family	135	95	3	3	2	True	rich_gte_3
+NCBITaxon:85007	Mycobacteriales	order	245	163	22	22	19	True	rich_gte_3
+NCBITaxon:1763	Mycobacterium	genus	80	55	14	14	10	True	rich_gte_3
 NCBITaxon:78331	Mycobacterium canetti	species	6	6	1	1	1	True	rich_gte_3
 NCBITaxon:1768	Mycobacterium kansasii	species	18	9	2	2	2	True	rich_gte_3
 NCBITaxon:1769	Mycobacterium leprae	species	7	7	1	1	1	True	rich_gte_3
@@ -2883,13 +2883,13 @@ NCBITaxon:36809	Mycobacteroides abscessus	species	18	13	2	2	2	True	rich_gte_3
 NCBITaxon:1792	Mycolicibacterium chitae	species	12	6	1	1	1	True	rich_gte_3
 NCBITaxon:1766	Mycolicibacterium fortuitum	species	25	15	1	1	1	True	rich_gte_3
 NCBITaxon:1771	Mycolicibacterium phlei	species	23	12	1	1	1	True	rich_gte_3
-NCBITaxon:13159	Mycoplana	genus	26	22	6	6	5	True	rich_gte_3
-NCBITaxon:2093	Mycoplasma	genus	27	24	30	30	24	True	rich_gte_3
+NCBITaxon:13159	Mycoplana	genus	25	21	6	6	5	True	rich_gte_3
+NCBITaxon:2093	Mycoplasma	genus	26	23	30	30	24	True	rich_gte_3
 NCBITaxon:1262905	Mycoplasma sp. CAG:611	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:65123	Mycoplasma wenyonii	species	3	3	1	1	1	True	rich_gte_3
-NCBITaxon:2092	Mycoplasmataceae	family	27	24	21	20	16	True	rich_gte_3
-NCBITaxon:2085	Mycoplasmatales	order	27	24	8	8	6	True	rich_gte_3
-NCBITaxon:544448	Mycoplasmatota	phylum	50	44	43	43	34	True	rich_gte_3
+NCBITaxon:2092	Mycoplasmataceae	family	26	23	21	20	16	True	rich_gte_3
+NCBITaxon:2085	Mycoplasmatales	order	26	23	8	8	6	True	rich_gte_3
+NCBITaxon:544448	Mycoplasmatota	phylum	49	43	43	43	34	True	rich_gte_3
 NCBITaxon:28903	Mycoplasmopsis bovis	species	9	8	2	2	2	True	rich_gte_3
 NCBITaxon:2107	Mycoplasmopsis pulmonis	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:41254	Mycosphaerella	genus	0	0	1	1	1	False	zero_traits
@@ -2897,7 +2897,7 @@ NCBITaxon:93133	Mycosphaerellaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:76831	Myroides	genus	71	61	1	1	1	True	rich_gte_3
 NCBITaxon:256	Myroides odoratus	species	16	11	2	2	1	True	rich_gte_3
 NCBITaxon:29	Myxococcales	order	56	44	3	3	3	True	rich_gte_3
-NCBITaxon:2818505	Myxococcota	phylum	95	73	3	3	2	True	rich_gte_3
+NCBITaxon:2818505	Myxococcota	phylum	94	72	3	3	2	True	rich_gte_3
 NCBITaxon:1851509	Naganishia	genus	0	0	2	2	1	False	zero_traits
 NCBITaxon:53461	Nakamurella multipartita	species	11	8	1	1	1	True	rich_gte_3
 NCBITaxon:85031	Nakamurellaceae	family	66	57	3	3	3	True	rich_gte_3
@@ -2918,8 +2918,8 @@ NCBITaxon:909928	Negativicoccus	genus	12	10	15	15	10	True	rich_gte_3
 NCBITaxon:620903	Negativicoccus succinicivorans	species	12	10	3	3	1	True	rich_gte_3
 NCBITaxon:909932	Negativicutes	class	169	115	67	67	56	True	rich_gte_3
 NCBITaxon:1776382	Neglectibacter timonensis	species	2	1	3	3	3	True	sparse_1_2
-NCBITaxon:482	Neisseria	genus	59	49	208	208	107	True	rich_gte_3
-NCBITaxon:326522	Neisseria animaloris	species	25	24	1	1	1	True	rich_gte_3
+NCBITaxon:482	Neisseria	genus	57	47	208	208	107	True	rich_gte_3
+NCBITaxon:326522	Neisseria animaloris	species	24	23	1	1	1	True	rich_gte_3
 NCBITaxon:267212	Neisseria bacilliformis	species	10	8	5	5	4	True	rich_gte_3
 NCBITaxon:483	Neisseria cinerea	species	10	9	4	4	2	True	rich_gte_3
 NCBITaxon:495	Neisseria elongata	species	16	11	21	21	16	True	rich_gte_3
@@ -2930,7 +2930,7 @@ NCBITaxon:486	Neisseria lactamica	species	12	10	4	4	2	True	rich_gte_3
 NCBITaxon:496	Neisseria macacae	species	8	7	7	7	3	True	rich_gte_3
 NCBITaxon:487	Neisseria meningitidis	species	13	11	11	11	7	True	rich_gte_3
 NCBITaxon:488	Neisseria mucosa	species	16	13	11	11	9	True	rich_gte_3
-NCBITaxon:1107316	Neisseria oralis	species	17	16	10	10	6	True	rich_gte_3
+NCBITaxon:1107316	Neisseria oralis	species	15	14	10	10	6	True	rich_gte_3
 NCBITaxon:33053	Neisseria perflava	species	9	6	9	9	6	True	rich_gte_3
 NCBITaxon:29434	Neisseria pharyngis	species	5	5	3	3	1	True	rich_gte_3
 NCBITaxon:47658	Neisseria pharyngis subsp. flava	species	0	0	1	1	1	False	zero_traits
@@ -2959,19 +2959,19 @@ NCBITaxon:641148	Neisseria sp. oral taxon 014	species	6	6	2	2	2	True	rich_gte_3
 NCBITaxon:712401	Neisseria sp. oral taxon 020	species	5	5	1	1	1	True	rich_gte_3
 NCBITaxon:28449	Neisseria subflava	species	11	9	29	29	16	True	rich_gte_3
 NCBITaxon:28091	Neisseria weaveri	species	19	15	1	1	1	True	rich_gte_3
-NCBITaxon:481	Neisseriaceae	family	89	69	52	51	41	True	rich_gte_3
-NCBITaxon:206351	Neisseriales	order	191	155	32	32	25	True	rich_gte_3
+NCBITaxon:481	Neisseriaceae	family	87	67	52	51	41	True	rich_gte_3
+NCBITaxon:206351	Neisseriales	order	189	153	32	32	25	True	rich_gte_3
 NCBITaxon:1770170	Neoascochyta	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:2301472	Neoascochyta tardicrescens	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1193713	Neobacillus mesonae	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:2126544	Neobittarella (ex Bilen et al. 2018)	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:2041842	Neobittarella massiliensis (ex Bilen et al. 2018)	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:356797	Neomegalonema	genus	24	23	1	1	1	True	rich_gte_3
-NCBITaxon:75687	Neptunomonas	genus	45	43	2	2	1	True	rich_gte_3
+NCBITaxon:75687	Neptunomonas	genus	43	41	2	2	1	True	rich_gte_3
 NCBITaxon:57494	Nesterenkonia	genus	113	89	2	2	2	True	rich_gte_3
 NCBITaxon:5140	Neurospora	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:64001	Nevskia	genus	49	44	1	1	1	True	rich_gte_3
-NCBITaxon:2837506	Niallia	genus	43	38	3	3	1	True	rich_gte_3
+NCBITaxon:2837506	Niallia	genus	42	37	3	3	1	True	rich_gte_3
 NCBITaxon:354354	Niastella	genus	40	39	1	1	1	True	rich_gte_3
 NCBITaxon:4091	Nicotiana otophora	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1522317	Nigerium massiliense	species	0	0	1	1	1	False	zero_traits
@@ -2979,11 +2979,11 @@ NCBITaxon:881	Nitratidesulfovibrio vulgaris	species	27	23	2	2	2	True	rich_gte_3
 NCBITaxon:596498	Nitriliruptoraceae	family	42	41	2	1	1	True	rich_gte_3
 NCBITaxon:596497	Nitriliruptorales	order	42	41	1	1	1	True	rich_gte_3
 NCBITaxon:908620	Nitriliruptoria	class	46	45	1	1	1	True	rich_gte_3
-NCBITaxon:41294	Nitrobacteraceae	family	134	106	14	12	8	True	rich_gte_3
+NCBITaxon:41294	Nitrobacteraceae	family	133	105	14	12	8	True	rich_gte_3
 NCBITaxon:1206749	Nitrolancea hollandica	species	4	4	1	1	1	True	rich_gte_3
 NCBITaxon:1227	Nitrosococcus	genus	10	10	1	1	1	True	rich_gte_3
 NCBITaxon:206379	Nitrosomonadaceae	family	13	12	1	1	1	True	rich_gte_3
-NCBITaxon:32003	Nitrosomonadales	order	145	104	1	1	1	True	rich_gte_3
+NCBITaxon:32003	Nitrosomonadales	order	143	102	1	1	1	True	rich_gte_3
 NCBITaxon:914	Nitrosomonas	genus	11	10	1	1	1	True	rich_gte_3
 NCBITaxon:497726	Nitrososphaera	genus	6	6	2	2	2	True	rich_gte_3
 NCBITaxon:1033997	Nitrososphaeraceae	family	9	8	2	2	2	True	rich_gte_3
@@ -2999,7 +2999,7 @@ NCBITaxon:1543704	Niveispirillum	genus	10	7	1	1	1	True	rich_gte_3
 NCBITaxon:1817	Nocardia	genus	151	119	2	2	1	True	rich_gte_3
 NCBITaxon:37327	Nocardia brevicatena	species	13	10	1	1	1	True	rich_gte_3
 NCBITaxon:85025	Nocardiaceae	family	184	133	22	22	13	True	rich_gte_3
-NCBITaxon:85015	Nocardioidaceae	family	202	155	5	5	4	True	rich_gte_3
+NCBITaxon:85015	Nocardioidaceae	family	200	153	5	5	4	True	rich_gte_3
 NCBITaxon:1839	Nocardioides	genus	174	139	7	7	6	True	rich_gte_3
 NCBITaxon:2014	Nocardiopsis dassonvillei	species	24	16	1	1	1	True	rich_gte_3
 NCBITaxon:169055	Nordella	genus	0	0	1	1	1	False	zero_traits
@@ -3010,18 +3010,18 @@ NCBITaxon:1677050	Novibacillus	genus	0	0	2	2	1	False	zero_traits
 NCBITaxon:1471761	Novibacillus thermophilus	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:1260987	Noviherbaspirillum malthae	species	5	5	1	1	1	True	rich_gte_3
 NCBITaxon:2888809	Novisyntrophococcus	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:165696	Novosphingobium	genus	117	94	13	13	9	True	rich_gte_3
+NCBITaxon:165696	Novosphingobium	genus	116	93	13	13	9	True	rich_gte_3
 NCBITaxon:378548	Novosphingobium nitrogenifigens	species	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:428991	Novosphingobium panipatense	species	28	28	1	1	1	True	rich_gte_3
 NCBITaxon:158500	Novosphingobium resinovorum	species	10	5	1	1	1	True	rich_gte_3
 NCBITaxon:1739114	Novosphingobium sp. Fuku2-ISO-50	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:208447	Oceanithermus	genus	15	13	1	1	1	True	rich_gte_3
 NCBITaxon:187137	Oceanithermus profundus	species	8	7	2	2	1	True	rich_gte_3
-NCBITaxon:182709	Oceanobacillus	genus	93	80	2	2	2	True	rich_gte_3
+NCBITaxon:182709	Oceanobacillus	genus	91	78	2	2	2	True	rich_gte_3
 NCBITaxon:372463	Oceanobacillus profundus	species	43	42	1	1	1	True	rich_gte_3
 NCBITaxon:1871622	Oceanobacillus sp.	species	4	2	1	1	1	True	rich_gte_3
-NCBITaxon:135620	Oceanospirillaceae	family	168	150	2	2	1	True	rich_gte_3
-NCBITaxon:135619	Oceanospirillales	order	230	165	5	5	4	True	rich_gte_3
+NCBITaxon:135620	Oceanospirillaceae	family	166	148	2	2	1	True	rich_gte_3
+NCBITaxon:135619	Oceanospirillales	order	228	163	5	5	4	True	rich_gte_3
 NCBITaxon:528	Ochrobactrum	genus	8	5	21	21	14	True	rich_gte_3
 NCBITaxon:42190	Ochrobactrum sp.	species	5	2	3	3	2	True	rich_gte_3
 NCBITaxon:2583453	Ochrobactrum sp. CGA5	species	0	0	1	1	1	False	zero_traits
@@ -3047,10 +3047,10 @@ NCBITaxon:33183	Onygenales	order	0	0	1	1	1	False	zero_traits
 NCBITaxon:134623	Opitutaceae	family	42	33	1	1	1	True	rich_gte_3
 NCBITaxon:794903	Opitutaceae bacterium TAV5	species	4	4	2	2	2	True	rich_gte_3
 NCBITaxon:415000	Opitutales	order	45	35	1	1	1	True	rich_gte_3
-NCBITaxon:414999	Opitutia	class	104	88	3	3	3	True	rich_gte_3
+NCBITaxon:414999	Opitutia	class	102	86	3	3	3	True	rich_gte_3
 NCBITaxon:178440	Opitutus	genus	13	9	1	1	1	True	rich_gte_3
-NCBITaxon:1240483	Orbaceae	family	71	65	1	1	1	True	rich_gte_3
-NCBITaxon:1240482	Orbales	order	71	65	1	1	1	True	rich_gte_3
+NCBITaxon:1240483	Orbaceae	family	69	63	1	1	1	True	rich_gte_3
+NCBITaxon:1240482	Orbales	order	69	63	1	1	1	True	rich_gte_3
 NCBITaxon:1413210	Orenia metallireducens	species	10	10	1	1	1	True	rich_gte_3
 NCBITaxon:265975	Oribacterium	genus	17	15	98	98	62	True	rich_gte_3
 NCBITaxon:1501332	Oribacterium asaccharolyticum	species	7	6	5	5	5	True	rich_gte_3
@@ -3086,11 +3086,11 @@ NCBITaxon:1855299	Oscillibacter sp. PC13	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:351091	Oscillibacter valericigenes	species	36	35	10	10	7	True	rich_gte_3
 NCBITaxon:119852	Oscillospira	genus	1	1	110	110	58	True	sparse_1_2
 NCBITaxon:119853	Oscillospira guilliermondii	species	1	1	6	6	5	True	sparse_1_2
-NCBITaxon:216572	Oscillospiraceae	family	166	106	293	284	159	True	rich_gte_3
+NCBITaxon:216572	Oscillospiraceae	family	165	105	293	284	159	True	rich_gte_3
 NCBITaxon:541000	Oscillospiraceae	family	0	0	74	74	53	False	zero_traits
 NCBITaxon:2485925	Oscillospiraceae bacterium	species	0	0	22	22	17	False	zero_traits
 NCBITaxon:1232459	Oscillospiraceae bacterium VE202-24	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:219181	Ottowia	genus	47	40	6	6	6	True	rich_gte_3
+NCBITaxon:219181	Ottowia	genus	45	38	6	6	6	True	rich_gte_3
 NCBITaxon:1898956	Ottowia sp.	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:1658672	Ottowia sp. oral taxon 894	species	0	0	3	3	3	False	zero_traits
 NCBITaxon:666060	Ovatus	genus	0	0	1	1	1	False	zero_traits
@@ -3098,17 +3098,17 @@ NCBITaxon:267986	Owenweeksia	genus	33	31	2	2	2	True	rich_gte_3
 NCBITaxon:223927	Oxalicibacterium	genus	12	10	1	1	1	True	rich_gte_3
 NCBITaxon:846	Oxalobacter	genus	10	9	28	28	25	True	rich_gte_3
 NCBITaxon:847	Oxalobacter formigenes	species	9	8	11	11	10	True	rich_gte_3
-NCBITaxon:75682	Oxalobacteraceae	family	174	144	35	34	27	True	rich_gte_3
+NCBITaxon:75682	Oxalobacteraceae	family	172	142	35	34	27	True	rich_gte_3
 NCBITaxon:44261	Oxobacter	genus	7	6	1	1	1	True	rich_gte_3
 NCBITaxon:1931105	Pacaella	genus	2	1	1	1	1	True	sparse_1_2
 NCBITaxon:1871009	Pacaella massiliensis	species	2	1	1	1	1	True	sparse_1_2
 NCBITaxon:122960	Paenalicyclobacillus herbarius	species	9	7	2	2	1	True	rich_gte_3
 NCBITaxon:1742992	Paenarthrobacter	genus	61	56	1	1	1	True	rich_gte_3
-NCBITaxon:186822	Paenibacillaceae	family	189	147	10	10	8	True	rich_gte_3
+NCBITaxon:186822	Paenibacillaceae	family	187	145	10	10	8	True	rich_gte_3
 NCBITaxon:1861638	Paenibacillaceae bacterium ZCTH02-B3	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:44249	Paenibacillus	genus	163	130	24	23	18	True	rich_gte_3
+NCBITaxon:44249	Paenibacillus	genus	161	128	24	23	18	True	rich_gte_3
 NCBITaxon:684063	Paenibacillus algorifonticola	species	5	3	1	1	1	True	rich_gte_3
-NCBITaxon:1451	Paenibacillus amylolyticus	species	12	11	1	1	1	True	rich_gte_3
+NCBITaxon:1451	Paenibacillus amylolyticus	species	11	10	1	1	1	True	rich_gte_3
 NCBITaxon:46240	Paenibacillus apiarius	species	8	6	1	1	1	True	rich_gte_3
 NCBITaxon:79263	Paenibacillus chitinolyticus	species	12	10	1	1	1	True	rich_gte_3
 NCBITaxon:59842	Paenibacillus chondroitinus	species	10	8	1	1	1	True	rich_gte_3
@@ -3117,13 +3117,13 @@ NCBITaxon:189425	Paenibacillus graminis	species	11	10	1	1	1	True	rich_gte_3
 NCBITaxon:1473112	Paenibacillus guangzhouensis	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1870820	Paenibacillus ihbetae	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:172713	Paenibacillus kribbensis	species	9	7	1	1	1	True	rich_gte_3
-NCBITaxon:1464	Paenibacillus larvae	species	16	12	1	1	1	True	rich_gte_3
+NCBITaxon:1464	Paenibacillus larvae	species	15	11	1	1	1	True	rich_gte_3
 NCBITaxon:2707005	Paenibacillus lutimineralis	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:44252	Paenibacillus macerans	species	14	10	1	1	1	True	rich_gte_3
 NCBITaxon:61624	Paenibacillus mucilaginosus	species	6	5	1	1	1	True	rich_gte_3
 NCBITaxon:189426	Paenibacillus odorifer	species	13	10	1	1	1	True	rich_gte_3
-NCBITaxon:1406	Paenibacillus polymyxa	species	15	13	1	1	1	True	rich_gte_3
-NCBITaxon:1333845	Paenibacillus sophorae	species	45	44	1	1	1	True	rich_gte_3
+NCBITaxon:1406	Paenibacillus polymyxa	species	14	12	1	1	1	True	rich_gte_3
+NCBITaxon:1333845	Paenibacillus sophorae	species	43	42	1	1	1	True	rich_gte_3
 NCBITaxon:1532905	Paenibacillus sp. CAA11	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:528191	Paenibacillus xylanexedens	species	39	38	2	2	1	True	rich_gte_3
 NCBITaxon:1882917	Pajaroellobacter	genus	0	0	1	1	1	False	zero_traits
@@ -3135,13 +3135,13 @@ NCBITaxon:656179	Pandoraea faecigallinarum	species	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:573737	Pandoraea oxalativorans	species	11	10	1	1	1	True	rich_gte_3
 NCBITaxon:2518599	Pandoraea sp. XY-2	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:5635	Panellus	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:53335	Pantoea	genus	82	68	11	11	9	True	rich_gte_3
-NCBITaxon:549	Pantoea agglomerans	species	16	10	3	3	2	True	rich_gte_3
-NCBITaxon:553	Pantoea ananatis	species	12	9	3	3	2	True	rich_gte_3
+NCBITaxon:53335	Pantoea	genus	80	66	11	11	9	True	rich_gte_3
+NCBITaxon:549	Pantoea agglomerans	species	15	9	3	3	2	True	rich_gte_3
+NCBITaxon:553	Pantoea ananatis	species	11	8	3	3	2	True	rich_gte_3
 NCBITaxon:59814	Pantoea dispersa	species	13	12	1	1	1	True	rich_gte_3
 NCBITaxon:472695	Pantoea septica	species	10	7	1	1	1	True	rich_gte_3
 NCBITaxon:2575375	Pantoea sp. SO10	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:470934	Pantoea vagans	species	32	31	1	1	1	True	rich_gte_3
+NCBITaxon:470934	Pantoea vagans	species	30	29	1	1	1	True	rich_gte_3
 NCBITaxon:100175	Papillibacter	genus	8	7	7	7	5	True	rich_gte_3
 NCBITaxon:100176	Papillibacter cinnamivorans	species	8	7	4	4	2	True	rich_gte_3
 NCBITaxon:375288	Parabacteroides	genus	58	46	226	226	155	True	rich_gte_3
@@ -3161,7 +3161,7 @@ NCBITaxon:563193	Parabacteroides sp. D13	species	6	6	1	1	1	True	rich_gte_3
 NCBITaxon:658662	Parabacteroides sp. D26	species	6	6	1	1	1	True	rich_gte_3
 NCBITaxon:537292	Parabacteroides sp. DJF_B086	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1078087	Parabacteroides sp. HGS0025	species	3	3	3	3	3	True	rich_gte_3
-NCBITaxon:1822464	Paraburkholderia	genus	129	114	1	1	1	True	rich_gte_3
+NCBITaxon:1822464	Paraburkholderia	genus	128	113	1	1	1	True	rich_gte_3
 NCBITaxon:420952	Paraburkholderia bryophila	species	16	15	2	2	1	True	rich_gte_3
 NCBITaxon:416943	Paraburkholderia caballeronis	species	6	5	2	2	2	True	rich_gte_3
 NCBITaxon:984307	Paraburkholderia kururiensis	species	16	11	2	2	1	True	rich_gte_3
@@ -3174,8 +3174,8 @@ NCBITaxon:36873	Paraburkholderia xenovorans	species	26	22	3	3	2	True	rich_gte_3
 NCBITaxon:80869	Paracidovorax citrulli	species	9	7	1	1	1	True	rich_gte_3
 NCBITaxon:1849822	Paraclostridium	genus	23	12	3	3	3	True	rich_gte_3
 NCBITaxon:1505	Paraclostridium sordellii	species	14	8	3	3	3	True	rich_gte_3
-NCBITaxon:31989	Paracoccaceae	family	235	179	15	15	9	True	rich_gte_3
-NCBITaxon:265	Paracoccus	genus	158	130	18	18	14	True	rich_gte_3
+NCBITaxon:31989	Paracoccaceae	family	233	177	15	15	9	True	rich_gte_3
+NCBITaxon:265	Paracoccus	genus	156	128	18	18	14	True	rich_gte_3
 NCBITaxon:1966466	Paracoccus aeridis	species	3	3	1	1	1	True	rich_gte_3
 NCBITaxon:266	Paracoccus denitrificans	species	22	17	1	1	1	True	rich_gte_3
 NCBITaxon:147645	Paracoccus yeei	species	10	5	1	1	1	True	rich_gte_3
@@ -3211,22 +3211,22 @@ NCBITaxon:1944660	Parvimonas sp.	species	2	2	10	10	6	True	sparse_1_2
 NCBITaxon:671230	Parvimonas sp. oral taxon 110	species	5	5	1	1	1	True	rich_gte_3
 NCBITaxon:713008	Parvimonas sp. oral taxon 393	species	5	5	1	1	1	True	rich_gte_3
 NCBITaxon:208215	Parvularcula	genus	43	42	1	1	1	True	rich_gte_3
-NCBITaxon:745	Pasteurella	genus	35	31	5	5	4	True	rich_gte_3
-NCBITaxon:747	Pasteurella multocida	species	22	18	2	2	2	True	rich_gte_3
-NCBITaxon:712	Pasteurellaceae	family	76	58	116	113	79	True	rich_gte_3
-NCBITaxon:135625	Pasteurellales	order	76	58	62	62	48	True	rich_gte_3
+NCBITaxon:745	Pasteurella	genus	34	30	5	5	4	True	rich_gte_3
+NCBITaxon:747	Pasteurella multocida	species	21	17	2	2	2	True	rich_gte_3
+NCBITaxon:712	Pasteurellaceae	family	75	57	116	113	79	True	rich_gte_3
+NCBITaxon:135625	Pasteurellales	order	75	57	62	62	48	True	rich_gte_3
 NCBITaxon:538998	Pasteuriaceae	family	3	3	1	1	1	True	rich_gte_3
 NCBITaxon:1768242	Paucibacter sp. KCTC 42545	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:178339	Pauljensenia hongkongensis	species	10	9	2	2	2	True	rich_gte_3
 NCBITaxon:47201	Paurocotylis pila	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:864	Pectinatus	genus	58	53	1	1	1	True	rich_gte_3
 NCBITaxon:86956	Pectinatus cerevisiiphilus	species	7	5	1	1	1	True	rich_gte_3
-NCBITaxon:1903410	Pectobacteriaceae	family	82	72	6	6	4	True	rich_gte_3
-NCBITaxon:122277	Pectobacterium	genus	42	34	2	2	2	True	rich_gte_3
+NCBITaxon:1903410	Pectobacteriaceae	family	80	70	6	6	4	True	rich_gte_3
+NCBITaxon:122277	Pectobacterium	genus	40	32	2	2	2	True	rich_gte_3
 NCBITaxon:554	Pectobacterium carotovorum	species	19	14	1	1	1	True	rich_gte_3
 NCBITaxon:1905730	Pectobacterium parmentieri	species	7	7	1	1	1	True	rich_gte_3
-NCBITaxon:1253	Pediococcus	genus	69	60	18	18	8	True	rich_gte_3
-NCBITaxon:1254	Pediococcus acidilactici	species	22	17	3	3	2	True	rich_gte_3
+NCBITaxon:1253	Pediococcus	genus	68	59	18	18	8	True	rich_gte_3
+NCBITaxon:1254	Pediococcus acidilactici	species	21	16	3	3	2	True	rich_gte_3
 NCBITaxon:84567	Pedobacter	genus	107	99	19	19	11	True	rich_gte_3
 NCBITaxon:188932	Pedobacter cryoconitis	species	6	5	5	5	2	True	rich_gte_3
 NCBITaxon:984	Pedobacter heparinus	species	14	12	3	3	2	True	rich_gte_3
@@ -3258,7 +3258,7 @@ NCBITaxon:2740	Peptococcus	genus	24	19	75	75	39	True	rich_gte_3
 NCBITaxon:2741	Peptococcus niger	species	9	5	2	2	2	True	rich_gte_3
 NCBITaxon:2049038	Peptococcus sp.	species	0	0	4	4	2	False	zero_traits
 NCBITaxon:671215	Peptococcus sp. oral taxon 167	species	1	1	2	2	2	True	sparse_1_2
-NCBITaxon:1570339	Peptoniphilaceae	family	72	56	16	16	13	True	rich_gte_3
+NCBITaxon:1570339	Peptoniphilaceae	family	71	55	16	16	13	True	rich_gte_3
 NCBITaxon:1891242	Peptoniphilaceae bacterium	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:162289	Peptoniphilus	genus	38	30	89	87	51	True	rich_gte_3
 NCBITaxon:1258	Peptoniphilus asaccharolyticus	species	12	8	2	2	2	True	rich_gte_3
@@ -3280,13 +3280,13 @@ NCBITaxon:1647712	Peptoniphilus sp. S362	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:1647714	Peptoniphilus sp. S470	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:1268254	Peptoniphilus timonensis	species	8	7	2	2	1	True	rich_gte_3
 NCBITaxon:755171	Peptoniphilus tyrrelliae	species	2	2	1	1	1	True	sparse_1_2
-NCBITaxon:186804	Peptostreptococcaceae	family	94	71	174	170	122	True	rich_gte_3
+NCBITaxon:186804	Peptostreptococcaceae	family	93	70	174	170	122	True	rich_gte_3
 NCBITaxon:1904861	Peptostreptococcaceae bacterium	species	0	0	6	6	6	False	zero_traits
 NCBITaxon:713018	Peptostreptococcaceae bacterium oral taxon 103	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:713019	Peptostreptococcaceae bacterium oral taxon 106	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1321783	Peptostreptococcaceae bacterium oral taxon 113	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:713020	Peptostreptococcaceae bacterium oral taxon 369	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:3082720	Peptostreptococcales	order	177	110	3	3	2	True	rich_gte_3
+NCBITaxon:3082720	Peptostreptococcales	order	175	108	3	3	2	True	rich_gte_3
 NCBITaxon:1257	Peptostreptococcus	genus	26	18	128	127	85	True	rich_gte_3
 NCBITaxon:1261	Peptostreptococcus anaerobius	species	14	8	20	20	15	True	rich_gte_3
 NCBITaxon:215200	Peptostreptococcus russellii	species	5	4	1	1	1	True	rich_gte_3
@@ -3306,7 +3306,7 @@ NCBITaxon:1262914	Phascolarctobacterium sp. CAG:207	species	0	0	1	1	1	False	zero
 NCBITaxon:1262915	Phascolarctobacterium sp. CAG:266	species	0	0	3	3	3	False	zero_traits
 NCBITaxon:626940	Phascolarctobacterium succinatutens	species	8	4	26	26	18	True	rich_gte_3
 NCBITaxon:33129	Phaseolus acutifolius	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:20	Phenylobacterium	genus	83	72	5	5	4	True	rich_gte_3
+NCBITaxon:20	Phenylobacterium	genus	81	70	5	5	4	True	rich_gte_3
 NCBITaxon:909656	Phocaeicola	genus	86	71	17	17	11	True	rich_gte_3
 NCBITaxon:555313	Phocaeicola abscessus	species	21	19	1	1	1	True	rich_gte_3
 NCBITaxon:376804	Phocaeicola barnesiae	species	9	7	12	12	6	True	rich_gte_3
@@ -3320,14 +3320,14 @@ NCBITaxon:376805	Phocaeicola salanitronis	species	11	7	4	4	4	True	rich_gte_3
 NCBITaxon:671267	Phocaeicola sartorii	species	12	8	9	9	6	True	rich_gte_3
 NCBITaxon:821	Phocaeicola vulgatus	species	20	12	73	72	47	True	rich_gte_3
 NCBITaxon:146805	Phocoenobacter	genus	11	9	1	1	1	True	rich_gte_3
-NCBITaxon:657	Photobacterium	genus	118	105	3	3	2	True	rich_gte_3
-NCBITaxon:29487	Photorhabdus	genus	39	27	2	2	2	True	rich_gte_3
+NCBITaxon:657	Photobacterium	genus	116	103	3	3	2	True	rich_gte_3
+NCBITaxon:29487	Photorhabdus	genus	38	26	2	2	2	True	rich_gte_3
 NCBITaxon:1632780	Phreatobacter	genus	6	5	3	3	2	True	rich_gte_3
 NCBITaxon:1868589	Phreatobacter cathodiphilus	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:666508	Phycisphaera	genus	7	6	1	1	1	True	rich_gte_3
 NCBITaxon:666505	Phycisphaerae	class	19	12	2	2	2	True	rich_gte_3
 NCBITaxon:666506	Phycisphaerales	order	12	10	1	1	1	True	rich_gte_3
-NCBITaxon:69277	Phyllobacteriaceae	family	147	121	6	6	5	True	rich_gte_3
+NCBITaxon:69277	Phyllobacteriaceae	family	146	120	6	6	5	True	rich_gte_3
 NCBITaxon:28100	Phyllobacterium	genus	40	36	29	29	14	True	rich_gte_3
 NCBITaxon:28101	Phyllobacterium myrsinacearum	species	8	6	2	2	2	True	rich_gte_3
 NCBITaxon:1871046	Phyllobacterium sp.	species	0	0	1	1	1	False	zero_traits
@@ -3338,26 +3338,26 @@ NCBITaxon:2691357	Pirellulaceae	family	80	70	2	2	1	True	rich_gte_3
 NCBITaxon:985001	Piscicoccus	genus	9	8	6	6	3	True	rich_gte_3
 NCBITaxon:1384499	Pisciglobus	genus	7	6	2	2	2	True	rich_gte_3
 NCBITaxon:1636152	Planctomyces sp. SH-PL62	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:112	Planctomycetales	order	55	45	1	1	1	True	rich_gte_3
-NCBITaxon:203682	Planctomycetota	phylum	130	99	10	10	6	True	rich_gte_3
+NCBITaxon:112	Planctomycetales	order	54	44	1	1	1	True	rich_gte_3
+NCBITaxon:203682	Planctomycetota	phylum	128	97	10	10	6	True	rich_gte_3
 NCBITaxon:1649480	Planctopirus	genus	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:162291	Planomicrobium	genus	44	39	2	2	2	True	rich_gte_3
 NCBITaxon:36330	Plasmodium ovale	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:220672	Plenodomus biglobosus	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:28556	Pleosporaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:92860	Pleosporales	order	0	0	1	1	1	False	zero_traits
-NCBITaxon:702	Plesiomonas	genus	15	12	8	8	4	True	rich_gte_3
-NCBITaxon:703	Plesiomonas shigelloides	species	14	11	2	2	2	True	rich_gte_3
-NCBITaxon:1330546	Pluralibacter	genus	21	15	3	3	3	True	rich_gte_3
-NCBITaxon:61647	Pluralibacter gergoviae	species	13	8	1	1	1	True	rich_gte_3
+NCBITaxon:702	Plesiomonas	genus	14	11	8	8	4	True	rich_gte_3
+NCBITaxon:703	Plesiomonas shigelloides	species	13	10	2	2	2	True	rich_gte_3
+NCBITaxon:1330546	Pluralibacter	genus	20	14	3	3	3	True	rich_gte_3
+NCBITaxon:61647	Pluralibacter gergoviae	species	12	7	1	1	1	True	rich_gte_3
 NCBITaxon:4753	Pneumocystis	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:42068	Pneumocystis jirovecii	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:52972	Polaromonas	genus	87	84	4	4	3	True	rich_gte_3
 NCBITaxon:49	Polyangiaceae	family	54	44	1	1	1	True	rich_gte_3
 NCBITaxon:991903	Polymorphum	genus	4	4	1	1	1	True	rich_gte_3
-NCBITaxon:44013	Polynucleobacter	genus	48	44	1	1	1	True	rich_gte_3
+NCBITaxon:44013	Polynucleobacter	genus	46	42	1	1	1	True	rich_gte_3
 NCBITaxon:1743168	Polynucleobacter wuianus	species	22	20	1	1	1	True	rich_gte_3
-NCBITaxon:289201	Pontibacillus	genus	67	65	1	1	1	True	rich_gte_3
+NCBITaxon:289201	Pontibacillus	genus	65	63	1	1	1	True	rich_gte_3
 NCBITaxon:1111	Porphyrobacter	genus	8	5	4	4	3	True	rich_gte_3
 NCBITaxon:1479239	Porphyrobacter sp. HL-46	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:171551	Porphyromonadaceae	family	56	43	126	126	96	True	rich_gte_3
@@ -3468,15 +3468,15 @@ NCBITaxon:2049047	Prevotellaceae bacterium	species	0	0	3	3	3	False	zero_traits
 NCBITaxon:1952510	Prevotellaceae bacterium UBA6398	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1926672	Prevotellamassilia	genus	0	0	2	2	2	False	zero_traits
 NCBITaxon:1852370	Prevotellamassilia timonensis	species	0	0	5	5	2	False	zero_traits
-NCBITaxon:1404	Priestia megaterium	species	25	20	1	1	1	True	rich_gte_3
+NCBITaxon:1404	Priestia megaterium	species	24	19	1	1	1	True	rich_gte_3
 NCBITaxon:2881426	Prochlorococcaceae	family	13	11	1	1	1	True	rich_gte_3
 NCBITaxon:43676	Promicromonospora	genus	84	70	1	1	1	True	rich_gte_3
-NCBITaxon:85017	Promicromonosporaceae	family	133	107	5	5	4	True	rich_gte_3
-NCBITaxon:31957	Propionibacteriaceae	family	177	136	30	29	25	True	rich_gte_3
-NCBITaxon:85009	Propionibacteriales	order	242	168	6	6	6	True	rich_gte_3
-NCBITaxon:1743	Propionibacterium	genus	42	34	58	58	38	True	rich_gte_3
+NCBITaxon:85017	Promicromonosporaceae	family	131	105	5	5	4	True	rich_gte_3
+NCBITaxon:31957	Propionibacteriaceae	family	175	134	30	29	25	True	rich_gte_3
+NCBITaxon:85009	Propionibacteriales	order	240	166	6	6	6	True	rich_gte_3
+NCBITaxon:1743	Propionibacterium	genus	41	33	58	58	38	True	rich_gte_3
 NCBITaxon:556499	Propionibacterium acidifaciens	species	32	28	2	2	2	True	rich_gte_3
-NCBITaxon:1744	Propionibacterium freudenreichii	species	13	11	1	1	1	True	rich_gte_3
+NCBITaxon:1744	Propionibacterium freudenreichii	species	12	10	1	1	1	True	rich_gte_3
 NCBITaxon:1977903	Propionibacterium sp.	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:671222	Propionibacterium sp. oral taxon 192	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:348581	Propionicicella	genus	11	9	1	1	1	True	rich_gte_3
@@ -3491,23 +3491,23 @@ NCBITaxon:48463	Prosthecobacter	genus	19	16	4	4	4	True	rich_gte_3
 NCBITaxon:35727	Prostoma	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:1262986	Proteobacteria bacterium CAG:139	species	0	0	3	3	2	False	zero_traits
 NCBITaxon:210425	Proteus	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:583	Proteus	genus	53	43	56	55	30	True	rich_gte_3
+NCBITaxon:583	Proteus	genus	51	41	56	55	30	True	rich_gte_3
 NCBITaxon:183417	Proteus hauseri	species	12	6	2	2	1	True	rich_gte_3
-NCBITaxon:584	Proteus mirabilis	species	20	12	7	7	7	True	rich_gte_3
-NCBITaxon:102862	Proteus penneri	species	16	12	1	1	1	True	rich_gte_3
+NCBITaxon:584	Proteus mirabilis	species	19	11	7	7	7	True	rich_gte_3
+NCBITaxon:102862	Proteus penneri	species	15	11	1	1	1	True	rich_gte_3
 NCBITaxon:229037	Proteus sp. (in: enterobacteria)	species	5	5	1	1	1	True	rich_gte_3
-NCBITaxon:585	Proteus vulgaris	species	14	10	1	1	1	True	rich_gte_3
-NCBITaxon:586	Providencia	genus	52	43	5	5	5	True	rich_gte_3
-NCBITaxon:587	Providencia rettgeri	species	17	11	1	1	1	True	rich_gte_3
-NCBITaxon:588	Providencia stuartii	species	15	10	2	2	1	True	rich_gte_3
+NCBITaxon:585	Proteus vulgaris	species	13	9	1	1	1	True	rich_gte_3
+NCBITaxon:586	Providencia	genus	51	42	5	5	5	True	rich_gte_3
+NCBITaxon:587	Providencia rettgeri	species	16	10	1	1	1	True	rich_gte_3
+NCBITaxon:588	Providencia stuartii	species	14	9	2	2	1	True	rich_gte_3
 NCBITaxon:333965	Providencia vermicola	species	28	28	1	1	1	True	rich_gte_3
 NCBITaxon:2321113	Pseudarcobacter	genus	0	0	2	2	1	False	zero_traits
 NCBITaxon:1742993	Pseudarthrobacter	genus	101	92	3	3	3	True	rich_gte_3
 NCBITaxon:1671	Pseudarthrobacter oxydans	species	16	11	1	1	1	True	rich_gte_3
 NCBITaxon:2055880	Pseudescherichia	genus	16	11	1	1	1	True	rich_gte_3
 NCBITaxon:566	Pseudescherichia vulneris	species	16	11	2	2	2	True	rich_gte_3
-NCBITaxon:267888	Pseudoalteromonadaceae	family	87	81	2	2	2	True	rich_gte_3
-NCBITaxon:53246	Pseudoalteromonas	genus	86	80	3	3	3	True	rich_gte_3
+NCBITaxon:267888	Pseudoalteromonadaceae	family	86	80	2	2	2	True	rich_gte_3
+NCBITaxon:53246	Pseudoalteromonas	genus	85	79	3	3	3	True	rich_gte_3
 NCBITaxon:1703256	Pseudoalteromonas gelatinilytica	species	28	27	1	1	1	True	rich_gte_3
 NCBITaxon:43662	Pseudoalteromonas piscicida	species	9	5	1	1	1	True	rich_gte_3
 NCBITaxon:1190813	Pseudoalteromonas shioyasakiensis	species	1	1	1	1	1	True	sparse_1_2
@@ -3536,12 +3536,12 @@ NCBITaxon:1364	Pseudolactococcus piscium	species	16	11	1	1	1	True	rich_gte_3
 NCBITaxon:1365	Pseudolactococcus plantarum	species	10	7	1	1	1	True	rich_gte_3
 NCBITaxon:1366	Pseudolactococcus raffinolactis	species	12	9	1	1	1	True	rich_gte_3
 NCBITaxon:157692	Pseudoleptotrichia goodfellowii	species	18	15	7	7	6	True	rich_gte_3
-NCBITaxon:135621	Pseudomonadaceae	family	225	160	53	51	42	True	rich_gte_3
-NCBITaxon:72274	Pseudomonadales	order	244	171	59	59	47	True	rich_gte_3
-NCBITaxon:1224	Pseudomonadota	phylum	1008	287	287	285	184	True	rich_gte_3
+NCBITaxon:135621	Pseudomonadaceae	family	223	158	53	51	42	True	rich_gte_3
+NCBITaxon:72274	Pseudomonadales	order	242	169	59	59	47	True	rich_gte_3
+NCBITaxon:1224	Pseudomonadota	phylum	1006	285	287	285	184	True	rich_gte_3
 NCBITaxon:1977087	Pseudomonadota bacterium	species	0	0	2	2	1	False	zero_traits
-NCBITaxon:286	Pseudomonas	genus	201	146	162	161	91	True	rich_gte_3
-NCBITaxon:287	Pseudomonas aeruginosa	species	69	54	20	20	13	True	rich_gte_3
+NCBITaxon:286	Pseudomonas	genus	199	144	162	161	91	True	rich_gte_3
+NCBITaxon:287	Pseudomonas aeruginosa	species	67	52	20	20	13	True	rich_gte_3
 NCBITaxon:46677	Pseudomonas agarici	species	11	9	1	1	1	True	rich_gte_3
 NCBITaxon:237609	Pseudomonas alkylphenolica	species	6	6	2	2	2	True	rich_gte_3
 NCBITaxon:219572	Pseudomonas antarctica	species	40	36	1	1	1	True	rich_gte_3
@@ -3607,8 +3607,8 @@ NCBITaxon:76761	Pseudomonas veronii	species	18	10	7	7	3	True	rich_gte_3
 NCBITaxon:33069	Pseudomonas viridiflava	species	12	8	3	3	3	True	rich_gte_3
 NCBITaxon:515393	Pseudomonas yamanorum	species	7	3	1	1	1	True	rich_gte_3
 NCBITaxon:1847	Pseudonocardia	genus	127	93	4	4	4	True	rich_gte_3
-NCBITaxon:2070	Pseudonocardiaceae	family	215	143	6	6	5	True	rich_gte_3
-NCBITaxon:85010	Pseudonocardiales	order	215	143	1	1	1	True	rich_gte_3
+NCBITaxon:2070	Pseudonocardiaceae	family	213	141	6	6	5	True	rich_gte_3
+NCBITaxon:85010	Pseudonocardiales	order	213	141	1	1	1	True	rich_gte_3
 NCBITaxon:113286	Pseudoramibacter	genus	9	5	12	12	10	True	rich_gte_3
 NCBITaxon:113287	Pseudoramibacter alactolyticus	species	8	5	1	1	1	True	rich_gte_3
 NCBITaxon:238783	Pseudorhodobacter	genus	21	19	2	2	2	True	rich_gte_3
@@ -3625,8 +3625,8 @@ NCBITaxon:349106	Psychrobacter sp. PRwf-1	species	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:1649484	Psychroglaciecola	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:186789	Punavirus	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:22663	Punica granatum	species	0	0	3	3	1	False	zero_traits
-NCBITaxon:415002	Puniceicoccaceae	family	51	47	8	8	6	True	rich_gte_3
-NCBITaxon:415001	Puniceicoccales	order	77	71	2	2	2	True	rich_gte_3
+NCBITaxon:415002	Puniceicoccaceae	family	49	45	8	8	6	True	rich_gte_3
+NCBITaxon:415001	Puniceicoccales	order	75	69	2	2	2	True	rich_gte_3
 NCBITaxon:33203	Purpureocillium lilacinum	species	0	0	4	4	1	False	zero_traits
 NCBITaxon:305976	Pusillimonas	genus	30	19	2	2	1	True	rich_gte_3
 NCBITaxon:1929305	Pygmaiobacter	genus	0	0	2	2	2	False	zero_traits
@@ -3638,8 +3638,8 @@ NCBITaxon:1855416	Qipengyuania	genus	26	23	4	4	2	True	rich_gte_3
 NCBITaxon:255984	Qipengyuania aquimaris	species	11	11	2	2	1	True	rich_gte_3
 NCBITaxon:317661	Quadrisphaera	genus	39	35	1	1	1	True	rich_gte_3
 NCBITaxon:1567	Quinella	genus	1	1	3	3	2	True	sparse_1_2
-NCBITaxon:34037	Rahnella	genus	22	13	3	3	3	True	rich_gte_3
-NCBITaxon:34038	Rahnella aquatilis	species	19	12	1	1	1	True	rich_gte_3
+NCBITaxon:34037	Rahnella	genus	21	12	3	3	3	True	rich_gte_3
+NCBITaxon:34038	Rahnella aquatilis	species	18	11	1	1	1	True	rich_gte_3
 NCBITaxon:1054200	Rahnella sp. EMA-83	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:48736	Ralstonia	genus	37	23	47	46	31	True	rich_gte_3
 NCBITaxon:148618	Ralstonia detusculanense	species	0	0	1	1	1	False	zero_traits
@@ -3652,23 +3652,23 @@ NCBITaxon:434126	Rarimicrobium hominis	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:1001126	Rebutia arenacea	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1645	Renibacterium	genus	15	13	2	2	1	True	rich_gte_3
 NCBITaxon:445219	Reyranella	genus	17	16	2	2	2	True	rich_gte_3
-NCBITaxon:67575	Rheinheimera	genus	90	82	7	7	5	True	rich_gte_3
+NCBITaxon:67575	Rheinheimera	genus	88	80	7	7	5	True	rich_gte_3
 NCBITaxon:2703963	Rheinheimera pleomorphica	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:212743	Rhizobacter	genus	34	30	2	2	2	True	rich_gte_3
-NCBITaxon:82115	Rhizobiaceae	family	196	149	29	29	18	True	rich_gte_3
-NCBITaxon:379	Rhizobium	genus	133	117	11	11	6	True	rich_gte_3
-NCBITaxon:29449	Rhizobium etli	species	15	12	1	1	1	True	rich_gte_3
+NCBITaxon:82115	Rhizobiaceae	family	194	147	29	29	18	True	rich_gte_3
+NCBITaxon:379	Rhizobium	genus	131	115	11	11	6	True	rich_gte_3
+NCBITaxon:29449	Rhizobium etli	species	14	11	1	1	1	True	rich_gte_3
 NCBITaxon:1312183	Rhizobium jaguaris	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:391	Rhizobium sp.	species	10	3	2	2	2	True	rich_gte_3
 NCBITaxon:456999	Rhizoctonia solani	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1803374	Rhizophagus sp. MUCL 43196	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:160791	Rhizorhabdus wittichii	species	14	11	2	2	1	True	rich_gte_3
-NCBITaxon:1775411	Rhodanobacteraceae	family	128	107	7	7	2	True	rich_gte_3
+NCBITaxon:1775411	Rhodanobacteraceae	family	126	105	7	7	2	True	rich_gte_3
 NCBITaxon:1060	Rhodobacter	genus	59	54	10	10	6	True	rich_gte_3
 NCBITaxon:1850250	Rhodobacter xanthinilyticus	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1366046	Rhodobacteraceae bacterium HIMB11	species	5	5	2	2	2	True	rich_gte_3
-NCBITaxon:204455	Rhodobacterales	order	265	197	6	6	5	True	rich_gte_3
-NCBITaxon:119043	Rhodobiaceae	family	43	41	2	2	2	True	rich_gte_3
+NCBITaxon:204455	Rhodobacterales	order	263	195	6	6	5	True	rich_gte_3
+NCBITaxon:119043	Rhodobiaceae	family	41	39	2	2	2	True	rich_gte_3
 NCBITaxon:34023	Rhodocista	genus	4	4	1	1	1	True	rich_gte_3
 NCBITaxon:1828	Rhodococcoides fascians	species	21	12	1	1	1	True	rich_gte_3
 NCBITaxon:1827	Rhodococcus	genus	132	98	45	45	19	True	rich_gte_3
@@ -3676,19 +3676,19 @@ NCBITaxon:1833	Rhodococcus erythropolis	species	43	27	5	5	2	True	rich_gte_3
 NCBITaxon:37919	Rhodococcus opacus	species	43	33	1	1	1	True	rich_gte_3
 NCBITaxon:1831	Rhodococcus sp. (in: high G+C Gram-positive bacteria)	species	1	1	3	3	2	True	sparse_1_2
 NCBITaxon:1653478	Rhodococcus sp. PBTS 1	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:75787	Rhodocyclaceae	family	74	60	7	7	6	True	rich_gte_3
-NCBITaxon:206389	Rhodocyclales	order	141	106	5	5	4	True	rich_gte_3
+NCBITaxon:75787	Rhodocyclaceae	family	72	58	7	7	6	True	rich_gte_3
+NCBITaxon:206389	Rhodocyclales	order	139	104	5	5	4	True	rich_gte_3
 NCBITaxon:455076	Rhodocytophaga	genus	30	29	1	1	1	True	rich_gte_3
 NCBITaxon:28065	Rhodoferax	genus	29	25	2	2	2	True	rich_gte_3
 NCBITaxon:529883	Rhodoluna	genus	15	11	1	1	1	True	rich_gte_3
-NCBITaxon:1068	Rhodomicrobium	genus	32	29	1	1	1	True	rich_gte_3
+NCBITaxon:1068	Rhodomicrobium	genus	31	28	1	1	1	True	rich_gte_3
 NCBITaxon:1070	Rhodopila	genus	11	10	1	1	1	True	rich_gte_3
 NCBITaxon:265488	Rhodopirellula	genus	42	37	3	2	1	True	rich_gte_3
-NCBITaxon:29407	Rhodoplanes	genus	53	51	3	3	2	True	rich_gte_3
+NCBITaxon:29407	Rhodoplanes	genus	52	50	3	3	2	True	rich_gte_3
 NCBITaxon:1073	Rhodopseudomonas	genus	53	49	3	3	2	True	rich_gte_3
 NCBITaxon:1076	Rhodopseudomonas palustris	species	23	20	2	2	2	True	rich_gte_3
-NCBITaxon:41295	Rhodospirillaceae	family	125	108	14	13	12	True	rich_gte_3
-NCBITaxon:204441	Rhodospirillales	order	219	171	16	16	16	True	rich_gte_3
+NCBITaxon:41295	Rhodospirillaceae	family	124	107	14	13	12	True	rich_gte_3
+NCBITaxon:204441	Rhodospirillales	order	217	169	16	16	16	True	rich_gte_3
 NCBITaxon:1081	Rhodospirillum	genus	18	14	1	1	1	True	rich_gte_3
 NCBITaxon:2026787	Rhodothermaceae bacterium	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:29548	Rhodothermus	genus	38	33	1	1	1	True	rich_gte_3
@@ -3707,8 +3707,8 @@ NCBITaxon:171550	Rikenellaceae	family	57	37	130	130	91	True	rich_gte_3
 NCBITaxon:2049048	Rikenellaceae bacterium	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:28092	Robbsia andropogonis	species	10	6	1	1	1	True	rich_gte_3
 NCBITaxon:588605	Robinsoniella	genus	17	14	5	5	4	True	rich_gte_3
-NCBITaxon:1960084	Rodentibacter	genus	20	12	2	2	1	True	rich_gte_3
-NCBITaxon:758	Rodentibacter pneumotropicus	species	16	12	2	2	2	True	rich_gte_3
+NCBITaxon:1960084	Rodentibacter	genus	19	11	2	2	1	True	rich_gte_3
+NCBITaxon:758	Rodentibacter pneumotropicus	species	15	11	2	2	2	True	rich_gte_3
 NCBITaxon:1501226	Romboutsia	genus	14	7	103	102	66	True	rich_gte_3
 NCBITaxon:1507512	Romboutsia hominis	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:1115758	Romboutsia ilealis	species	6	3	4	4	4	True	rich_gte_3
@@ -3741,13 +3741,13 @@ NCBITaxon:1262947	Roseburia sp. CAG:45	species	0	0	3	3	2	False	zero_traits
 NCBITaxon:1262948	Roseburia sp. CAG:471	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:1262949	Roseburia sp. CAG:50	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2293144	Roseburia sp. TF10-5	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1356488	Rosenbergiella	genus	29	28	1	1	1	True	rich_gte_3
+NCBITaxon:1356488	Rosenbergiella	genus	27	26	1	1	1	True	rich_gte_3
 NCBITaxon:125216	Roseomonas	genus	20	13	2	2	2	True	rich_gte_3
 NCBITaxon:257708	Roseomonas gilardii	species	7	4	6	6	3	True	rich_gte_3
 NCBITaxon:207340	Roseomonas mucosa	species	9	5	1	1	1	True	rich_gte_3
-NCBITaxon:32207	Rothia	genus	88	76	142	142	88	True	rich_gte_3
+NCBITaxon:32207	Rothia	genus	87	75	142	142	88	True	rich_gte_3
 NCBITaxon:508215	Rothia	genus	0	0	32	32	19	False	zero_traits
-NCBITaxon:172042	Rothia aeria	species	27	25	22	22	15	True	rich_gte_3
+NCBITaxon:172042	Rothia aeria	species	26	24	22	22	15	True	rich_gte_3
 NCBITaxon:2047	Rothia dentocariosa	species	13	8	39	39	26	True	rich_gte_3
 NCBITaxon:43675	Rothia mucilaginosa	species	16	10	79	79	49	True	rich_gte_3
 NCBITaxon:1885016	Rothia sp. (in: high G+C Gram-positive bacteria)	species	0	0	7	7	3	False	zero_traits
@@ -3861,13 +3861,13 @@ NCBITaxon:45669	Salinicoccus	genus	80	72	1	1	1	True	rich_gte_3
 NCBITaxon:1398404	Salinihabitans	genus	32	31	1	1	1	True	rich_gte_3
 NCBITaxon:168694	Salinispora	genus	34	28	3	3	3	True	rich_gte_3
 NCBITaxon:168695	Salinispora tropica	species	23	20	2	2	2	True	rich_gte_3
-NCBITaxon:51366	Salinivibrio	genus	75	64	1	1	1	True	rich_gte_3
+NCBITaxon:51366	Salinivibrio	genus	73	62	1	1	1	True	rich_gte_3
 NCBITaxon:51367	Salinivibrio costicola	species	15	10	1	1	1	True	rich_gte_3
 NCBITaxon:1229727	Salipiger profundus	species	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:394505	Salirhabdus	genus	57	56	1	1	1	True	rich_gte_3
-NCBITaxon:590	Salmonella	genus	33	23	36	36	16	True	rich_gte_3
-NCBITaxon:28901	Salmonella enterica	species	33	23	12	12	10	True	rich_gte_3
-NCBITaxon:59201	Salmonella enterica subsp. enterica	species	25	18	1	1	1	True	rich_gte_3
+NCBITaxon:590	Salmonella	genus	32	22	36	36	16	True	rich_gte_3
+NCBITaxon:28901	Salmonella enterica	species	32	22	12	12	10	True	rich_gte_3
+NCBITaxon:59201	Salmonella enterica subsp. enterica	species	24	17	1	1	1	True	rich_gte_3
 NCBITaxon:599	Salmonella sp.	species	2	1	16	16	2	True	sparse_1_2
 NCBITaxon:2560221	Samunavirus	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:2560683	Samunavirus SM1	species	0	0	1	1	1	False	zero_traits
@@ -3882,14 +3882,14 @@ NCBITaxon:1267	Sarcina ventriculi	species	4	3	4	4	2	True	rich_gte_3
 NCBITaxon:196081	Scardovia	genus	31	26	20	19	15	True	rich_gte_3
 NCBITaxon:78259	Scardovia inopinata	species	10	8	3	3	3	True	rich_gte_3
 NCBITaxon:230143	Scardovia wiggsiae	species	28	25	10	10	8	True	rich_gte_3
-NCBITaxon:2529408	Schaalia	genus	37	28	2	2	2	True	rich_gte_3
+NCBITaxon:2529408	Schaalia	genus	36	27	2	2	2	True	rich_gte_3
 NCBITaxon:181487	Schaalia cardiffensis	species	10	8	6	6	5	True	rich_gte_3
 NCBITaxon:52768	Schaalia georgiae	species	16	15	6	6	3	True	rich_gte_3
 NCBITaxon:52773	Schaalia meyeri	species	17	15	8	8	8	True	rich_gte_3
 NCBITaxon:635203	Schaalia naturae	species	6	5	3	3	2	True	rich_gte_3
-NCBITaxon:1660	Schaalia odontolytica	species	16	10	30	30	21	True	rich_gte_3
+NCBITaxon:1660	Schaalia odontolytica	species	15	9	30	30	21	True	rich_gte_3
 NCBITaxon:131110	Schaalia radingae	species	7	6	2	2	1	True	rich_gte_3
-NCBITaxon:131111	Schaalia turicensis	species	13	11	5	5	4	True	rich_gte_3
+NCBITaxon:131111	Schaalia turicensis	species	12	10	5	5	4	True	rich_gte_3
 NCBITaxon:2676048	Schaedlerella	genus	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:2044587	Schaedlerella arabinosiphila	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:766733	Scheffersomyces	genus	0	0	1	1	1	False	zero_traits
@@ -3902,11 +3902,11 @@ NCBITaxon:55507	Schwartzia succinivorans	species	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:596495	Sciscionella	genus	37	35	1	1	1	True	rich_gte_3
 NCBITaxon:60404	Scriptaphyosemion liberiense	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:32068	Sebaldella	genus	11	7	1	1	1	True	rich_gte_3
-NCBITaxon:240427	Secundilactobacillus paracollinoides	species	20	16	2	2	1	True	rich_gte_3
+NCBITaxon:240427	Secundilactobacillus paracollinoides	species	19	15	2	2	1	True	rich_gte_3
 NCBITaxon:190972	Sedimentibacter	genus	38	33	4	4	2	True	rich_gte_3
 NCBITaxon:349742	Sedimenticola	genus	10	8	2	2	2	True	rich_gte_3
 NCBITaxon:2483368	Sedimentisphaera	genus	5	2	1	1	1	True	rich_gte_3
-NCBITaxon:504481	Sediminibacterium	genus	58	55	9	9	8	True	rich_gte_3
+NCBITaxon:504481	Sediminibacterium	genus	57	54	9	9	8	True	rich_gte_3
 NCBITaxon:1917865	Sediminibacterium sp.	species	2	1	1	1	1	True	sparse_1_2
 NCBITaxon:1217414	Sediminihabitans	genus	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:2974251	Segatella	genus	68	54	2	2	1	True	rich_gte_3
@@ -3949,29 +3949,29 @@ NCBITaxon:1473205	Senegalimassilia	genus	10	8	15	15	13	True	rich_gte_3
 NCBITaxon:1473216	Senegalimassilia anaerobia	species	9	7	9	9	5	True	rich_gte_3
 NCBITaxon:265976	Serinicoccus	genus	68	62	1	1	1	True	rich_gte_3
 NCBITaxon:2985502	Serratia	genus	0	0	3	3	2	False	zero_traits
-NCBITaxon:613	Serratia	genus	105	93	39	39	26	True	rich_gte_3
+NCBITaxon:613	Serratia	genus	104	92	39	39	26	True	rich_gte_3
 NCBITaxon:42906	Serratia entomophila	species	12	9	3	3	2	True	rich_gte_3
-NCBITaxon:47917	Serratia fonticola	species	46	41	1	1	1	True	rich_gte_3
+NCBITaxon:47917	Serratia fonticola	species	45	40	1	1	1	True	rich_gte_3
 NCBITaxon:614	Serratia liquefaciens	species	18	14	1	1	1	True	rich_gte_3
-NCBITaxon:615	Serratia marcescens	species	32	23	8	8	7	True	rich_gte_3
+NCBITaxon:615	Serratia marcescens	species	31	22	8	8	7	True	rich_gte_3
 NCBITaxon:28151	Serratia proteamaculans	species	12	10	2	2	2	True	rich_gte_3
 NCBITaxon:616	Serratia sp. (in: enterobacteria)	species	3	3	2	2	1	True	rich_gte_3
 NCBITaxon:490233	Serratia sp. DAP4	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:648695	Serratia sp. M1	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:519427	Sharpea	genus	24	18	4	4	3	True	rich_gte_3
-NCBITaxon:22	Shewanella	genus	142	128	25	25	13	True	rich_gte_3
+NCBITaxon:22	Shewanella	genus	140	126	25	25	13	True	rich_gte_3
 NCBITaxon:38313	Shewanella algae	species	15	12	3	3	2	True	rich_gte_3
 NCBITaxon:24	Shewanella putrefaciens	species	25	19	1	1	1	True	rich_gte_3
-NCBITaxon:267890	Shewanellaceae	family	142	128	5	5	2	True	rich_gte_3
-NCBITaxon:620	Shigella	genus	17	13	65	65	43	True	rich_gte_3
-NCBITaxon:621	Shigella boydii	species	14	11	5	5	4	True	rich_gte_3
-NCBITaxon:622	Shigella dysenteriae	species	15	12	8	8	6	True	rich_gte_3
-NCBITaxon:623	Shigella flexneri	species	14	11	7	7	6	True	rich_gte_3
+NCBITaxon:267890	Shewanellaceae	family	140	126	5	5	2	True	rich_gte_3
+NCBITaxon:620	Shigella	genus	16	12	65	65	43	True	rich_gte_3
+NCBITaxon:621	Shigella boydii	species	13	10	5	5	4	True	rich_gte_3
+NCBITaxon:622	Shigella dysenteriae	species	14	11	8	8	6	True	rich_gte_3
+NCBITaxon:623	Shigella flexneri	species	13	10	7	7	6	True	rich_gte_3
 NCBITaxon:1776082	Shigella genomosp. SF-2015	species	6	6	3	3	2	True	rich_gte_3
 NCBITaxon:1407493	Shigella phage SfIV	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:624	Shigella sonnei	species	15	12	9	9	6	True	rich_gte_3
+NCBITaxon:624	Shigella sonnei	species	14	11	9	9	6	True	rich_gte_3
 NCBITaxon:1813821	Shigella sp. PAMC 28760	species	0	0	2	2	1	False	zero_traits
-NCBITaxon:1335483	Shimwellia	genus	28	22	1	1	1	True	rich_gte_3
+NCBITaxon:1335483	Shimwellia	genus	27	21	1	1	1	True	rich_gte_3
 NCBITaxon:79880	Shouchella clausii	species	15	12	1	1	1	True	rich_gte_3
 NCBITaxon:300825	Shouchella lehensis	species	47	47	1	1	1	True	rich_gte_3
 NCBITaxon:177971	Shuttleworthella	genus	9	8	26	26	17	True	rich_gte_3
@@ -3979,7 +3979,7 @@ NCBITaxon:177972	Shuttleworthella satelles	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:2763665	Simiaoa hominis	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:71	Simonsiella	genus	12	9	8	8	5	True	rich_gte_3
 NCBITaxon:72	Simonsiella muelleri	species	12	9	8	8	4	True	rich_gte_3
-NCBITaxon:352450	Simplicispira	genus	44	36	1	1	1	True	rich_gte_3
+NCBITaxon:352450	Simplicispira	genus	43	35	1	1	1	True	rich_gte_3
 NCBITaxon:380	Sinorhizobium fredii	species	15	13	1	1	1	True	rich_gte_3
 NCBITaxon:382	Sinorhizobium meliloti	species	19	16	2	2	2	True	rich_gte_3
 NCBITaxon:1842534	Sinorhizobium sp. RAC02	species	0	0	1	1	1	False	zero_traits
@@ -4001,7 +4001,7 @@ NCBITaxon:63612	Sodalis glossinidius	species	9	7	1	1	1	True	rich_gte_3
 NCBITaxon:648800	Solibacillus	genus	61	58	1	1	1	True	rich_gte_3
 NCBITaxon:207599	Solirubrobacter	genus	42	38	8	8	3	True	rich_gte_3
 NCBITaxon:588673	Solirubrobacterales	order	102	90	1	1	1	True	rich_gte_3
-NCBITaxon:929509	Solitalea	genus	40	37	1	1	1	True	rich_gte_3
+NCBITaxon:929509	Solitalea	genus	39	36	1	1	1	True	rich_gte_3
 NCBITaxon:123375	Solobacterium	genus	10	7	50	50	33	True	rich_gte_3
 NCBITaxon:102148	Solobacterium moorei	species	10	7	37	36	29	True	rich_gte_3
 NCBITaxon:1947467	Solobacterium sp. UBA636	species	0	0	1	1	1	False	zero_traits
@@ -4011,9 +4011,9 @@ NCBITaxon:147550	Sordariomycetes	class	0	0	2	2	2	False	zero_traits
 NCBITaxon:134549	Spartobacteria	class	18	17	3	3	2	True	rich_gte_3
 NCBITaxon:399320	Sphaerochaeta	genus	32	31	2	2	2	True	rich_gte_3
 NCBITaxon:1131703	Sphaerochaeta globosa	species	29	28	1	1	1	True	rich_gte_3
-NCBITaxon:84566	Sphingobacteriaceae	family	156	130	22	22	15	True	rich_gte_3
-NCBITaxon:200666	Sphingobacteriales	order	158	130	11	11	10	True	rich_gte_3
-NCBITaxon:117747	Sphingobacteriia	class	158	130	12	12	11	True	rich_gte_3
+NCBITaxon:84566	Sphingobacteriaceae	family	154	128	22	22	15	True	rich_gte_3
+NCBITaxon:200666	Sphingobacteriales	order	156	128	11	11	10	True	rich_gte_3
+NCBITaxon:117747	Sphingobacteriia	class	156	128	12	12	11	True	rich_gte_3
 NCBITaxon:28453	Sphingobacterium	genus	106	91	21	21	13	True	rich_gte_3
 NCBITaxon:28454	Sphingobacterium multivorum	species	18	13	2	2	2	True	rich_gte_3
 NCBITaxon:626343	Sphingobacterium shayense	species	14	14	1	1	1	True	rich_gte_3
@@ -4035,8 +4035,8 @@ NCBITaxon:484429	Sphingobium sp. YBL2	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:1332080	Sphingobium wenxiniae	species	23	22	2	2	2	True	rich_gte_3
 NCBITaxon:121428	Sphingobium xenophagum	species	19	9	1	1	1	True	rich_gte_3
 NCBITaxon:13690	Sphingobium yanoikuyae	species	24	12	4	4	3	True	rich_gte_3
-NCBITaxon:41297	Sphingomonadaceae	family	209	152	29	27	24	True	rich_gte_3
-NCBITaxon:204457	Sphingomonadales	order	229	161	17	17	15	True	rich_gte_3
+NCBITaxon:41297	Sphingomonadaceae	family	207	150	29	27	24	True	rich_gte_3
+NCBITaxon:204457	Sphingomonadales	order	227	159	17	17	15	True	rich_gte_3
 NCBITaxon:13687	Sphingomonas	genus	151	113	88	88	52	True	rich_gte_3
 NCBITaxon:330920	Sphingomonas azotifigens	species	40	37	1	1	1	True	rich_gte_3
 NCBITaxon:59803	Sphingomonas echinoides	species	14	11	2	2	1	True	rich_gte_3
@@ -4067,14 +4067,14 @@ NCBITaxon:117207	Sphingopyxis alaskensis	species	11	10	3	3	1	True	rich_gte_3
 NCBITaxon:1515612	Sphingopyxis fribergensis	species	9	7	1	1	1	True	rich_gte_3
 NCBITaxon:267128	Sphingopyxis granuli	species	12	11	1	1	1	True	rich_gte_3
 NCBITaxon:33050	Sphingopyxis macrogoltabida	species	8	6	1	1	1	True	rich_gte_3
-NCBITaxon:146	Spirochaeta	genus	75	65	12	12	6	True	rich_gte_3
+NCBITaxon:146	Spirochaeta	genus	73	63	12	12	6	True	rich_gte_3
 NCBITaxon:46355	Spirochaeta africana	species	10	9	1	1	1	True	rich_gte_3
-NCBITaxon:137	Spirochaetaceae	family	105	87	23	23	18	True	rich_gte_3
-NCBITaxon:136	Spirochaetales	order	163	120	15	15	12	True	rich_gte_3
+NCBITaxon:137	Spirochaetaceae	family	103	85	23	23	18	True	rich_gte_3
+NCBITaxon:136	Spirochaetales	order	161	118	15	15	12	True	rich_gte_3
 NCBITaxon:1674862	Spirochaetales bacterium Spiro_06	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:203692	Spirochaetia	class	175	124	11	11	9	True	rich_gte_3
+NCBITaxon:203692	Spirochaetia	class	173	122	11	11	9	True	rich_gte_3
 NCBITaxon:2053615	Spirochaetia bacterium	species	0	0	4	4	1	False	zero_traits
-NCBITaxon:203691	Spirochaetota	phylum	175	124	40	40	28	True	rich_gte_3
+NCBITaxon:203691	Spirochaetota	phylum	173	122	40	40	28	True	rich_gte_3
 NCBITaxon:2057025	Spirosoma pollinicola	species	4	3	1	1	1	True	rich_gte_3
 NCBITaxon:1379870	Spirosoma radiotolerans	species	2	2	1	1	1	True	sparse_1_2
 NCBITaxon:4815	Spizellomyces	genus	0	0	1	1	1	False	zero_traits
@@ -4089,38 +4089,38 @@ NCBITaxon:44749	Sporobacter termitidis	species	11	10	2	2	2	True	rich_gte_3
 NCBITaxon:100132	Sporobacterium	genus	5	4	3	3	2	True	rich_gte_3
 NCBITaxon:507843	Sporobacterium sp. WAL 1855D	species	0	0	3	3	3	False	zero_traits
 NCBITaxon:1812776	Sporocadaceae	family	0	0	1	1	1	False	zero_traits
-NCBITaxon:186821	Sporolactobacillaceae	family	101	87	1	1	1	True	rich_gte_3
-NCBITaxon:2077	Sporolactobacillus	genus	57	48	1	1	1	True	rich_gte_3
+NCBITaxon:186821	Sporolactobacillaceae	family	99	85	1	1	1	True	rich_gte_3
+NCBITaxon:2077	Sporolactobacillus	genus	56	47	1	1	1	True	rich_gte_3
 NCBITaxon:47679	Sporomusa sphaeroides	species	15	14	1	1	1	True	rich_gte_3
 NCBITaxon:1843490	Sporomusaceae	family	81	60	3	3	2	True	rich_gte_3
 NCBITaxon:55176	Sporormiaceae	family	0	0	1	1	1	False	zero_traits
 NCBITaxon:1569	Sporosarcina	genus	74	62	3	3	2	True	rich_gte_3
 NCBITaxon:1226341	SR1 bacterium oral taxon 874	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1226342	SR1 bacterium oral taxon 875	species	0	0	2	2	2	False	zero_traits
-NCBITaxon:90964	Staphylococcaceae	family	133	103	41	41	33	True	rich_gte_3
+NCBITaxon:90964	Staphylococcaceae	family	131	101	41	41	33	True	rich_gte_3
 NCBITaxon:3120442	Staphylococcales	order	0	0	2	2	2	False	zero_traits
-NCBITaxon:1279	Staphylococcus	genus	94	74	186	186	99	True	rich_gte_3
+NCBITaxon:1279	Staphylococcus	genus	93	73	186	186	99	True	rich_gte_3
 NCBITaxon:29378	Staphylococcus arlettae	species	13	10	2	2	2	True	rich_gte_3
-NCBITaxon:1280	Staphylococcus aureus	species	29	18	24	24	18	True	rich_gte_3
-NCBITaxon:29388	Staphylococcus capitis	species	15	12	7	7	4	True	rich_gte_3
-NCBITaxon:29380	Staphylococcus caprae	species	12	10	5	5	4	True	rich_gte_3
+NCBITaxon:1280	Staphylococcus aureus	species	28	17	24	24	18	True	rich_gte_3
+NCBITaxon:29388	Staphylococcus capitis	species	14	11	7	7	4	True	rich_gte_3
+NCBITaxon:29380	Staphylococcus caprae	species	11	9	5	5	4	True	rich_gte_3
 NCBITaxon:46126	Staphylococcus chromogenes	species	8	6	1	1	1	True	rich_gte_3
-NCBITaxon:29382	Staphylococcus cohnii	species	15	10	4	4	3	True	rich_gte_3
-NCBITaxon:1282	Staphylococcus epidermidis	species	23	15	21	21	14	True	rich_gte_3
+NCBITaxon:29382	Staphylococcus cohnii	species	14	9	4	4	3	True	rich_gte_3
+NCBITaxon:1282	Staphylococcus epidermidis	species	22	14	21	21	14	True	rich_gte_3
 NCBITaxon:246432	Staphylococcus equorum	species	15	12	1	1	1	True	rich_gte_3
-NCBITaxon:1283	Staphylococcus haemolyticus	species	16	11	7	7	5	True	rich_gte_3
-NCBITaxon:1290	Staphylococcus hominis	species	17	10	11	11	8	True	rich_gte_3
+NCBITaxon:1283	Staphylococcus haemolyticus	species	15	10	7	7	5	True	rich_gte_3
+NCBITaxon:1290	Staphylococcus hominis	species	16	9	11	11	8	True	rich_gte_3
 NCBITaxon:1284	Staphylococcus hyicus	species	12	9	1	1	1	True	rich_gte_3
-NCBITaxon:28035	Staphylococcus lugdunensis	species	15	12	1	1	1	True	rich_gte_3
-NCBITaxon:29385	Staphylococcus saprophyticus	species	16	11	2	2	2	True	rich_gte_3
+NCBITaxon:28035	Staphylococcus lugdunensis	species	14	11	1	1	1	True	rich_gte_3
+NCBITaxon:29385	Staphylococcus saprophyticus	species	15	10	2	2	2	True	rich_gte_3
 NCBITaxon:1286	Staphylococcus simulans	species	13	10	1	1	1	True	rich_gte_3
 NCBITaxon:29387	Staphylococcus sp.	species	12	8	8	8	5	True	rich_gte_3
-NCBITaxon:1292	Staphylococcus warneri	species	16	10	4	4	4	True	rich_gte_3
+NCBITaxon:1292	Staphylococcus warneri	species	15	9	4	4	4	True	rich_gte_3
 NCBITaxon:2490858	Staphylospora marina	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:152161	Stappia	genus	68	64	1	1	1	True	rich_gte_3
 NCBITaxon:45547	Starmerella etchellsii	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:95729	Stemphylium	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:40323	Stenotrophomonas	genus	87	72	53	53	33	True	rich_gte_3
+NCBITaxon:40323	Stenotrophomonas	genus	86	71	53	53	33	True	rich_gte_3
 NCBITaxon:128780	Stenotrophomonas acidaminiphila	species	13	8	1	1	1	True	rich_gte_3
 NCBITaxon:86188	Stenotrophomonas geniculata	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:40324	Stenotrophomonas maltophilia	species	24	16	13	13	10	True	rich_gte_3
@@ -4136,40 +4136,40 @@ NCBITaxon:1213720	Stomatobaculum	genus	26	25	44	44	27	True	rich_gte_3
 NCBITaxon:796942	Stomatobaculum longum	species	26	25	4	4	4	True	rich_gte_3
 NCBITaxon:1984869	Stomatobaculum sp.	species	0	0	3	3	1	False	zero_traits
 NCBITaxon:2016	Streptoalloteichus	genus	32	27	1	1	1	True	rich_gte_3
-NCBITaxon:34104	Streptobacillus	genus	19	14	18	18	9	True	rich_gte_3
-NCBITaxon:34105	Streptobacillus moniliformis	species	12	10	3	3	2	True	rich_gte_3
-NCBITaxon:1300	Streptococcaceae	family	129	95	166	166	111	True	rich_gte_3
+NCBITaxon:34104	Streptobacillus	genus	18	13	18	18	9	True	rich_gte_3
+NCBITaxon:34105	Streptobacillus moniliformis	species	11	9	3	3	2	True	rich_gte_3
+NCBITaxon:1300	Streptococcaceae	family	127	93	166	166	111	True	rich_gte_3
 NCBITaxon:423432	Streptococcaceae bacterium RF32	species	0	0	4	4	3	False	zero_traits
-NCBITaxon:1301	Streptococcus	genus	118	92	504	503	269	True	rich_gte_3
+NCBITaxon:1301	Streptococcus	genus	116	90	504	503	269	True	rich_gte_3
 NCBITaxon:948104	Streptococcus	genus	0	0	2	2	1	False	zero_traits
-NCBITaxon:1311	Streptococcus agalactiae	species	17	12	13	13	10	True	rich_gte_3
-NCBITaxon:1328	Streptococcus anginosus	species	21	17	45	45	31	True	rich_gte_3
+NCBITaxon:1311	Streptococcus agalactiae	species	16	11	13	13	10	True	rich_gte_3
+NCBITaxon:1328	Streptococcus anginosus	species	20	16	45	45	31	True	rich_gte_3
 NCBITaxon:113107	Streptococcus australis	species	11	9	21	21	14	True	rich_gte_3
-NCBITaxon:76860	Streptococcus constellatus	species	20	15	13	12	8	True	rich_gte_3
+NCBITaxon:76860	Streptococcus constellatus	species	19	14	13	12	8	True	rich_gte_3
 NCBITaxon:45634	Streptococcus cristatus	species	13	10	23	23	12	True	rich_gte_3
 NCBITaxon:1317	Streptococcus downei	species	10	8	2	2	2	True	rich_gte_3
-NCBITaxon:1334	Streptococcus dysgalactiae	species	13	11	6	6	4	True	rich_gte_3
-NCBITaxon:1336	Streptococcus equi	species	12	10	1	1	1	True	rich_gte_3
+NCBITaxon:1334	Streptococcus dysgalactiae	species	12	10	6	6	4	True	rich_gte_3
+NCBITaxon:1336	Streptococcus equi	species	11	9	1	1	1	True	rich_gte_3
 NCBITaxon:1335	Streptococcus equinus	species	17	12	5	5	4	True	rich_gte_3
 NCBITaxon:661498	Streptococcus fryi	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:315405	Streptococcus gallolyticus	species	41	35	5	5	4	True	rich_gte_3
+NCBITaxon:315405	Streptococcus gallolyticus	species	40	34	5	5	4	True	rich_gte_3
 NCBITaxon:230122	Streptococcus genomosp. C5	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1302	Streptococcus gordonii	species	15	11	17	17	13	True	rich_gte_3
-NCBITaxon:1888195	Streptococcus himalayensis	species	14	13	2	2	1	True	rich_gte_3
+NCBITaxon:1302	Streptococcus gordonii	species	14	10	17	17	13	True	rich_gte_3
+NCBITaxon:1888195	Streptococcus himalayensis	species	13	12	2	2	1	True	rich_gte_3
 NCBITaxon:1156431	Streptococcus ilei	species	7	7	3	3	3	True	rich_gte_3
 NCBITaxon:1156433	Streptococcus ilei	species	7	7	1	1	1	True	rich_gte_3
-NCBITaxon:102684	Streptococcus infantarius	species	14	11	2	2	2	True	rich_gte_3
+NCBITaxon:102684	Streptococcus infantarius	species	13	10	2	2	2	True	rich_gte_3
 NCBITaxon:68892	Streptococcus infantis	species	12	9	27	27	18	True	rich_gte_3
-NCBITaxon:1338	Streptococcus intermedius	species	15	11	10	10	9	True	rich_gte_3
+NCBITaxon:1338	Streptococcus intermedius	species	14	10	10	10	9	True	rich_gte_3
 NCBITaxon:2382163	Streptococcus koreensis	species	1	1	1	1	1	True	sparse_1_2
-NCBITaxon:150055	Streptococcus lutetiensis	species	12	10	7	7	6	True	rich_gte_3
+NCBITaxon:150055	Streptococcus lutetiensis	species	11	9	7	7	6	True	rich_gte_3
 NCBITaxon:1339	Streptococcus macacae	species	11	9	1	1	1	True	rich_gte_3
 NCBITaxon:59310	Streptococcus macedonicus	species	8	7	2	2	2	True	rich_gte_3
-NCBITaxon:1825069	Streptococcus marmotae	species	16	15	4	4	3	True	rich_gte_3
+NCBITaxon:1825069	Streptococcus marmotae	species	15	14	4	4	3	True	rich_gte_3
 NCBITaxon:33040	Streptococcus milleri	species	3	3	2	2	1	True	rich_gte_3
-NCBITaxon:28037	Streptococcus mitis	species	16	12	34	34	21	True	rich_gte_3
-NCBITaxon:1309	Streptococcus mutans	species	18	14	21	17	12	True	rich_gte_3
-NCBITaxon:1303	Streptococcus oralis	species	40	35	24	24	20	True	rich_gte_3
+NCBITaxon:28037	Streptococcus mitis	species	15	11	34	34	21	True	rich_gte_3
+NCBITaxon:1309	Streptococcus mutans	species	17	13	21	17	12	True	rich_gte_3
+NCBITaxon:1303	Streptococcus oralis	species	39	34	24	24	20	True	rich_gte_3
 NCBITaxon:1458253	Streptococcus oralis subsp. dentisani	species	30	28	2	2	2	True	rich_gte_3
 NCBITaxon:1077464	Streptococcus oralis subsp. tigurinus	species	27	25	2	1	1	True	rich_gte_3
 NCBITaxon:82806	Streptococcus ovis	species	14	12	1	1	1	True	rich_gte_3
@@ -4182,15 +4182,15 @@ NCBITaxon:68891	Streptococcus peroris	species	10	7	5	5	4	True	rich_gte_3
 NCBITaxon:890041	Streptococcus phage PhiSpn_200	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:82348	Streptococcus pluranimalium	species	8	6	3	3	2	True	rich_gte_3
 NCBITaxon:456876	Streptococcus plurextorum	species	21	19	1	1	1	True	rich_gte_3
-NCBITaxon:1313	Streptococcus pneumoniae	species	20	16	23	23	20	True	rich_gte_3
+NCBITaxon:1313	Streptococcus pneumoniae	species	19	15	23	23	20	True	rich_gte_3
 NCBITaxon:1340	Streptococcus porcinus	species	12	10	1	1	1	True	rich_gte_3
 NCBITaxon:257758	Streptococcus pseudopneumoniae	species	9	7	5	5	4	True	rich_gte_3
-NCBITaxon:1314	Streptococcus pyogenes	species	18	13	2	2	2	True	rich_gte_3
+NCBITaxon:1314	Streptococcus pyogenes	species	17	12	2	2	2	True	rich_gte_3
 NCBITaxon:2021971	Streptococcus respiraculi	species	4	3	2	2	1	True	rich_gte_3
 NCBITaxon:1234680	Streptococcus rubneri	species	21	20	3	3	2	True	rich_gte_3
 NCBITaxon:2698804	Streptococcus ruminicola	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1304	Streptococcus salivarius	species	16	12	72	71	53	True	rich_gte_3
-NCBITaxon:1305	Streptococcus sanguinis	species	15	11	34	34	27	True	rich_gte_3
+NCBITaxon:1304	Streptococcus salivarius	species	15	11	72	71	53	True	rich_gte_3
+NCBITaxon:1305	Streptococcus sanguinis	species	14	10	34	34	27	True	rich_gte_3
 NCBITaxon:176090	Streptococcus sinensis	species	7	6	9	9	3	True	rich_gte_3
 NCBITaxon:1310	Streptococcus sobrinus	species	15	13	3	3	3	True	rich_gte_3
 NCBITaxon:1306	Streptococcus sp.	species	12	8	25	25	18	True	rich_gte_3
@@ -4230,13 +4230,13 @@ NCBITaxon:712631	Streptococcus sp. oral taxon 074	species	3	3	2	2	1	True	rich_gt
 NCBITaxon:712632	Streptococcus sp. oral taxon 423	species	3	3	2	2	1	True	rich_gte_3
 NCBITaxon:712633	Streptococcus sp. oral taxon 431	species	0	0	5	5	3	False	zero_traits
 NCBITaxon:1419814	Streptococcus sp. VT 162	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:1307	Streptococcus suis	species	14	11	4	4	3	True	rich_gte_3
+NCBITaxon:1307	Streptococcus suis	species	13	10	4	4	3	True	rich_gte_3
 NCBITaxon:2588991	Streptococcus symci	species	0	0	2	2	1	False	zero_traits
-NCBITaxon:1308	Streptococcus thermophilus	species	26	18	38	38	24	True	rich_gte_3
+NCBITaxon:1308	Streptococcus thermophilus	species	25	17	38	38	24	True	rich_gte_3
 NCBITaxon:2819619	Streptococcus toyakuensis	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:1111760	Streptococcus troglodytae	species	28	24	1	1	1	True	rich_gte_3
 NCBITaxon:1071886	Streptococcus troglodytidis	species	7	7	1	1	1	True	rich_gte_3
-NCBITaxon:1349	Streptococcus uberis	species	13	9	1	1	1	True	rich_gte_3
+NCBITaxon:1349	Streptococcus uberis	species	12	8	1	1	1	True	rich_gte_3
 NCBITaxon:149016	Streptococcus urinalis	species	10	9	2	2	1	True	rich_gte_3
 NCBITaxon:1343	Streptococcus vestibularis	species	12	10	24	24	16	True	rich_gte_3
 NCBITaxon:1883	Streptomyces	genus	200	140	9	9	5	True	rich_gte_3
@@ -4285,11 +4285,11 @@ NCBITaxon:212790	Sulfurihydrogenibium	genus	57	52	1	1	1	True	rich_gte_3
 NCBITaxon:436114	Sulfurihydrogenibium sp. YO3AOP1	species	7	7	1	1	1	True	rich_gte_3
 NCBITaxon:2771471	Sulfurimonadaceae	family	70	57	1	1	1	True	rich_gte_3
 NCBITaxon:1499082	Sulfurisoma	genus	4	3	6	6	1	True	rich_gte_3
-NCBITaxon:69655	Sulfurisphaera	genus	14	12	2	2	1	True	rich_gte_3
+NCBITaxon:69655	Sulfurisphaera	genus	13	11	2	2	1	True	rich_gte_3
 NCBITaxon:1054211	Sulfuritalea	genus	9	8	6	6	1	True	rich_gte_3
-NCBITaxon:1972068	Sulfurivermis fontis	species	21	20	1	1	1	True	rich_gte_3
+NCBITaxon:1972068	Sulfurivermis fontis	species	20	19	1	1	1	True	rich_gte_3
 NCBITaxon:57665	Sulfurospirillum	genus	66	55	1	1	1	True	rich_gte_3
-NCBITaxon:265570	Sulfurovum	genus	53	47	1	1	1	True	rich_gte_3
+NCBITaxon:265570	Sulfurovum	genus	52	46	1	1	1	True	rich_gte_3
 NCBITaxon:40544	Sutterella	genus	22	17	150	149	105	True	rich_gte_3
 NCBITaxon:437898	Sutterella parvirubra	species	14	11	4	4	3	True	rich_gte_3
 NCBITaxon:282125	Sutterella sanguinus	species	0	0	2	2	1	False	zero_traits
@@ -4338,7 +4338,7 @@ NCBITaxon:1262979	Tannerella sp. CAG:51	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:712711	Tannerella sp. oral taxon 808	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2005525	Tannerellaceae	family	62	49	25	25	20	True	rich_gte_3
 NCBITaxon:1395974	Tardiphaga	genus	5	3	1	1	1	True	rich_gte_3
-NCBITaxon:82986	Tatumella	genus	39	34	2	2	1	True	rich_gte_3
+NCBITaxon:82986	Tatumella	genus	37	32	2	2	1	True	rich_gte_3
 NCBITaxon:82987	Tatumella ptyseos	species	5	4	1	1	1	True	rich_gte_3
 NCBITaxon:1166366	Tatumella sp. L3-179	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:82525	Tausonia pullulans	species	0	0	1	1	1	False	zero_traits
@@ -4355,17 +4355,17 @@ NCBITaxon:586416	Terribacillus aidingensis	species	44	43	1	1	1	True	rich_gte_3
 NCBITaxon:204433	Terriglobales	order	118	105	1	1	1	True	rich_gte_3
 NCBITaxon:1505652	Terrisporobacter	genus	15	10	13	13	11	True	rich_gte_3
 NCBITaxon:36841	Terrisporobacter glycolicus	species	13	10	1	1	1	True	rich_gte_3
-NCBITaxon:72763	Tessaracoccus	genus	73	64	5	5	5	True	rich_gte_3
+NCBITaxon:72763	Tessaracoccus	genus	71	62	5	5	5	True	rich_gte_3
 NCBITaxon:1332264	Tessaracoccus aquimaris	species	2	2	1	1	1	True	sparse_1_2
-NCBITaxon:399497	Tessaracoccus flavescens	species	32	30	1	1	1	True	rich_gte_3
-NCBITaxon:51668	Tetragenococcus	genus	50	41	3	3	2	True	rich_gte_3
+NCBITaxon:399497	Tessaracoccus flavescens	species	31	29	1	1	1	True	rich_gte_3
+NCBITaxon:51668	Tetragenococcus	genus	49	40	3	3	2	True	rich_gte_3
 NCBITaxon:113604	Tetrapisispora	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:266808	Thalassobacter	genus	31	30	1	1	1	True	rich_gte_3
-NCBITaxon:168934	Thalassospira	genus	91	87	6	6	4	True	rich_gte_3
-NCBITaxon:33057	Thauera	genus	74	56	2	2	2	True	rich_gte_3
-NCBITaxon:1134435	Thauera humireducens	species	42	41	1	1	1	True	rich_gte_3
-NCBITaxon:188786	Thermaceae	family	101	74	5	5	5	True	rich_gte_3
-NCBITaxon:68933	Thermales	order	101	74	3	3	3	True	rich_gte_3
+NCBITaxon:168934	Thalassospira	genus	89	85	6	6	4	True	rich_gte_3
+NCBITaxon:33057	Thauera	genus	72	54	2	2	2	True	rich_gte_3
+NCBITaxon:1134435	Thauera humireducens	species	40	39	1	1	1	True	rich_gte_3
+NCBITaxon:188786	Thermaceae	family	100	73	5	5	5	True	rich_gte_3
+NCBITaxon:68933	Thermales	order	100	73	3	3	3	True	rich_gte_3
 NCBITaxon:81462	Thermanaerovibrio acidaminovorans	species	10	9	2	2	1	True	rich_gte_3
 NCBITaxon:278993	Thermincola	genus	25	23	1	1	1	True	rich_gte_3
 NCBITaxon:863643	Thermincola carboxydiphila	species	7	7	1	1	1	True	rich_gte_3
@@ -4394,15 +4394,15 @@ NCBITaxon:500	Thermomicrobium roseum	species	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:141948	Thermomonas	genus	19	16	3	3	3	True	rich_gte_3
 NCBITaxon:2019	Thermomonospora	genus	36	23	1	1	1	True	rich_gte_3
 NCBITaxon:2020	Thermomonospora curvata	species	15	11	1	1	1	True	rich_gte_3
-NCBITaxon:183967	Thermoplasmata	class	38	23	1	1	1	True	rich_gte_3
-NCBITaxon:28889	Thermoproteota	phylum	136	67	3	3	2	True	rich_gte_3
+NCBITaxon:183967	Thermoplasmata	class	37	22	1	1	1	True	rich_gte_3
+NCBITaxon:28889	Thermoproteota	phylum	135	66	3	3	2	True	rich_gte_3
 NCBITaxon:291988	Thermosediminibacter	genus	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:261684	Thermosinus	genus	32	30	2	2	1	True	rich_gte_3
 NCBITaxon:336260	Thermovirga	genus	26	25	1	1	1	True	rich_gte_3
-NCBITaxon:270	Thermus	genus	73	59	10	10	9	True	rich_gte_3
+NCBITaxon:270	Thermus	genus	72	58	10	10	9	True	rich_gte_3
 NCBITaxon:37636	Thermus scotoductus	species	13	9	1	1	1	True	rich_gte_3
 NCBITaxon:106633	Thioalkalivibrio	genus	27	19	1	1	1	True	rich_gte_3
-NCBITaxon:36861	Thiobacillus denitrificans	species	24	22	1	1	1	True	rich_gte_3
+NCBITaxon:36861	Thiobacillus denitrificans	species	22	20	1	1	1	True	rich_gte_3
 NCBITaxon:926	Thiomonas intermedia	species	13	11	1	1	1	True	rich_gte_3
 NCBITaxon:665868	Thioprofundum	genus	12	9	1	1	1	True	rich_gte_3
 NCBITaxon:1030	Thiothrix	genus	43	41	2	2	1	True	rich_gte_3
@@ -4420,8 +4420,8 @@ NCBITaxon:41273	Tissierella	genus	16	8	1	1	1	True	rich_gte_3
 NCBITaxon:79681	Tissierella creatinophila	species	8	7	1	1	1	True	rich_gte_3
 NCBITaxon:41274	Tissierella sp.	species	5	3	1	1	1	True	rich_gte_3
 NCBITaxon:1737406	Tissierellaceae	family	20	11	23	22	16	True	rich_gte_3
-NCBITaxon:1737405	Tissierellales	order	128	92	11	11	8	True	rich_gte_3
-NCBITaxon:1737404	Tissierellia	class	139	97	14	14	10	True	rich_gte_3
+NCBITaxon:1737405	Tissierellales	order	127	91	11	11	8	True	rich_gte_3
+NCBITaxon:1737404	Tissierellia	class	138	96	14	14	10	True	rich_gte_3
 NCBITaxon:1588751	Tissierellia bacterium KA00581	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:171437	Tistrella mobilis	species	9	9	1	1	1	True	rich_gte_3
 NCBITaxon:163601	TM7 phylum sp. oral clone CW040	species	0	0	3	3	2	False	zero_traits
@@ -4436,13 +4436,13 @@ NCBITaxon:713053	TM7 phylum sp. oral taxon 351	species	0	0	4	4	4	False	zero_trai
 NCBITaxon:713054	TM7 phylum sp. oral taxon 352	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:713056	TM7 phylum sp. oral taxon 355	species	0	0	3	3	2	False	zero_traits
 NCBITaxon:713057	TM7 phylum sp. oral taxon 356	species	0	0	3	3	1	False	zero_traits
-NCBITaxon:43947	Tolumonas	genus	30	26	3	3	1	True	rich_gte_3
+NCBITaxon:43947	Tolumonas	genus	28	24	3	3	1	True	rich_gte_3
 NCBITaxon:43948	Tolumonas auensis	species	12	9	3	3	2	True	rich_gte_3
 NCBITaxon:741759	Tomitella	genus	27	24	1	1	1	True	rich_gte_3
 NCBITaxon:4948	Torulaspora	genus	0	0	2	2	1	False	zero_traits
 NCBITaxon:4950	Torulaspora delbrueckii	species	0	0	3	3	2	False	zero_traits
-NCBITaxon:158851	Trabulsiella	genus	41	37	7	7	6	True	rich_gte_3
-NCBITaxon:379893	Trabulsiella odontotermitis	species	36	35	1	1	1	True	rich_gte_3
+NCBITaxon:158851	Trabulsiella	genus	39	35	7	7	6	True	rich_gte_3
+NCBITaxon:379893	Trabulsiella odontotermitis	species	35	34	1	1	1	True	rich_gte_3
 NCBITaxon:1299998	Tractidigestivibacter scatoligenes	species	5	3	2	2	2	True	rich_gte_3
 NCBITaxon:1903263	Traorella massiliensis	species	2	1	1	1	1	True	sparse_1_2
 NCBITaxon:5234	Tremellales	order	0	0	1	1	1	False	zero_traits
@@ -4497,7 +4497,7 @@ NCBITaxon:1144522	Tritrichomonas foetus	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:2038	Tropheryma	genus	6	6	1	1	1	True	rich_gte_3
 NCBITaxon:2039	Tropheryma whipplei	species	6	6	1	1	1	True	rich_gte_3
 NCBITaxon:332248	Truepera	genus	9	8	7	7	2	True	rich_gte_3
-NCBITaxon:1661	Trueperella pyogenes	species	20	18	2	2	2	True	rich_gte_3
+NCBITaxon:1661	Trueperella pyogenes	species	19	17	2	2	2	True	rich_gte_3
 NCBITaxon:2060	Tsukamurella	genus	80	65	4	4	2	True	rich_gte_3
 NCBITaxon:85028	Tsukamurellaceae	family	80	65	1	1	1	True	rich_gte_3
 NCBITaxon:432330	Tumebacillus	genus	45	43	3	3	3	True	rich_gte_3
@@ -4615,7 +4615,7 @@ NCBITaxon:2130	Ureaplasma urealyticum	species	7	7	4	4	3	True	rich_gte_3
 NCBITaxon:160795	Ureibacillus	genus	61	54	2	2	2	True	rich_gte_3
 NCBITaxon:51173	Ureibacillus thermosphaericus	species	18	14	1	1	1	True	rich_gte_3
 NCBITaxon:299568	Uruburuella	genus	30	27	1	1	1	True	rich_gte_3
-NCBITaxon:2737	Vagococcus	genus	43	40	15	13	9	True	rich_gte_3
+NCBITaxon:2737	Vagococcus	genus	42	39	15	13	9	True	rich_gte_3
 NCBITaxon:519472	Vagococcus teuberi	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:213484	Vampirovibrio	genus	1	1	7	7	5	True	sparse_1_2
 NCBITaxon:184869	Varibaculum	genus	11	8	28	28	14	True	rich_gte_3
@@ -4660,21 +4660,21 @@ NCBITaxon:671235	Veillonellaceae bacterium oral taxon 155	species	3	3	2	2	2	True
 NCBITaxon:713070	Veillonellaceae bacterium oral taxon 483	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1843489	Veillonellales	order	85	60	15	15	12	True	rich_gte_3
 NCBITaxon:203557	Verrucomicrobiaceae	family	89	80	50	50	34	True	rich_gte_3
-NCBITaxon:48461	Verrucomicrobiales	order	108	91	40	40	36	True	rich_gte_3
-NCBITaxon:203494	Verrucomicrobiia	class	111	93	44	44	40	True	rich_gte_3
-NCBITaxon:74201	Verrucomicrobiota	phylum	151	119	106	106	73	True	rich_gte_3
+NCBITaxon:48461	Verrucomicrobiales	order	107	90	40	40	36	True	rich_gte_3
+NCBITaxon:203494	Verrucomicrobiia	class	110	92	44	44	40	True	rich_gte_3
+NCBITaxon:74201	Verrucomicrobiota	phylum	149	117	106	106	73	True	rich_gte_3
 NCBITaxon:2735	Verrucomicrobium	genus	11	7	3	3	2	True	rich_gte_3
 NCBITaxon:27337	Verticillium dahliae	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:2714355	Vescimonas coprocola	species	0	0	1	1	1	False	zero_traits
-NCBITaxon:662	Vibrio	genus	152	127	17	17	13	True	rich_gte_3
+NCBITaxon:662	Vibrio	genus	150	125	17	17	13	True	rich_gte_3
 NCBITaxon:153622	Vibrio agarivorans	species	4	3	1	1	1	True	rich_gte_3
 NCBITaxon:55601	Vibrio anguillarum	species	19	13	1	1	1	True	rich_gte_3
-NCBITaxon:666	Vibrio cholerae	species	21	18	3	3	2	True	rich_gte_3
+NCBITaxon:666	Vibrio cholerae	species	20	17	3	3	2	True	rich_gte_3
 NCBITaxon:212667	Vibrio fortis	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:1435069	Vibrio tritonius	species	1	1	2	2	1	True	sparse_1_2
-NCBITaxon:672	Vibrio vulnificus	species	19	12	1	1	1	True	rich_gte_3
-NCBITaxon:641	Vibrionaceae	family	179	143	6	6	5	True	rich_gte_3
-NCBITaxon:135623	Vibrionales	order	179	143	2	2	2	True	rich_gte_3
+NCBITaxon:672	Vibrio vulnificus	species	18	11	1	1	1	True	rich_gte_3
+NCBITaxon:641	Vibrionaceae	family	177	141	6	6	5	True	rich_gte_3
+NCBITaxon:135623	Vibrionales	order	177	141	2	2	2	True	rich_gte_3
 NCBITaxon:1649511	Vibrionimonas	genus	0	0	2	2	2	False	zero_traits
 NCBITaxon:1847386	Vicinamibacter	genus	29	28	1	1	1	True	rich_gte_3
 NCBITaxon:1813735	Vicinamibacteria	class	37	36	1	1	1	True	rich_gte_3
@@ -4685,10 +4685,10 @@ NCBITaxon:2212475	Victivallales bacterium	species	0	0	2	2	1	False	zero_traits
 NCBITaxon:2094242	Victivallales bacterium CCUG 44730	species	0	0	2	2	2	False	zero_traits
 NCBITaxon:172900	Victivallis	genus	15	11	21	21	18	True	rich_gte_3
 NCBITaxon:172901	Victivallis vadensis	species	13	11	4	4	2	True	rich_gte_3
-NCBITaxon:84406	Virgibacillus	genus	120	106	1	1	1	True	rich_gte_3
+NCBITaxon:84406	Virgibacillus	genus	119	105	1	1	1	True	rich_gte_3
 NCBITaxon:2024555	Virgibacillus profundi	species	1	1	1	1	1	True	sparse_1_2
 NCBITaxon:1891946	Vishniacozyma	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:57739	Vogesella	genus	90	86	2	2	2	True	rich_gte_3
+NCBITaxon:57739	Vogesella	genus	89	85	2	2	2	True	rich_gte_3
 NCBITaxon:2609667	Vreelandella piezotolerans	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:148959	Wallemia	genus	0	0	2	2	2	False	zero_traits
 NCBITaxon:245174	Wallemia ichthyophaga	species	0	0	1	1	1	False	zero_traits
@@ -4699,9 +4699,9 @@ NCBITaxon:431957	Wallemiomycetes	class	0	0	1	1	1	False	zero_traits
 NCBITaxon:2606635	Waltera intestinalis	species	5	1	2	2	2	True	rich_gte_3
 NCBITaxon:343873	Wautersiella	genus	1	1	3	3	3	True	sparse_1_2
 NCBITaxon:1013	Weeksella	genus	14	10	2	2	2	True	rich_gte_3
-NCBITaxon:2762318	Weeksellaceae	family	157	130	11	11	9	True	rich_gte_3
-NCBITaxon:46255	Weissella	genus	64	60	46	45	35	True	rich_gte_3
-NCBITaxon:137591	Weissella cibaria	species	13	12	2	2	2	True	rich_gte_3
+NCBITaxon:2762318	Weeksellaceae	family	155	128	11	11	9	True	rich_gte_3
+NCBITaxon:46255	Weissella	genus	63	59	46	45	35	True	rich_gte_3
+NCBITaxon:137591	Weissella cibaria	species	12	11	2	2	2	True	rich_gte_3
 NCBITaxon:1583	Weissella confusa	species	18	15	10	10	6	True	rich_gte_3
 NCBITaxon:165096	Weissella koreensis	species	9	8	1	1	1	True	rich_gte_3
 NCBITaxon:155866	Weissella soli	species	9	8	2	2	1	True	rich_gte_3
@@ -4718,18 +4718,18 @@ NCBITaxon:2944152	Wujia	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:2763670	Wujia chipingensis	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:279	Xanthobacter	genus	20	14	1	1	1	True	rich_gte_3
 NCBITaxon:280	Xanthobacter autotrophicus	species	15	11	1	1	1	True	rich_gte_3
-NCBITaxon:335928	Xanthobacteraceae	family	141	121	10	10	7	True	rich_gte_3
+NCBITaxon:335928	Xanthobacteraceae	family	139	119	10	10	7	True	rich_gte_3
 NCBITaxon:338	Xanthomonas	genus	33	20	8	8	5	True	rich_gte_3
 NCBITaxon:343	Xanthomonas translucens	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:467934	Xenasmatella ardosiaca	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:1890499	Xenococcaceae	family	4	4	1	1	1	True	rich_gte_3
-NCBITaxon:626	Xenorhabdus	genus	60	52	1	1	1	True	rich_gte_3
+NCBITaxon:626	Xenorhabdus	genus	58	50	1	1	1	True	rich_gte_3
 NCBITaxon:558436	Xylanibacter	genus	16	10	1	1	1	True	rich_gte_3
 NCBITaxon:83231	Xylanibacter brevis	species	3	3	1	1	1	True	rich_gte_3
 NCBITaxon:185293	Xylanibacter oryzae	species	11	9	2	2	2	True	rich_gte_3
 NCBITaxon:1676614	Xylanibacter rarus	species	3	2	1	1	1	True	rich_gte_3
 NCBITaxon:839	Xylanibacter ruminicola	species	8	8	12	12	8	True	rich_gte_3
-NCBITaxon:186188	Xylanimonas	genus	43	36	3	3	2	True	rich_gte_3
+NCBITaxon:186188	Xylanimonas	genus	42	35	3	3	2	True	rich_gte_3
 NCBITaxon:186189	Xylanimonas cellulosilytica	species	15	13	1	1	1	True	rich_gte_3
 NCBITaxon:37989	Xylariales	order	0	0	1	1	1	False	zero_traits
 NCBITaxon:2370	Xylella	genus	15	11	2	2	2	True	rich_gte_3
@@ -4737,15 +4737,15 @@ NCBITaxon:1124675	Xylodon	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:2173181	Xylodon flaviporus	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:4952	Yarrowia lipolytica	species	0	0	1	1	1	False	zero_traits
 NCBITaxon:444888	Yersinia	genus	0	0	1	1	1	False	zero_traits
-NCBITaxon:629	Yersinia	genus	53	42	7	7	6	True	rich_gte_3
-NCBITaxon:630	Yersinia enterocolitica	species	19	11	1	1	1	True	rich_gte_3
-NCBITaxon:29484	Yersinia frederiksenii	species	17	14	1	1	1	True	rich_gte_3
+NCBITaxon:629	Yersinia	genus	52	41	7	7	6	True	rich_gte_3
+NCBITaxon:630	Yersinia enterocolitica	species	18	10	1	1	1	True	rich_gte_3
+NCBITaxon:29484	Yersinia frederiksenii	species	16	13	1	1	1	True	rich_gte_3
 NCBITaxon:419257	Yersinia massiliensis	species	18	16	2	2	1	True	rich_gte_3
 NCBITaxon:632	Yersinia pestis	species	12	12	1	1	1	True	rich_gte_3
-NCBITaxon:1903411	Yersiniaceae	family	140	123	3	3	2	True	rich_gte_3
+NCBITaxon:1903411	Yersiniaceae	family	138	121	3	3	2	True	rich_gte_3
 NCBITaxon:908935	Yimella	genus	58	54	1	1	1	True	rich_gte_3
 NCBITaxon:158876	Yokenella	genus	6	4	16	16	2	True	rich_gte_3
 NCBITaxon:158877	Yokenella regensburgei	species	6	4	15	15	2	True	rich_gte_3
-NCBITaxon:349	Zoogloea	genus	32	28	4	4	2	True	rich_gte_3
+NCBITaxon:349	Zoogloea	genus	31	27	4	4	2	True	rich_gte_3
 NCBITaxon:1047167	Zymoseptoria	genus	0	0	1	1	1	False	zero_traits
 NCBITaxon:1047171	Zymoseptoria tritici	species	0	0	1	1	1	False	zero_traits
