@@ -13,7 +13,7 @@ from matplotlib.colors import TwoSlopeNorm
 from matplotlib.patches import Circle, Patch, PathPatch
 from matplotlib.path import Path as MplPath
 
-from create_study_trait_profile_heatmap import load_raw_experiment_metadata
+from create_study_trait_profile_heatmap import load_raw_experiment_metadata, load_trait_labels
 from mtp.body_site_diagram import (
     add_colorbar_beside,
     anatomical_site_base,
@@ -24,6 +24,7 @@ from mtp.body_site_diagram import (
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
+    retained_trait_counts,
     trait_fractions,
 )
 from mtp.human_host_corpus import (
@@ -36,6 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "anaerobe-depletion-v2"
 PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
+TRAIT_COLUMNS_PATH = REPO_ROOT / "data/derived/taxa_trait_matrix_columns.tsv"
 
 GUILD_TRAITS = {
     "METPO:1000603": "anaerobic",
@@ -391,6 +393,56 @@ def guild_trait_z_scores(counts: pd.DataFrame) -> pd.DataFrame:
     """
     z_scores = profile_trait_z_scores(counts, list(GUILD_TRAITS))
     return z_scores.rename(columns=GUILD_TRAITS)
+
+
+def extend_with_guild_traits(
+    matrix: pd.DataFrame,
+    trait_metadata: pd.DataFrame,
+    counts: pd.DataFrame,
+    guild_z: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Add guild traits outside the heatmap selection to the analysis matrix and metadata (#2399).
+
+    Their z-scores come from guild_trait_z_scores (the heatmap's own scale); their support,
+    signal and variance are computed as the heatmap computes them. `heatmap_selected` marks
+    which rows belong to the heatmap's top-trait selection.
+    """
+    matrix = matrix.copy()
+    trait_metadata = trait_metadata.copy()
+    trait_metadata["heatmap_selected"] = True
+    missing = [trait_id for trait_id in GUILD_TRAITS if trait_id not in trait_metadata.index]
+    if not missing:
+        return matrix, trait_metadata
+    retained = retained_trait_counts(counts)
+    fractions = trait_fractions(counts)
+    labels = load_trait_labels(TRAIT_COLUMNS_PATH)
+    rows: list[dict[str, object]] = []
+    for trait_id in missing:
+        trait_name = GUILD_TRAITS[trait_id]
+        label_row = labels.loc[trait_id]
+        if clean_text(label_row["object_name"]) != trait_name:
+            raise ValueError(
+                f"{trait_id} is named {label_row['object_name']!r} in {TRAIT_COLUMNS_PATH.name}, "
+                f"not {trait_name!r}"
+            )
+        matrix[trait_name] = guild_z[trait_name]
+        rows.append(
+            {
+                "trait_id": trait_id,
+                "profile_support": int(retained[trait_id].gt(0).sum()),
+                "total_signal": float(retained[trait_id].sum()),
+                "composition_variance": float(fractions[trait_id].var()),
+                "display_label": label_row["display_label"],
+                "column_label": label_row["column_label"],
+                "object_name": trait_name,
+                "object_category": label_row["object_category"],
+                "display_category": label_row["display_category"],
+                "selection_score": pd.NA,
+                "heatmap_selected": False,
+            }
+        )
+    extra = pd.DataFrame(rows).set_index(pd.Index(missing))
+    return matrix, pd.concat([trait_metadata, extra])
 
 
 def add_guild_scores(guild_z: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
@@ -2340,7 +2392,10 @@ def write_summary_report(
         "# Anaerobe v2 Depletion Investigation",
         "",
         "This investigation uses the existing study trait profile clustered heatmap matrix, "
-        "study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices.",
+        "study metadata, taxa guild heatmap metadata, and derived taxa/trait matrices. "
+        "Guild-trait z-scores are computed from the retained counts of "
+        "data/derived/study_trait_profiles_wide.tsv on the heatmap's scale, so a selected "
+        "trait outside the heatmap's top traits is still scored (#2399).",
         "",
         "## Scope",
         "",
@@ -2690,8 +2745,13 @@ def write_summary_report(
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    study_matrix, study_metadata, study_trait_metadata, profile_counts = load_study_heatmap()
-    scored_profiles = add_guild_scores(guild_trait_z_scores(profile_counts), study_metadata)
+    heatmap_matrix, study_metadata, heatmap_trait_metadata, profile_counts = load_study_heatmap()
+    guild_z = guild_trait_z_scores(profile_counts)
+    scored_profiles = add_guild_scores(guild_z, study_metadata)
+    # Every declared guild trait is analysed, including any outside the heatmap selection.
+    study_matrix, study_trait_metadata = extend_with_guild_traits(
+        heatmap_matrix, heatmap_trait_metadata, profile_counts, guild_z
+    )
     analysis_profiles = scored_profiles.copy()
 
     direction_summary = summarize_direction(analysis_profiles)
