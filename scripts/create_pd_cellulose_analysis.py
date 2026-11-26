@@ -14,6 +14,7 @@ from matplotlib.patches import Patch
 from scipy import stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
+from mtp.profile_metadata import with_profile_id_column
 from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
 
 
@@ -139,8 +140,7 @@ def load_trait_summary() -> pd.DataFrame:
 def load_profile_metadata() -> pd.DataFrame:
     """Load profile metadata aligned to the profile matrix."""
     metadata = read_tsv(PROFILE_METADATA_PATH, index_col=0)
-    metadata = metadata.copy()
-    metadata["profile_id"] = metadata.index
+    metadata = with_profile_id_column(metadata)
     for column in ["study_id", "experiment_id", "inc_dec", "condition", "body_site_group"]:
         metadata[column] = metadata[column].map(clean_text)
     metadata["body_site"] = metadata.get("body_site", "unknown")

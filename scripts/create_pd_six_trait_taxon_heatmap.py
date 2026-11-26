@@ -41,6 +41,7 @@ from lookup_pd_trait_taxa import (
     trait_directions,
 )
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
+from mtp.profile_metadata import with_profile_id_column
 
 PROFILE_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 STEM = "pd_species_six_traits_influence_heatmap"
@@ -620,7 +621,7 @@ def complete_pd_pairs(metadata: pd.DataFrame, valid_profiles: pd.Index) -> pd.Da
         & selected["inc_dec"].isin(["inc", "dec"])
     ]
     if "profile_id" not in selected:
-        selected["profile_id"] = selected.index
+        selected = with_profile_id_column(selected)
     selected = selected.reset_index(drop=True)
     keys = ["study_id", "experiment_id", "inc_dec"]
     if selected.duplicated(keys).any():

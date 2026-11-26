@@ -31,6 +31,7 @@ from mtp.composition_denominators import (
     retained_trait_counts,
 )
 from mtp.paths import file_sha256
+from mtp.profile_metadata import with_index_column
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -151,7 +152,7 @@ def load_selected_trait_metadata(path: Path = SELECTED_TRAIT_METADATA_PATH) -> p
     if "trait_id" in metadata.columns:
         metadata = metadata.set_index("trait_id", drop=False)
     else:
-        metadata["trait_id"] = metadata.index
+        metadata = with_index_column(metadata, "trait_id")
     if "trait_label" not in metadata.columns:
         source = metadata.get("display_label", metadata["trait_id"])
         metadata["trait_label"] = source.map(full_trait_label)
