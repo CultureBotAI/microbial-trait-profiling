@@ -16,6 +16,8 @@ from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
+from mtp.composition_denominators import load_retained_profiles
+from mtp.guild_trait_scores import guild_trait_z_scores
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.trait_guilds import OXYGEN_GUILDS
 
@@ -242,34 +244,28 @@ def get_paired_input_counts() -> dict[str, int]:
     }
 
 
-def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    matrix = read_tsv(VIS_DIR / "study_trait_profile_clustered_heatmap_matrix.tsv", index_col=0)
+def load_profiles() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return the heatmap's profile metadata and its retained profile counts."""
     metadata = read_tsv(VIS_DIR / "study_trait_profile_study_metadata.tsv", index_col=0)
-    trait_metadata = read_tsv(VIS_DIR / "study_trait_profile_trait_metadata.tsv", index_col=0)
-
-    matrix.index = metadata.index
-    column_labels = {
-        row["display_label"]: row["object_name"] for _, row in trait_metadata.iterrows()
-    }
-    matrix = matrix.rename(columns=column_labels)
-    return matrix, metadata, trait_metadata
+    counts = load_retained_profiles(STUDY_TRAIT_PROFILE_WIDE_TSV, metadata)
+    return metadata, counts
 
 
 def write_direction_grid_table() -> None:
     """Write a unified 2x2 trait-set-by-direction condition summary table."""
-    matrix, metadata, _ = load_study_heatmap()
+    metadata, counts = load_profiles()
     metadata = metadata.copy()
     metadata["condition_clean"] = metadata["condition"].map(clean_text)
 
     guilds = [
         {
             "guild": "aerobe_v2",
-            "traits": list(AEROBE_GUILD_TRAITS.values()),
+            "traits": AEROBE_GUILD_TRAITS,
             "parent_direction": "increased",
         },
         {
             "guild": "anaerobe_v2_depletion",
-            "traits": list(ANAEROBE_GUILD_TRAITS.values()),
+            "traits": ANAEROBE_GUILD_TRAITS,
             "parent_direction": "decreased",
         },
     ]
@@ -285,8 +281,10 @@ def write_direction_grid_table() -> None:
     records: list[dict[str, object]] = []
     for guild in guilds:
         profiles = metadata.copy()
-        available_traits = [trait for trait in guild["traits"] if trait in matrix.columns]
-        profiles["guild_z_mean"] = matrix.loc[profiles.index, available_traits].mean(axis=1)
+        # Every guild trait, scored from the full profile table (#2403); "anaerobic"
+        # is not among the heatmap's top traits.
+        guild_z = guild_trait_z_scores(counts, cast("dict[str, str]", guild["traits"]))
+        profiles["guild_z_mean"] = guild_z.loc[profiles.index].mean(axis=1)
 
         for condition in conditions:
             condition_profiles = profiles[profiles["condition_clean"] == condition].copy()

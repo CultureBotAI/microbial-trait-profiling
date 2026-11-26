@@ -23,8 +23,9 @@ if TYPE_CHECKING:
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
-    trait_fractions,
+    profile_trait_z_scores,
 )
+from mtp.guild_trait_scores import guild_trait_z_scores, read_guild_trait_selection
 from sankey_v3_rollups import (
     body_site_display_label,
     condition_display_label,
@@ -264,8 +265,8 @@ def read_tsv(path: Path, *, index_col: int | str | None = None) -> pd.DataFrame:
     return pd.read_csv(path, sep="\t", index_col=index_col)
 
 
-def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load profile-level z-score matrix and metadata with readable trait names."""
+def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Load the heatmap z-score matrix, profile metadata and retained profile counts."""
     matrix = read_tsv(MATRIX_PATH, index_col=0)
     matrix = matrix.apply(pd.to_numeric, errors="coerce").fillna(0.0)
     metadata = read_tsv(METADATA_PATH, index_col=0)
@@ -307,12 +308,7 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame]:
         raise ValueError("Heatmap matrix has columns missing from trait metadata")
     counts = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
     trait_ids = [column_to_id[column] for column in matrix.columns]
-    expected_comp = trait_fractions(counts).loc[metadata.index, trait_ids]
-    expected_scaled = (expected_comp * 1000).apply(lambda column: column.map(math.log1p))
-    expected_z = (
-        (expected_scaled - expected_scaled.mean(axis=0))
-        / expected_scaled.std(axis=0, ddof=0).replace(0, float("nan"))
-    ).fillna(0.0)
+    expected_z = profile_trait_z_scores(counts, trait_ids)
     expected_z.columns = matrix.columns
     if not np.allclose(matrix.to_numpy(dtype=float), expected_z.to_numpy(dtype=float), atol=1e-9):
         raise ValueError(
@@ -320,37 +316,27 @@ def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame]:
             "regenerate from the non-MediaDive raw profile matrix."
         )
     matrix = matrix.rename(columns=column_labels)
-    return matrix, metadata
-
-
-def load_guild_traits(config: MapConfig) -> list[str]:
-    """Load the selected traits for one analysis."""
-    selection = read_tsv(config.guild_selection_path)
-    trait_column = (
-        "profile_matrix_object_name"
-        if "profile_matrix_object_name" in selection.columns
-        else "trait_name"
-    )
-    traits = [clean_text(value) for value in selection[trait_column]]
-    return [trait for trait in traits if trait != "unknown"]
+    return matrix, metadata, counts
 
 
 def add_guild_scores(
-    matrix: pd.DataFrame,
+    counts: pd.DataFrame,
     metadata: pd.DataFrame,
     config: MapConfig,
 ) -> pd.DataFrame:
-    """Attach row-wise guild z-score means to profile metadata."""
-    guild_traits = load_guild_traits(config)
-    available_traits = [trait for trait in guild_traits if trait in matrix.columns]
-    if not available_traits:
-        msg = f"No selected traits for {config.key} were found in the profile matrix."
-        raise ValueError(msg)
+    """Attach row-wise guild z-score means to profile metadata.
+
+    Every selected guild trait is scored from the full retained profile table, on the
+    heatmap's scale, whether or not it is among the heatmap's top traits (#2403).
+    """
+    guild_z = guild_trait_z_scores(counts, read_guild_trait_selection(config.guild_selection_path))
+    if not guild_z.index.equals(metadata.index):
+        raise ValueError(f"Guild scores for {config.key} are not aligned with profile metadata")
 
     scored = metadata.copy()
     scored["profile_id"] = scored.index
-    scored["guild_z_mean"] = matrix[available_traits].mean(axis=1)
-    scored["guild_positive_trait_count"] = matrix[available_traits].gt(0.0).sum(axis=1)
+    scored["guild_z_mean"] = guild_z.mean(axis=1)
+    scored["guild_positive_trait_count"] = guild_z.gt(0.0).sum(axis=1)
     scored["has_guild_enriched_trait"] = scored["guild_positive_trait_count"] > 0
     scored["condition"] = scored["condition"].map(clean_text)
     scored["body_site"] = scored["body_site"].map(clean_text)
@@ -2413,9 +2399,9 @@ def remove_legacy_single_v3_outputs(config: MapConfig) -> None:
             path.unlink()
 
 
-def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapConfig) -> None:
+def write_map_outputs(counts: pd.DataFrame, metadata: pd.DataFrame, config: MapConfig) -> None:
     """Write the edge table and PNG for one analysis."""
-    scored = add_guild_scores(matrix, metadata, config)
+    scored = add_guild_scores(counts, metadata, config)
     sampled_sites = summarize_sampled_body_sites(scored, config)
     edges = summarize_condition_body_site_edges(sampled_sites)
     display_edges = select_display_edges(edges)
@@ -2552,9 +2538,9 @@ def write_map_outputs(matrix: pd.DataFrame, metadata: pd.DataFrame, config: MapC
 
 
 def main() -> None:
-    matrix, metadata = load_study_heatmap()
+    _, metadata, counts = load_study_heatmap()
     for config in [FACULTATIVE_CONFIG, ANAEROBE_CONFIG]:
-        write_map_outputs(matrix, metadata, config)
+        write_map_outputs(counts, metadata, config)
 
 
 if __name__ == "__main__":

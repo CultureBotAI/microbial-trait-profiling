@@ -10,6 +10,9 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from mtp.composition_denominators import DENOMINATOR_DEFINITION, load_retained_profiles
+from mtp.guild_trait_scores import guild_trait_z_scores, read_guild_trait_selection
+
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
@@ -18,9 +21,8 @@ TRAIT_VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = TRAIT_VIS_DIR / "trait-profile-investigation"
 OUTPUT_DIR = INVESTIGATION_DIR / "parkinsons-disease"
 
-MATRIX_PATH = TRAIT_VIS_DIR / "study_trait_profile_clustered_heatmap_matrix.tsv"
 METADATA_PATH = TRAIT_VIS_DIR / "study_trait_profile_study_metadata.tsv"
-TRAIT_METADATA_PATH = TRAIT_VIS_DIR / "study_trait_profile_trait_metadata.tsv"
+PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
 
 PD_CONDITION = "Parkinson's disease"
 BODY_SITE_GROUP = "Feces"
@@ -133,50 +135,38 @@ def fmt_p_value(value: Any) -> str:
     return f"{p_value:.4f}"
 
 
-def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame]:
-    matrix = read_tsv(MATRIX_PATH, index_col=0)
-    matrix = matrix.apply(pd.to_numeric, errors="coerce").fillna(0.0)
+def load_profiles() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return the heatmap's profile metadata and its retained profile counts.
+
+    Guild traits are scored from the full profile table (#2403): a selected trait need not
+    be among the heatmap's top traits (METPO:1000603 "anaerobic" is not).
+    """
     metadata = read_tsv(METADATA_PATH, index_col=0)
-    trait_metadata = read_tsv(TRAIT_METADATA_PATH, index_col=0)
-
-    if len(matrix) != len(metadata):
-        msg = f"Matrix/profile metadata row mismatch: {len(matrix)} vs {len(metadata)}"
-        raise ValueError(msg)
-
-    matrix.index = metadata.index
-    column_labels = {
-        row["display_label"]: row["object_name"] for _, row in trait_metadata.iterrows()
-    }
-    matrix = matrix.rename(columns=column_labels)
-    return matrix, metadata
+    if (
+        "denominator_definition" not in metadata.columns
+        or not metadata["denominator_definition"].eq(DENOMINATOR_DEFINITION).all()
+    ):
+        raise ValueError(
+            "Profile metadata is missing the harmonized non-MediaDive denominator marker"
+        )
+    counts = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    return metadata, counts
 
 
-def load_guild_traits(config: AnalysisConfig) -> list[str]:
-    selection = read_tsv(config.trait_selection_path)
-    trait_column = (
-        "profile_matrix_object_name"
-        if "profile_matrix_object_name" in selection.columns
-        else "trait_name"
-    )
-    traits = [clean_text(value) for value in selection[trait_column]]
-    return [trait for trait in traits if trait != "unknown"]
-
-
-def add_trait_scores(matrix: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
+def add_trait_scores(counts: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
     scored = metadata.copy()
     scored["profile_id"] = scored.index
 
     for config in ANALYSIS_CONFIGS:
-        guild_traits = load_guild_traits(config)
-        available_traits = [trait for trait in guild_traits if trait in matrix.columns]
-        if not available_traits:
-            msg = f"No selected traits for {config.label} were found in the profile matrix."
+        guild_z = guild_trait_z_scores(
+            counts, read_guild_trait_selection(config.trait_selection_path)
+        )
+        if not guild_z.index.equals(metadata.index):
+            msg = f"Guild scores for {config.label} are not aligned with profile metadata."
             raise ValueError(msg)
-
-        selected = matrix[available_traits]
-        scored[config.score_column] = selected.mean(axis=1)
-        scored[config.positive_count_column] = selected.gt(0.0).sum(axis=1)
-        scored[f"{config.key}_selected_trait_count"] = len(available_traits)
+        scored[config.score_column] = guild_z.mean(axis=1)
+        scored[config.positive_count_column] = guild_z.gt(0.0).sum(axis=1)
+        scored[f"{config.key}_selected_trait_count"] = guild_z.shape[1]
 
     for column in ("condition", "body_site", "body_site_group", "condition_group"):
         scored[column] = scored[column].map(clean_text)
@@ -852,11 +842,9 @@ def write_readme(
             "## Figure Methods",
             "",
             (
-                "- Source data: profile z-score matrix "
-                "`study_trait_profile_clustered_heatmap_matrix.tsv`, profile metadata "
-                "`study_trait_profile_study_metadata.tsv`, trait metadata "
-                "`study_trait_profile_trait_metadata.tsv`, v2 guild trait selections, "
-                "and v2 candidate-taxa direction tables."
+                "- Source data: profile metadata `study_trait_profile_study_metadata.tsv`, "
+                "the retained profile counts `data/derived/study_trait_profiles_wide.tsv`, "
+                "v2 guild trait selections, and v2 candidate-taxa direction tables."
             ),
             (
                 f"- Filter: exact condition `{PD_CONDITION}` and body-site group "
@@ -866,8 +854,11 @@ def write_readme(
             ),
             (
                 "- Profile scores: for each profile, the aerobe and anaerobe v2 "
-                "scores are the row-wise mean z-score across the selected trait "
-                "columns from the corresponding `guild_trait_selection.tsv` file. "
+                "scores are the row-wise mean z-score across every selected trait "
+                "of the corresponding `guild_trait_selection.tsv` file. Each trait "
+                "is scored from the full retained profile table with the study "
+                "heatmap's transform (z of log1p(1000 x retained fraction) across "
+                "profiles), whether or not it is among the heatmap's top traits. "
                 "Positive-trait counts record how many selected trait z-scores are "
                 "greater than zero."
             ),
@@ -929,8 +920,8 @@ def write_readme(
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    matrix, metadata = load_study_heatmap()
-    scored = add_trait_scores(matrix, metadata)
+    metadata, counts = load_profiles()
+    scored = add_trait_scores(counts, metadata)
     scores = parkinsons_feces_scores(scored)
     direction_summary = summarize_direction_scores(scores)
     paired = build_paired_contrasts(scores)
