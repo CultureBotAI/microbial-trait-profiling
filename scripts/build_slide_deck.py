@@ -2734,6 +2734,14 @@ PR315_HISTOGRAMS = frozenset(
 )
 
 
+# Coverage-histogram folders under trait-profile-investigation/, with the title suffix
+# that tells their appendix slides apart (#2419)
+TAXA_COVERAGE_FOLDERS = {
+    "taxa-coverage": "",
+    "taxa-coverage-tier1-2-subject-controls": " (tier 1-2 subject controls)",
+}
+
+
 def get_remaining_appendix_slides(
     already_included: set[str], repo: Path, metrics: dict[str, Any]
 ) -> list[dict[str, str]]:
@@ -3035,18 +3043,23 @@ def get_remaining_appendix_slides(
                 "trait-visualization/trait-profile-investigation/six-shared-traits/"
                 "six_shared_trait_condition_body_site_direction_contrasts.tsv"
             )
-        elif "/taxa-coverage/" in rel:
+        elif coverage_folder := next(
+            (folder for folder in TAXA_COVERAGE_FOLDERS if f"/{folder}/" in rel), None
+        ):
+            # `just taxa-coverage-548` writes the tier 1-2 subject-control copy (#2386, #2419)
             owner = "Jed"
             code_path = "scripts/create_taxa_coverage_histogram.py"
             tag = "Jed · Appendix · Taxa coverage"
-            title = f"Taxa trait coverage diagnostic: {stem}"
+            title = (
+                f"Taxa trait coverage diagnostic{TAXA_COVERAGE_FOLDERS[coverage_folder]}: {stem}"
+            )
             takeaway = (
                 "Evaluates KG-Microbe trait count distribution and unique vs occurrence "
                 f"coverage ({png_path.name})."
             )
             caveat = "Diagnostic of database annotation completeness across BugSigDB taxa."
             evidence_path = (
-                "trait-visualization/trait-profile-investigation/taxa-coverage/README.md"
+                f"trait-visualization/trait-profile-investigation/{coverage_folder}/README.md"
             )
         elif "/bsdb-taxa-only/" in rel:
             owner = "Jed"

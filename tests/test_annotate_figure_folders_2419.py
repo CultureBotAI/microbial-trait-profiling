@@ -23,9 +23,22 @@ from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "annotate_trait_profile_investigation_figures.py"
-JUSTFILE_FOLDER = re.compile(
-    r"trait-visualization/trait-profile-investigation/([A-Za-z0-9_-]+)/?(?=[\s\"']|$)"
-)
+# First path segment after trait-profile-investigation/, and whether more path follows
+JUSTFILE_PATH = re.compile(r"trait-visualization/trait-profile-investigation/([^/\s\"'{}]+)(/?)")
+
+
+def justfile_folders() -> set[str]:
+    """Top-level folders under trait-profile-investigation/ named in the Justfile.
+
+    The annotate script checks a PNG by its first path part, so a deeper path counts as
+    its top folder; a bare segment with a file suffix is a file, not a folder.
+    """
+    text = (REPO_ROOT / "Justfile").read_text(encoding="utf-8")
+    return {
+        segment
+        for segment, slash in JUSTFILE_PATH.findall(text)
+        if slash or not Path(segment).suffix
+    }
 
 
 def load_annotate() -> ModuleType:
@@ -48,13 +61,13 @@ def covered_folders() -> set[str]:
 
 
 def test_justfile_names_the_taxa_coverage_548_folder() -> None:
-    folders = set(JUSTFILE_FOLDER.findall((REPO_ROOT / "Justfile").read_text(encoding="utf-8")))
+    folders = justfile_folders()
     assert "taxa-coverage-tier1-2-subject-controls" in folders
 
 
 def test_every_justfile_output_folder_is_labelled_or_exempt() -> None:
-    folders = set(JUSTFILE_FOLDER.findall((REPO_ROOT / "Justfile").read_text(encoding="utf-8")))
-    assert folders
+    folders = justfile_folders()
+    assert "six-shared-traits" in folders  # named only by file paths under it (line 301)
     assert sorted(folders - covered_folders()) == []
 
 
