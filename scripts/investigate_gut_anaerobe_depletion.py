@@ -24,9 +24,11 @@ from mtp.body_site_diagram import (
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
+    profile_trait_z_scores,
     retained_trait_counts,
     trait_fractions,
 )
+from mtp.guild_trait_scores import guild_trait_z_scores as shared_guild_trait_z_scores
 from mtp.human_host_corpus import (
     excluded_host_note,
     excluded_host_summary,
@@ -313,24 +315,6 @@ def profile_id_from_taxa_row(row: pd.Series) -> str:
     return f"{row['study_id']}|{row['experiment_id']}|{direction}"
 
 
-def profile_trait_z_scores(counts: pd.DataFrame, trait_ids: list[str]) -> pd.DataFrame:
-    """Z-score log1p(1000 * retained fraction) per trait across the given profiles.
-
-    This is the transform the study heatmap uses for its cells, applied to any traits
-    of the full profile table, so a trait outside the heatmap selection is scored on
-    the same scale as one inside it.
-    """
-    fractions = trait_fractions(counts)
-    missing = [trait_id for trait_id in trait_ids if trait_id not in fractions.columns]
-    if missing:
-        raise ValueError(f"Traits missing from the retained profile table: {missing}")
-    composition = fractions.loc[:, trait_ids]
-    scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    return (
-        (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
-    ).fillna(0.0)
-
-
 def load_study_heatmap() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Return the heatmap matrix, profile metadata, trait metadata and retained counts."""
     matrix = read_tsv(VIS_DIR / "study_trait_profile_clustered_heatmap_matrix.tsv", index_col=0)
@@ -391,8 +375,7 @@ def guild_trait_z_scores(counts: pd.DataFrame) -> pd.DataFrame:
     The guild traits are not guaranteed to be in the heatmap's top-trait selection, so
     they are scored from the retained counts rather than read from the heatmap matrix.
     """
-    z_scores = profile_trait_z_scores(counts, list(GUILD_TRAITS))
-    return z_scores.rename(columns=GUILD_TRAITS)
+    return shared_guild_trait_z_scores(counts, GUILD_TRAITS)
 
 
 def extend_with_guild_traits(

@@ -395,10 +395,12 @@ recalculate differential abundance.
 
 Aerobe and anaerobe profile scores are computed from the same v2 trait selections
 used by the corresponding trait-profile investigation folders. The script reads
-the selected trait columns from
+the selected trait ids from
 `aerobe-enrichment-v2/guild_trait_selection.tsv` and
-`anaerobe-depletion-v2/guild_trait_selection.tsv`, maps heatmap display labels to
-trait object names with `study_trait_profile_trait_metadata.tsv`, and computes
+`anaerobe-depletion-v2/guild_trait_selection.tsv`, scores every selected trait
+from the full retained profile table `data/derived/study_trait_profiles_wide.tsv`
+with the study heatmap's transform (z of log1p(1000 x retained fraction) across
+profiles), whether or not the trait is among the heatmap's top traits, and computes
 each profile's row-wise mean z-score across the selected traits. Positive-trait
 counts are the number of selected trait z-scores greater than zero in that
 profile.
@@ -740,9 +742,11 @@ the row-wise trait-enrichment score is the mean of the selected profile-level tr
 z-scores.
 
 The maps are generated from
-`trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv`,
-`trait-visualization/study_trait_profile_study_metadata.tsv`, and each v2
-folder's `guild_trait_selection.tsv`. Profiles are grouped by `condition` and
+`trait-visualization/study_trait_profile_study_metadata.tsv`, the retained profile
+table `data/derived/study_trait_profiles_wide.tsv`, and each v2 folder's
+`guild_trait_selection.tsv`. Every selected trait is scored from the profile table
+with the study heatmap's transform, whether or not it is among the heatmap's top
+traits. Profiles are grouped by `condition` and
 `body_site_group`. Broad metadata-like conditions are removed using the same
 condition exclusion rules as the corresponding v2 condition plots, and `Other`
 or `unknown` body-site groups are excluded from the displayed map. The companion
@@ -2071,7 +2075,7 @@ These method notes describe how each PNG in this investigation folder was genera
 
 #### Shared Inputs
 
-Study-profile z-scores were read from `trait-visualization/study_trait_profile_clustered_heatmap_matrix.tsv` and joined to study metadata from `trait-visualization/study_trait_profile_study_metadata.tsv`. The anaerobe v2 trait-enrichment score was the row-wise mean of the selected oxygen-tolerance counterpart traits: anaerobic and obligately anaerobic. This makes the comparison parallel to the aerobe v2 trait set, with the focus direction switched to decreased profiles. Profiles from all body sites are retained, and body-site summaries are used to separate gut, oral, airway, urogenital, and other contexts.
+Study-profile metadata were read from `trait-visualization/study_trait_profile_study_metadata.tsv`. Both anaerobe v2 traits were scored from the full retained profile table `data/derived/study_trait_profiles_wide.tsv` with the study heatmap's transform (z of log1p(1000 x retained fraction) across profiles): anaerobic is not among the heatmap's top traits (its profile support is above the heatmap's cap), and obligately anaerobic scores identically to its heatmap column. The anaerobe v2 trait-enrichment score was the row-wise mean of the selected oxygen-tolerance counterpart traits: anaerobic and obligately anaerobic. This makes the comparison parallel to the aerobe v2 trait set, with the focus direction switched to decreased profiles. Profiles from all body sites are retained, and body-site summaries are used to separate gut, oral, airway, urogenital, and other contexts.
 `guild_trait_selection.tsv` documents the a priori selected trait set, the focus/comparator directions, a short selection justification for each trait, and KG-Microbe grounding as the count of taxa carrying each trait in `data/derived/taxa_trait_matrix.tsv`.
 Direction labels (`increased` and `decreased`) were taken from BugSigDB's curated `Abundance in Group 1` signature field. This script did not recalculate differential abundance; it grouped and filtered BugSigDB-reported study/experiment/direction profiles by condition and body-site metadata.
 For profile-enrichment filtering, a profile's `enriched_guild_trait_count` is the number of selected anaerobe v2 traits with a positive z-score in that profile. Profiles with zero positive selected trait z-scores are retained in the main trait-enrichment summaries but are excluded from enrichment-filtered profile-count plots.
