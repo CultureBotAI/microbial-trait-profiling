@@ -214,7 +214,6 @@ def load_profile_metadata(
 ) -> pd.DataFrame:
     """Load the human-host profile metadata used by the current Sankey maps."""
     metadata = read_tsv(PROFILE_METADATA_PATH if path is None else path, index_col=0)
-    metadata = metadata.copy()
     metadata = with_profile_id_column(metadata)
     for column in ["study_id", "experiment_id", "inc_dec", "condition", "body_site_group"]:
         metadata[column] = metadata[column].map(clean_text)

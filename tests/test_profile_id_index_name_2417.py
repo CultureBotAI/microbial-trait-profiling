@@ -9,6 +9,7 @@ both header forms.
 
 import dataclasses
 import importlib.util
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -177,3 +178,34 @@ def test_parkinsons_feces_scores_sort_with_either_header(
 
     assert list(scores["profile_id"]) == ["1|e1|dec", "1|e1|inc", "2|e2|dec", "2|e2|inc"]
     assert scores.index.name is None
+
+
+def test_helper_refuses_multiindex_and_conflicting_column() -> None:
+    """Both edge cases fail loudly instead of silently (#2422)."""
+    multi = pd.DataFrame(
+        {"value": [1]}, index=pd.MultiIndex.from_tuples([("a", "b")], names=["x", "y"])
+    )
+    with pytest.raises(ValueError, match="MultiIndex"):
+        with_profile_id_column(multi)
+    conflicting = pd.DataFrame({"profile_id": ["other"]}, index=["1|e1|inc"])
+    with pytest.raises(ValueError, match="disagrees"):
+        with_profile_id_column(conflicting)
+    consistent = pd.DataFrame({"profile_id": ["1|e1|inc"]}, index=["1|e1|inc"])
+    assert list(with_profile_id_column(consistent)["profile_id"]) == ["1|e1|inc"]
+
+
+INDEX_COPY = re.compile(r"""\[\s*["'](?:profile_id|trait_id|pair_id)["']\s*\]\s*=\s*\w+\.index\b""")
+
+
+def test_no_reader_copies_a_metadata_index_into_a_key_column_by_hand() -> None:
+    """Index-to-column copies of metadata keys go through mtp.profile_metadata (#2421)."""
+    repo = SCRIPTS_DIR.parent
+    offenders = [
+        f"{path.relative_to(repo)}:{number}"
+        for root in (repo / "scripts", repo / "src")
+        for path in sorted(root.rglob("*.py"))
+        if "adhoc" not in path.parts
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+        if INDEX_COPY.search(line)
+    ]
+    assert offenders == [], offenders

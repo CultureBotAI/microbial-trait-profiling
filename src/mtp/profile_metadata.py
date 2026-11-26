@@ -17,7 +17,17 @@ __all__ = ["with_index_column", "with_profile_id_column"]
 
 
 def with_index_column(frame: pd.DataFrame, column: str) -> pd.DataFrame:
-    """Return a copy with an unnamed index and that index copied into ``column``."""
+    """Return a copy with an unnamed index and that index copied into ``column``.
+
+    The input is not modified. A MultiIndex is refused, and so is an existing ``column``
+    whose values differ from the index (#2422).
+    """
+    if isinstance(frame.index, pd.MultiIndex):
+        raise ValueError(f"Cannot copy a MultiIndex into the {column!r} column")
+    if column in frame.columns:
+        existing = frame[column].astype(str).to_numpy()
+        if (existing != frame.index.astype(str).to_numpy()).any():
+            raise ValueError(f"Existing {column!r} column disagrees with the index")
     result = frame.rename_axis(index=None)
     result[column] = result.index
     return result

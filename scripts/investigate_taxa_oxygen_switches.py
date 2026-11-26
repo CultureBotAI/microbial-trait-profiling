@@ -185,7 +185,6 @@ def profile_id_from_taxa_row(study_id: object, experiment_id: object, direction:
 def load_profile_metadata() -> pd.DataFrame:
     """Load human-host profile metadata from the existing trait visualization artifacts."""
     metadata = pd.read_csv(PROFILE_METADATA_PATH, sep="\t", index_col=0)
-    metadata = metadata.copy()
     metadata = with_profile_id_column(metadata)
     for column in [
         "study_id",

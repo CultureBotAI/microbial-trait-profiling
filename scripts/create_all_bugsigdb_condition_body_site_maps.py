@@ -224,7 +224,6 @@ def is_display_condition(value: object) -> bool:
 def load_profile_metadata(path: Path = METADATA_PATH) -> pd.DataFrame:
     """Load all study/experiment/direction profiles used by the trait-profile figures."""
     metadata = pd.read_csv(path, sep="\t", index_col=0)
-    metadata = metadata.copy()
     metadata = with_profile_id_column(metadata)
     for column in ["study_id", "experiment_id", "inc_dec", "condition", "body_site_group"]:
         metadata[column] = metadata[column].map(clean_text)

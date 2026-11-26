@@ -186,7 +186,6 @@ def load_traits() -> pd.DataFrame:
 def load_metadata() -> pd.DataFrame:
     """Load profile metadata and retain normalized direction labels."""
     metadata = read_tsv(PROFILE_METADATA_PATH, index_col=0)
-    metadata = metadata.copy()
     metadata.index = metadata.index.astype(str)
     metadata = with_profile_id_column(metadata)
     text_columns = [
