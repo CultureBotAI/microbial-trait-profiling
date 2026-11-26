@@ -1,9 +1,15 @@
-"""Pin the docs/workflow.md site-stats provenance schema 1.1/1.2 contract (#1028)."""
+"""Pin the docs/workflow.md site-stats provenance contract (#1028, #2432).
+
+Since #857 a full render deletes stratified_stats_provenance.json, because it rewrites the
+tables the record lists; `just trait-profile-site-stats` writes a fresh schema 1.2 record for
+its own run. The committed schema 1.1 record from the final rerun (#1004) was retired in the
+#2397 regeneration (#2432). The deletion itself is tested in
+tests/test_trait_profile_infographic.py::test_other_modes_invalidate_old_site_provenance.
+"""
 
 from __future__ import annotations
 
 import importlib.util
-import json
 import re
 import sys
 from pathlib import Path
@@ -18,20 +24,19 @@ PROVENANCE_JSON = (
 )
 VERIFIER_SCRIPT = ROOT / "scripts/adhoc/verify_1028_mutants_agy2_20261111.py"
 SECTION_HEADING = "### Regenerate historical body-site composition tables (#824)"
-LEGACY_REASON = "not refreshed by pooled/site statistics mode"
 EXPECTED_SCHEMA_1_2_SENTENCE = (
     "Schema version 1.2 distinguishes `existing_stratum_table_not_refreshed` from "
     "`not_produced_by_site_stats_mode` (the summaries and figure)."
 )
-EXPECTED_SCHEMA_1_1_SENTENCE = (
-    "The committed "
-    "`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json` "
-    "written by the final rerun (#1004) is schema version 1.1, with all eight of its "
-    "`not_regenerated` entries using the single legacy reason "
-    '`"not refreshed by pooled/site statistics mode"`; the next '
-    "`just trait-profile-site-stats` run rewrites it compatibly under schema version 1.2, "
+EXPECTED_RETIRED_SENTENCE = (
+    "No record is committed: a full render (`just trait-profile-investigation`) deletes "
+    "`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`, "
+    "because it rewrites the tables the record lists, so the schema 1.1 record from the "
+    "final rerun (#1004) was retired in the #2397 regeneration (#2432); each "
+    "`just trait-profile-site-stats` run writes a fresh record under schema version 1.2, "
     "and nothing reads it."
 )
+RETIRED_COMMITTED_CLAIM = "is schema version 1.1, with all eight of its"
 
 
 def _site_stats_section(markdown: str) -> str:
@@ -51,26 +56,34 @@ def _load_verifier() -> Any:
     return module
 
 
-def test_workflow_documents_committed_schema_1_1_and_schema_1_2_site_stats_provenance() -> None:
-    """docs/workflow.md states the committed 1.1 record (#1004) and 1.2 rewrite (#1028)."""
+def test_workflow_documents_retired_record_and_schema_1_2_site_stats_provenance() -> None:
+    """No record is committed after a full render; docs/workflow.md says so (#1028, #2432)."""
     section = _site_stats_section(WORKFLOW_DOC.read_text(encoding="utf-8"))
-    record = json.loads(PROVENANCE_JSON.read_text(encoding="utf-8"))
 
-    assert record["schema_version"] == "1.1"
-    not_regenerated = record["not_regenerated"]
-    assert isinstance(not_regenerated, list)
-    assert len(not_regenerated) == 8
-    assert [entry["reason"] for entry in not_regenerated] == [LEGACY_REASON] * 8
-
+    assert not PROVENANCE_JSON.exists()
     assert EXPECTED_SCHEMA_1_2_SENTENCE in section
-    assert EXPECTED_SCHEMA_1_1_SENTENCE in section
-    assert f"{EXPECTED_SCHEMA_1_2_SENTENCE} {EXPECTED_SCHEMA_1_1_SENTENCE}" in section
+    assert EXPECTED_RETIRED_SENTENCE in section
+    assert f"{EXPECTED_SCHEMA_1_2_SENTENCE} {EXPECTED_RETIRED_SENTENCE}" in section
+    assert RETIRED_COMMITTED_CLAIM not in section
 
 
-def test_verifier_rejects_setup_error_and_call_value_error(tmp_path: Path) -> None:
-    """Mutant verifier rejects setup errors and call-phase non-AssertionErrors."""
+def test_verifier_rejects_setup_error_and_call_value_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Mutant verifier rejects setup errors and call-phase non-AssertionErrors.
+
+    The dated #1028 verifier copies the committed record into each scratch case. That record
+    is retired (#2432), so a placeholder stands in for it under a temporary root; these two
+    probes replace the test file and never read the record.
+    """
     verifier = _load_verifier()
     doc_text = WORKFLOW_DOC.read_text(encoding="utf-8")
+    placeholder_root = tmp_path / "root"
+    (placeholder_root / verifier.PROVENANCE).parent.mkdir(parents=True)
+    (placeholder_root / verifier.PROVENANCE).write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(verifier, "ROOT", placeholder_root)
+    runs = tmp_path / "runs"
+    runs.mkdir()
     target = verifier.NODE
 
     setup_error_test = (
@@ -83,7 +96,7 @@ def test_verifier_rejects_setup_error_and_call_value_error(tmp_path: Path) -> No
     )
     with pytest.raises(RuntimeError, match="Setup/collection/teardown error or skip"):
         verifier.run_case(
-            tmp_path,
+            runs,
             "setup_error_probe",
             target,
             doc_text,
@@ -96,7 +109,7 @@ def test_verifier_rejects_setup_error_and_call_value_error(tmp_path: Path) -> No
     )
     with pytest.raises(RuntimeError, match="Not a target call-phase AssertionError"):
         verifier.run_case(
-            tmp_path,
+            runs,
             "call_value_error_probe",
             target,
             doc_text,

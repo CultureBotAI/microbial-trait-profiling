@@ -17,7 +17,7 @@ all-tied count, which is the collapse the basis forbids. On the corpus of these
 outputs (the `off` table identified under "What is in it now") this removes **55 of
 2,257 experiments** and takes the study count from **932 to 922**; on the
 `phenotype` table now committed it removes 43 and leaves 923
-(`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`). It changes the tie counts rather
+(`zero_total_experiments` and `studies_after` in `data/derived/integrated_evidence/integrated_evidence_provenance.json`). It changes the tie counts rather
 than the directions: facultatively aerobic 32 to 24, arsenate reduction 324 to
 316, moderately halophilic 101 to 93. All six fraction traits remain significant
 at BH q <= 0.05 within `mt-supp-table1-direction`, the six requested fraction
