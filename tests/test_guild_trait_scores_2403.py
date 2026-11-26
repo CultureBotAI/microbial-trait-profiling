@@ -56,6 +56,9 @@ COUNTS = {
 }
 # MediaDive counts are outside the retained denominator and must not change any value.
 MEDIA_COUNTS = [50, 0, 7, 900, 30, 2]
+# A profile in the full table but not in the heatmap's metadata: it must not enter the
+# standardization population (#2415).
+OUTSIDE_PROFILE = ("s9|e9|inc", (90, 1, 0, 0, 1), 0)
 CONDITION = "Crohn's disease"
 
 
@@ -89,31 +92,37 @@ def write_selection(path: Path, traits: dict[str, str]) -> Path:
 
 @pytest.fixture
 def profiles(tmp_path: Path) -> tuple[Path, Path]:
-    """Write the full profile table and the heatmap's profile metadata."""
+    """Write the full profile table and the heatmap's profile metadata.
+
+    The full table holds one extra profile and lists its rows in reverse order, so
+    scores must be standardized over the metadata's profiles and aligned by key.
+    """
     keys = list(COUNTS)
-    wide = pd.DataFrame(
+    outside_key, outside_counts, outside_media = OUTSIDE_PROFILE
+    wide_rows = [*zip(keys, COUNTS.values(), MEDIA_COUNTS, strict=True)]
+    wide_rows = [*reversed(wide_rows), (outside_key, outside_counts, outside_media)]
+    wide_path = tmp_path / "study_trait_profiles_wide.tsv"
+    pd.DataFrame(
         {
-            "study_id": [key.split("|")[0] for key in keys],
-            "experiment_id": [key.split("|")[1] for key in keys],
-            "inc_dec": [key.split("|")[2] for key in keys],
+            "study_id": [key.split("|")[0] for key, _, _ in wide_rows],
+            "experiment_id": [key.split("|")[1] for key, _, _ in wide_rows],
+            "inc_dec": [key.split("|")[2] for key, _, _ in wide_rows],
             **{
-                trait: [values[index] for values in COUNTS.values()]
+                trait: [values[index] for _, values, _ in wide_rows]
                 for index, trait in enumerate(TRAITS)
             },
-            MEDIA: MEDIA_COUNTS,
+            MEDIA: [media for _, _, media in wide_rows],
         }
-    )
-    wide_path = tmp_path / "study_trait_profiles_wide.tsv"
-    wide.to_csv(wide_path, sep="\t", index=False)
+    ).to_csv(wide_path, sep="\t", index=False)
 
     vis_dir = tmp_path / "vis"
     vis_dir.mkdir()
     metadata_path = vis_dir / "study_trait_profile_study_metadata.tsv"
     pd.DataFrame(
         {
-            "study_id": wide["study_id"].to_numpy(),
-            "experiment_id": wide["experiment_id"].to_numpy(),
-            "inc_dec": wide["inc_dec"].to_numpy(),
+            "study_id": [key.split("|")[0] for key in keys],
+            "experiment_id": [key.split("|")[1] for key in keys],
+            "inc_dec": [key.split("|")[2] for key in keys],
             "condition": [CONDITION] * len(keys),
             "body_site": ["feces"] * len(keys),
             "body_site_group": ["Feces"] * len(keys),
@@ -158,10 +167,10 @@ def test_read_guild_trait_selection_rejects_malformed_tables(
 
 
 def test_shared_transform_matches_hand_computed_heatmap_z(profiles: tuple[Path, Path]) -> None:
-    wide_path, _ = profiles
-    wide = pd.read_csv(wide_path, sep="\t")
-    counts = wide.drop(columns=["study_id", "experiment_id", "inc_dec"])
-    counts.index = pd.Index(list(COUNTS))
+    wide_path, metadata_path = profiles
+    metadata = pd.read_csv(metadata_path, sep="\t", index_col=0)
+    counts = guild_maps.load_retained_profiles(wide_path, metadata)
+    assert list(counts.index) == list(COUNTS)
     z_scores = profile_trait_z_scores(counts, [ANAEROBIC, OBLIGATE])
     assert list(z_scores[ANAEROBIC]) == pytest.approx(expected_z(ANAEROBIC))
     assert list(z_scores[OBLIGATE]) == pytest.approx(expected_z(OBLIGATE))
