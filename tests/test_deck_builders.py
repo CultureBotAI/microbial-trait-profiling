@@ -2018,6 +2018,37 @@ def test_appendix_refuses_a_figure_it_cannot_credit(tmp_path: Path) -> None:
         deck.get_remaining_appendix_slides(set(), tmp_path, {})
 
 
+@pytest.mark.parametrize(
+    ("folder", "suffix"),
+    [
+        ("taxa-coverage", ""),
+        ("taxa-coverage-tier1-2-subject-controls", " (tier 1-2 subject controls)"),
+    ],
+)
+def test_appendix_credits_both_coverage_folders_to_the_coverage_script(
+    folder: str, suffix: str, tmp_path: Path
+) -> None:
+    """The taxa-coverage-548 histograms fell through to the guild-assignment slide (#2419)."""
+    figure = (
+        tmp_path
+        / "trait-visualization/trait-profile-investigation"
+        / folder
+        / "taxa_profile_distribution_by_rank.png"
+    )
+    figure.parent.mkdir(parents=True)
+    figure.write_bytes(folder.encode())
+    (slide,) = deck.get_remaining_appendix_slides(set(), tmp_path, {})
+    assert slide["code_path"] == "scripts/create_taxa_coverage_histogram.py"
+    assert (
+        slide["title"]
+        == f"Taxa trait coverage diagnostic{suffix}: taxa profile distribution by rank"
+    )
+    assert (
+        slide["evidence_path"]
+        == f"trait-visualization/trait-profile-investigation/{folder}/README.md"
+    )
+
+
 def test_the_svg_a_slide_shows_is_checked_like_its_png(tmp_path: Path) -> None:
     """The deck certified the PNG but showed whatever SVG sat beside it (#684)."""
     png = tmp_path / "trait-visualization" / "map.png"

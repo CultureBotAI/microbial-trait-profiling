@@ -15,6 +15,7 @@ UNLABELED_FOLDERS = {
     "PD-cellulose",
     "six-shared-traits",
     "taxa-coverage",
+    "taxa-coverage-tier1-2-subject-controls",
     "taxa-oxygen-switches",
 }
 UNLABELED_FIGURES = {
