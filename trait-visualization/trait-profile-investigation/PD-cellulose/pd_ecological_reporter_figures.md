@@ -104,9 +104,9 @@ summed.
 `just pd-ecological-reporter-combined` writes this block from the tables below; do not edit it by hand.
 
 <!-- BEGIN numbers written by `just pd-ecological-reporter-combined` -->
-- Qualifying fecal conditions in panels A and B: `17`.
-- In panel B's upper-right quadrant: `14` of the `17`, PD among them. Of the other `13`, `9` have a larger ecological-reporter composite than PD and `11` a larger three-trait composite.
-- PD, across `45` paired studies: cellulose contrast `-0.692` (descriptive 95% t interval `-1.170` to `-0.213`); three-trait increased-side composite `+0.438` (`+0.169` to `+0.707`); ecological-reporter composite `+1.130` (`+0.512` to `+1.748`).
+- Qualifying fecal conditions in panels A and B: `18`.
+- In panel B's upper-right quadrant: `15` of the `18`, PD among them. Of the other `14`, `10` have a larger ecological-reporter composite than PD and `12` a larger three-trait composite.
+- PD, across `45` paired studies: cellulose contrast `-0.684` (descriptive 95% t interval `-1.160` to `-0.207`); three-trait increased-side composite `+0.440` (`+0.169` to `+0.711`); ecological-reporter composite `+1.124` (`+0.506` to `+1.741`).
 <!-- END numbers written by `just pd-ecological-reporter-combined` -->
 
 The ecological-reporter composite equals the mean contrasts for moderately halophilic, facultatively aerobic, and arsenate reduction minus the cellulose contrast; it is not a validated diagnostic score.

@@ -9,37 +9,37 @@
     {
       "trait_id": "METPO:1000623",
       "trait": "moderately halophilic",
-      "increased_minus_decreased_mean_z": 0.5093256659570338,
+      "increased_minus_decreased_mean_z": 0.5062846049165034,
+      "trait_direction": "increased"
+    },
+    {
+      "trait_id": "METPO:1000608",
+      "trait": "facultative (aerobe or anaerobe)",
+      "increased_minus_decreased_mean_z": 0.3790442226948509,
       "trait_direction": "increased"
     },
     {
       "trait_id": "METPO:2000103|pathways:arsenate_reduction",
       "trait": "arsenate reduction",
-      "increased_minus_decreased_mean_z": 0.3896882769399424,
-      "trait_direction": "increased"
-    },
-    {
-      "trait_id": "METPO:1000608",
-      "trait": "facultatively aerobic",
-      "increased_minus_decreased_mean_z": 0.3477377024240431,
+      "increased_minus_decreased_mean_z": 0.37709364316196853,
       "trait_direction": "increased"
     },
     {
       "trait_id": "METPO:1000668",
       "trait": "coccus shaped",
-      "increased_minus_decreased_mean_z": -0.0762325912240173,
+      "increased_minus_decreased_mean_z": -0.06577965851985164,
       "trait_direction": "decreased"
     },
     {
       "trait_id": "METPO:1000683",
       "trait": "sphere shaped",
-      "increased_minus_decreased_mean_z": -0.1283950181958026,
+      "increased_minus_decreased_mean_z": -0.12867437662174971,
       "trait_direction": "decreased"
     },
     {
       "trait_id": "METPO:2000103|GO:0030245",
       "trait": "cellulose catabolic process",
-      "increased_minus_decreased_mean_z": -0.7113990449519834,
+      "increased_minus_decreased_mean_z": -0.7058629006646382,
       "trait_direction": "decreased"
     }
   ],
@@ -55,66 +55,66 @@
       "db271c59"
     ],
     "taxa_trait_matrix.tsv": [
-      "f6de0576",
-      "63f3a3b0",
-      "026579df",
-      "af341745",
-      "faac27df",
-      "7f9c0afd",
-      "6f5fa3e6",
-      "aa034178"
+      "6638849b",
+      "04137de7",
+      "3cad5564",
+      "46a1de02",
+      "4765b2a6",
+      "4301f841",
+      "386fd9ed",
+      "7bf389af"
     ],
     "study_trait_profiles_wide.tsv": [
-      "519a095b",
-      "09e179dc",
-      "92fb51f9",
-      "d892984a",
-      "52dd100d",
-      "ece4dadf",
-      "6c94b036",
-      "a5323e6c"
+      "dd20b920",
+      "308d1ab9",
+      "dd9ff586",
+      "81e17de2",
+      "526d2e70",
+      "cc2cbce0",
+      "b55e924e",
+      "0a661ba2"
     ],
     "study_trait_profile_study_metadata.tsv": [
-      "a7c83cb5",
-      "e2867bdd",
-      "60e57826",
-      "0e4944d1",
-      "bc455f3b",
-      "d77a410b",
-      "1b594f0c",
-      "223599f8"
+      "c9871a2a",
+      "59599591",
+      "2e761e71",
+      "db59e133",
+      "64d30594",
+      "d50abf8c",
+      "d343c0ef",
+      "563caa48"
     ],
     "pd_six_trait_direction_summary.tsv": [
-      "a28f834a",
-      "34f51452",
-      "54f60c57",
-      "393241f9",
-      "8b59295b",
-      "18841261",
-      "d2e8b85a",
-      "4d973fbf"
+      "b7e26b12",
+      "e9918418",
+      "f3e4cbe7",
+      "9eff444b",
+      "d9f753b4",
+      "c602f05a",
+      "116414f9",
+      "350963cf"
     ]
   },
   "output_sha256_chunks": {
     "pd_six_trait_taxon_carriers.tsv": [
-      "152fd917",
-      "268c9234",
-      "cec003f3",
-      "7df42023",
-      "84cca6c5",
-      "4c17b676",
-      "c5c4f478",
-      "cd18a1de"
+      "42778154",
+      "79c58092",
+      "9e9bf2bc",
+      "6fc6a506",
+      "6b7b83ad",
+      "f2b74875",
+      "3a2dac65",
+      "f41ff912"
     ],
     "pd_six_trait_taxon_profile_evidence.tsv": [
-      "8793b9a0",
-      "e9209db3",
-      "49b3faab",
-      "512f4ccf",
-      "08c4522f",
-      "ec7b5662",
-      "0c442967",
-      "91d91000"
+      "eff835b2",
+      "cad0937f",
+      "a53e66d5",
+      "22c19742",
+      "9380b7fa",
+      "854cfdea",
+      "0a6073c1",
+      "f79f33e6"
     ]
   },
   "sha256_chunk_encoding": "concatenate each file's eight chunks in order"

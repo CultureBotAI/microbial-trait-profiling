@@ -1,121 +1,123 @@
 trait_id	trait_name	trait_category	is_guild_trait	inc_dec	direction_label	retained_profile_count	trait_enriched_profile_count	trait_zero_profile_count	trait_enriched_profile_fraction	retained_study_count	trait_enriched_study_count	retained_condition_count	trait_enriched_condition_count
-METPO:1000603	anaerobic	PhenotypicQuality	True	dec	decreased profiles	1824	1681	143	0.9216008771929824	790	741	405	391
-METPO:1000603	anaerobic	PhenotypicQuality	True	inc	increased profiles	1842	1666	176	0.9044516829533116	771	722	408	392
-METPO:1000667	bacillus shaped	PhenotypicQuality	False	dec	decreased profiles	1824	1386	438	0.7598684210526315	790	649	405	347
-METPO:1000432	GC high	PhenotypicQuality	False	dec	decreased profiles	1824	1368	456	0.75	790	670	405	344
-METPO:1000429	GC low	PhenotypicQuality	False	dec	decreased profiles	1824	1351	473	0.7406798245614035	790	657	405	335
-METPO:1000703	non motile	PhenotypicQuality	False	inc	increased profiles	1842	1325	517	0.7193268186753529	771	639	408	345
-METPO:1000703	non motile	PhenotypicQuality	False	dec	decreased profiles	1824	1323	501	0.725328947368421	790	639	405	342
-METPO:1000432	GC high	PhenotypicQuality	False	inc	increased profiles	1842	1319	523	0.7160694896851248	771	648	408	338
-METPO:1000698	gram positive	PhenotypicQuality	False	inc	increased profiles	1842	1315	527	0.7138979370249728	771	622	408	342
-METPO:1000698	gram positive	PhenotypicQuality	False	dec	decreased profiles	1824	1297	527	0.7110745614035088	790	638	405	335
-METPO:1000667	bacillus shaped	PhenotypicQuality	False	inc	increased profiles	1842	1284	558	0.6970684039087948	771	612	408	345
-METPO:1000429	GC low	PhenotypicQuality	False	inc	increased profiles	1842	1276	566	0.6927252985884907	771	621	408	330
-METPO:1000446	temperature optimum mid4	PhenotypicQuality	False	dec	decreased profiles	1824	1273	551	0.6979166666666666	790	636	405	323
-METPO:1000681	rod shaped	PhenotypicQuality	False	dec	decreased profiles	1824	1264	560	0.6929824561403509	790	634	405	328
-METPO:1000607	obligately anaerobic	PhenotypicQuality	True	dec	decreased profiles	1824	1247	577	0.6836622807017544	790	615	405	325
-METPO:1000446	temperature optimum mid4	PhenotypicQuality	False	inc	increased profiles	1842	1232	610	0.6688382193268186	771	621	408	336
-METPO:1000456	pH optimum mid1	PhenotypicQuality	False	dec	decreased profiles	1824	1214	610	0.6655701754385965	790	611	405	316
-METPO:1000607	obligately anaerobic	PhenotypicQuality	True	inc	increased profiles	1842	1214	628	0.6590662323561346	771	604	408	331
-METPO:1002005	Fermentation	OntologyClass	False	dec	decreased profiles	1824	1197	627	0.65625	790	607	405	319
-METPO:1000681	rod shaped	PhenotypicQuality	False	inc	increased profiles	1842	1189	653	0.6454940282301845	771	600	408	326
-METPO:1000615	mesophilic	PhenotypicQuality	False	inc	increased profiles	1842	1187	655	0.6444082519001085	771	569	408	322
-METPO:2000006|CHEBI:17234	D-glucose	SmallMolecule	False	dec	decreased profiles	1824	1184	640	0.6491228070175439	790	604	405	306
-METPO:1000615	mesophilic	PhenotypicQuality	False	dec	decreased profiles	1824	1176	648	0.6447368421052632	790	566	405	322
-METPO:2000006|CHEBI:17306	maltose	SmallMolecule	False	dec	decreased profiles	1824	1168	656	0.6403508771929824	790	602	405	300
-METPO:1000889	cell width medium	PhenotypicQuality	False	dec	decreased profiles	1824	1148	676	0.6293859649122807	790	601	405	307
-METPO:1000456	pH optimum mid1	PhenotypicQuality	False	inc	increased profiles	1842	1148	694	0.6232356134636265	771	584	408	316
-METPO:2000006|CHEBI:17992	sucrose	SmallMolecule	False	dec	decreased profiles	1824	1136	688	0.6228070175438597	790	593	405	299
-METPO:2000006|CHEBI:17057	cellobiose	SmallMolecule	False	dec	decreased profiles	1824	1136	688	0.6228070175438597	790	589	405	300
-METPO:2000006|CHEBI:17234	D-glucose	SmallMolecule	False	inc	increased profiles	1842	1135	707	0.6161780673181325	771	579	408	313
-METPO:1000886	cell length large	PhenotypicQuality	False	dec	decreased profiles	1824	1131	693	0.6200657894736842	790	589	405	307
-METPO:2000006|CHEBI:37684	mannose	SmallMolecule	False	dec	decreased profiles	1824	1130	694	0.6195175438596491	790	583	405	301
-METPO:2000006|CHEBI:17306	maltose	SmallMolecule	False	inc	increased profiles	1842	1130	712	0.6134636264929425	771	579	408	312
-METPO:1000453	temperature range mid4	PhenotypicQuality	False	inc	increased profiles	1842	1129	713	0.6129207383279045	771	586	408	314
-METPO:1002005	Fermentation	OntologyClass	False	inc	increased profiles	1842	1116	726	0.6058631921824105	771	554	408	309
-METPO:1000453	temperature range mid4	PhenotypicQuality	False	dec	decreased profiles	1824	1111	713	0.6091008771929824	790	598	405	298
-METPO:1000452	temperature range mid3	PhenotypicQuality	False	inc	increased profiles	1842	1110	732	0.6026058631921825	771	579	408	308
-METPO:1000699	gram negative	PhenotypicQuality	False	inc	increased profiles	1842	1110	732	0.6026058631921825	771	562	408	316
-METPO:2000006|CHEBI:16634	raffinose	SmallMolecule	False	dec	decreased profiles	1824	1101	723	0.6036184210526315	790	577	405	295
-METPO:1000889	cell width medium	PhenotypicQuality	False	inc	increased profiles	1842	1098	744	0.5960912052117264	771	564	408	309
-METPO:1000699	gram negative	PhenotypicQuality	False	dec	decreased profiles	1824	1096	728	0.6008771929824561	790	548	405	317
-METPO:1000886	cell length large	PhenotypicQuality	False	inc	increased profiles	1842	1086	756	0.5895765472312704	771	560	408	310
-METPO:1000452	temperature range mid3	PhenotypicQuality	False	dec	decreased profiles	1824	1085	739	0.5948464912280702	790	589	405	295
-METPO:1000451	temperature range mid2	PhenotypicQuality	False	inc	increased profiles	1842	1083	759	0.5879478827361564	771	571	408	303
-METPO:2000006|CHEBI:17992	sucrose	SmallMolecule	False	inc	increased profiles	1842	1083	759	0.5879478827361564	771	566	408	306
-METPO:2000006|CHEBI:37684	mannose	SmallMolecule	False	inc	increased profiles	1842	1067	775	0.5792616720955484	771	566	408	306
-METPO:1000451	temperature range mid2	PhenotypicQuality	False	dec	decreased profiles	1824	1064	760	0.5833333333333334	790	582	405	289
-METPO:2000006|CHEBI:17716	lactose	SmallMolecule	False	inc	increased profiles	1842	1060	782	0.5754614549402823	771	553	408	301
-METPO:2000006|CHEBI:17716	lactose	SmallMolecule	False	dec	decreased profiles	1824	1057	767	0.5794956140350878	790	555	405	292
-METPO:1000702	motile	PhenotypicQuality	False	inc	increased profiles	1842	1046	796	0.5678610206297503	771	543	408	292
-METPO:1000450	temperature range mid1	PhenotypicQuality	False	inc	increased profiles	1842	1042	800	0.5656894679695983	771	557	408	299
-METPO:2000006|CHEBI:17057	cellobiose	SmallMolecule	False	inc	increased profiles	1842	1041	801	0.5651465798045603	771	551	408	292
-METPO:1000887	cell width very small	PhenotypicQuality	False	dec	decreased profiles	1824	1036	788	0.5679824561403509	790	567	405	276
-METPO:1000450	temperature range mid1	PhenotypicQuality	False	dec	decreased profiles	1824	1030	794	0.5646929824561403	790	568	405	284
-METPO:1000887	cell width very small	PhenotypicQuality	False	inc	increased profiles	1842	1029	813	0.5586319218241043	771	551	408	302
-METPO:2000006|CHEBI:16634	raffinose	SmallMolecule	False	inc	increased profiles	1842	1027	815	0.5575461454940283	771	541	408	299
-METPO:1000702	motile	PhenotypicQuality	False	dec	decreased profiles	1824	1025	799	0.5619517543859649	790	568	405	297
-METPO:2000006|CHEBI:22599	arabinose	SmallMolecule	False	dec	decreased profiles	1824	1022	802	0.5603070175438597	790	544	405	288
-METPO:2000103|GO:0045493	xylan catabolic process	BiologicalProcess	False	dec	decreased profiles	1824	1019	805	0.5586622807017544	790	551	405	291
-METPO:2000006|CHEBI:18222	xylose	SmallMolecule	False	dec	decreased profiles	1824	1008	816	0.5526315789473685	790	540	405	274
-METPO:1000461	pH range mid1	PhenotypicQuality	False	dec	decreased profiles	1824	985	839	0.5400219298245614	790	549	405	283
-METPO:1000460	pH range low	PhenotypicQuality	False	dec	decreased profiles	1824	984	840	0.5394736842105263	790	543	405	280
-METPO:1000460	pH range low	PhenotypicQuality	False	inc	increased profiles	1842	984	858	0.5342019543973942	771	528	408	290
-METPO:1000884	cell length small	PhenotypicQuality	False	dec	decreased profiles	1824	981	843	0.537828947368421	790	525	405	283
-METPO:1000461	pH range mid1	PhenotypicQuality	False	inc	increased profiles	1842	979	863	0.5314875135722041	771	525	408	288
-METPO:1000668	coccus shaped	PhenotypicQuality	False	inc	increased profiles	1842	979	863	0.5314875135722041	771	522	408	288
-METPO:1000449	temperature range low	PhenotypicQuality	False	inc	increased profiles	1842	973	869	0.5282301845819761	771	534	408	286
-METPO:1000462	pH range mid2	PhenotypicQuality	False	inc	increased profiles	1842	956	886	0.5190010857763301	771	516	408	283
-METPO:1000462	pH range mid2	PhenotypicQuality	False	dec	decreased profiles	1824	953	871	0.5224780701754386	790	540	405	281
-METPO:1000449	temperature range low	PhenotypicQuality	False	dec	decreased profiles	1824	948	876	0.5197368421052632	790	532	405	272
-METPO:2000006|CHEBI:22599	arabinose	SmallMolecule	False	inc	increased profiles	1842	947	895	0.5141150922909881	771	507	408	278
-METPO:2000006|CHEBI:18222	xylose	SmallMolecule	False	inc	increased profiles	1842	926	916	0.50271444082519	771	502	408	279
-METPO:1000883	cell length very small	PhenotypicQuality	False	inc	increased profiles	1842	920	922	0.499457111834962	771	512	408	280
-METPO:2000103|GO:0045493	xylan catabolic process	BiologicalProcess	False	inc	increased profiles	1842	911	931	0.49457111834962	771	499	408	278
-METPO:1000624	non halophilic	PhenotypicQuality	False	dec	decreased profiles	1824	909	915	0.49835526315789475	790	513	405	276
-METPO:1000624	non halophilic	PhenotypicQuality	False	inc	increased profiles	1842	909	933	0.49348534201954397	771	486	408	280
-METPO:1000884	cell length small	PhenotypicQuality	False	inc	increased profiles	1842	893	949	0.48479913137893593	771	488	408	277
-METPO:1000463	pH range mid3	PhenotypicQuality	False	inc	increased profiles	1842	872	970	0.4733984799131379	771	482	408	265
-METPO:2000103|GO:0030245	cellulose catabolic process	BiologicalProcess	False	dec	decreased profiles	1824	860	964	0.47149122807017546	790	463	405	254
-METPO:1000871	spore forming	PhenotypicQuality	False	inc	increased profiles	1842	855	987	0.46416938110749184	771	454	408	256
-METPO:1000871	spore forming	PhenotypicQuality	False	dec	decreased profiles	1824	848	976	0.4649122807017544	790	476	405	258
-METPO:1000668	coccus shaped	PhenotypicQuality	False	dec	decreased profiles	1824	847	977	0.4643640350877193	790	491	405	274
-METPO:1000470	NaCl range mid1	PhenotypicQuality	False	inc	increased profiles	1842	844	998	0.4581976112920738	771	479	408	265
-METPO:1000469	NaCl range low	PhenotypicQuality	False	inc	increased profiles	1842	840	1002	0.4560260586319218	771	468	408	265
-METPO:1000470	NaCl range mid1	PhenotypicQuality	False	dec	decreased profiles	1824	833	991	0.45668859649122806	790	485	405	249
-METPO:1000463	pH range mid3	PhenotypicQuality	False	dec	decreased profiles	1824	830	994	0.4550438596491228	790	490	405	258
-METPO:1000883	cell length very small	PhenotypicQuality	False	dec	decreased profiles	1824	824	1000	0.4517543859649123	790	489	405	270
-METPO:2000103|pathways:nitrate_reduction	nitrate_reduction	BiologicalProcess	False	inc	increased profiles	1842	822	1020	0.44625407166123776	771	486	408	269
-METPO:1000469	NaCl range low	PhenotypicQuality	False	dec	decreased profiles	1824	817	1007	0.4479166666666667	790	482	405	247
-METPO:1000604	microaerophilic	PhenotypicQuality	False	inc	increased profiles	1842	804	1038	0.4364820846905538	771	466	408	258
-METPO:1000471	NaCl range mid2	PhenotypicQuality	False	dec	decreased profiles	1824	797	1027	0.4369517543859649	790	460	405	236
-METPO:1000608	facultatively aerobic	PhenotypicQuality	False	inc	increased profiles	1842	796	1046	0.43213897937024975	771	447	408	245
-METPO:1000471	NaCl range mid2	PhenotypicQuality	False	inc	increased profiles	1842	788	1054	0.42779587404994573	771	459	408	253
-METPO:1000683	sphere shaped	PhenotypicQuality	False	inc	increased profiles	1842	781	1061	0.4239956568946797	771	447	408	255
-METPO:1000602	aerobic	PhenotypicQuality	False	inc	increased profiles	1842	765	1077	0.4153094462540717	771	441	408	258
-METPO:1000444	temperature optimum mid2	PhenotypicQuality	False	inc	increased profiles	1842	755	1087	0.40988056460369166	771	450	408	245
-METPO:2000103|pathways:nitrate_reduction	nitrate_reduction	BiologicalProcess	False	dec	decreased profiles	1824	732	1092	0.40131578947368424	790	465	405	242
-METPO:1000444	temperature optimum mid2	PhenotypicQuality	False	dec	decreased profiles	1824	726	1098	0.3980263157894737	790	437	405	235
-METPO:1000431	GC mid2	PhenotypicQuality	False	inc	increased profiles	1842	715	1127	0.38816503800217156	771	418	408	254
-METPO:1000608	facultatively aerobic	PhenotypicQuality	False	dec	decreased profiles	1824	696	1128	0.3815789473684211	790	429	405	237
-METPO:1000688	coccobacillus shaped	PhenotypicQuality	False	inc	increased profiles	1842	693	1149	0.3762214983713355	771	396	408	240
-METPO:2000103|GO:0030245	cellulose catabolic process	BiologicalProcess	False	inc	increased profiles	1842	681	1161	0.3697068403908795	771	390	408	240
-METPO:1000688	coccobacillus shaped	PhenotypicQuality	False	dec	decreased profiles	1824	676	1148	0.3706140350877193	790	402	405	227
-METPO:1000604	microaerophilic	PhenotypicQuality	False	dec	decreased profiles	1824	673	1151	0.36896929824561403	790	418	405	230
-METPO:1000602	aerobic	PhenotypicQuality	False	dec	decreased profiles	1824	671	1153	0.3678728070175439	790	434	405	241
-METPO:1000431	GC mid2	PhenotypicQuality	False	dec	decreased profiles	1824	660	1164	0.3618421052631579	790	395	405	235
-METPO:1000683	sphere shaped	PhenotypicQuality	False	dec	decreased profiles	1824	646	1178	0.3541666666666667	790	398	405	232
-METPO:1000616	thermophilic	PhenotypicQuality	False	inc	increased profiles	1842	631	1211	0.34256243213897936	771	374	408	216
-METPO:1000686	vibrio shaped	PhenotypicQuality	False	dec	decreased profiles	1824	613	1211	0.3360745614035088	790	384	405	223
-METPO:1000616	thermophilic	PhenotypicQuality	False	dec	decreased profiles	1824	596	1228	0.3267543859649123	790	383	405	210
-METPO:1000674	filament shaped	PhenotypicQuality	False	dec	decreased profiles	1824	577	1247	0.3163377192982456	790	359	405	204
-METPO:1000686	vibrio shaped	PhenotypicQuality	False	inc	increased profiles	1842	559	1283	0.30347448425624324	771	347	408	203
-METPO:1000674	filament shaped	PhenotypicQuality	False	inc	increased profiles	1842	548	1294	0.2975027144408252	771	359	408	204
-METPO:1000606	obligately aerobic	PhenotypicQuality	False	inc	increased profiles	1842	484	1358	0.26275787187839306	771	329	408	203
-METPO:1000606	obligately aerobic	PhenotypicQuality	False	dec	decreased profiles	1824	460	1364	0.25219298245614036	790	314	405	185
-METPO:1000430	GC mid1	PhenotypicQuality	False	inc	increased profiles	1842	404	1438	0.21932681867535286	771	272	408	170
-METPO:1000430	GC mid1	PhenotypicQuality	False	dec	decreased profiles	1824	400	1424	0.21929824561403508	790	281	405	175
-METPO:1000684	spiral shaped	PhenotypicQuality	False	inc	increased profiles	1842	327	1515	0.1775244299674267	771	228	408	147
-METPO:1000684	spiral shaped	PhenotypicQuality	False	dec	decreased profiles	1824	245	1579	0.13432017543859648	790	179	405	130
-METPO:1000844	Methanogenesis	OntologyClass	False	dec	decreased profiles	1824	31	1793	0.01699561403508772	790	25	405	24
-METPO:1000844	Methanogenesis	OntologyClass	False	inc	increased profiles	1842	29	1813	0.015743756786102063	771	21	408	18
+METPO:1000603	anaerobic	PhenotypicQuality	True	inc	increased profiles	1879	1694	185	0.9015433741351783	777	725	411	394
+METPO:1000603	anaerobic	PhenotypicQuality	True	dec	decreased profiles	1840	1684	156	0.9152173913043479	787	733	415	396
+METPO:1000667	bacillus shaped	PhenotypicQuality	False	dec	decreased profiles	1840	1420	420	0.7717391304347826	787	660	415	359
+METPO:1000432	GC high	PhenotypicQuality	False	dec	decreased profiles	1840	1376	464	0.7478260869565218	787	671	415	351
+METPO:1000681	rod shaped	PhenotypicQuality	False	inc	increased profiles	1879	1349	530	0.717935071846727	777	664	411	352
+METPO:1000429	GC low	PhenotypicQuality	False	dec	decreased profiles	1840	1348	492	0.7326086956521739	787	650	415	341
+METPO:1000703	non motile	PhenotypicQuality	False	inc	increased profiles	1879	1345	534	0.7158062799361362	777	643	411	350
+METPO:1000432	GC high	PhenotypicQuality	False	inc	increased profiles	1879	1343	536	0.7147418839808408	777	654	411	342
+METPO:1000681	rod shaped	PhenotypicQuality	False	dec	decreased profiles	1840	1339	501	0.7277173913043479	787	675	415	356
+METPO:1000698	gram positive	PhenotypicQuality	False	inc	increased profiles	1879	1338	541	0.7120808940926024	777	626	411	344
+METPO:1000607	obligately anaerobic	PhenotypicQuality	True	dec	decreased profiles	1840	1325	515	0.720108695652174	787	631	415	331
+METPO:1000667	bacillus shaped	PhenotypicQuality	False	inc	increased profiles	1879	1323	556	0.7040979244278872	777	621	411	345
+METPO:1000703	non motile	PhenotypicQuality	False	dec	decreased profiles	1840	1314	526	0.7141304347826087	787	625	415	349
+METPO:1000615	mesophilic	PhenotypicQuality	False	dec	decreased profiles	1840	1305	535	0.7092391304347826	787	603	415	350
+METPO:1000698	gram positive	PhenotypicQuality	False	dec	decreased profiles	1840	1302	538	0.7076086956521739	787	636	415	338
+METPO:1000607	obligately anaerobic	PhenotypicQuality	True	inc	increased profiles	1879	1300	579	0.6918573709419904	777	625	411	340
+METPO:1000429	GC low	PhenotypicQuality	False	inc	increased profiles	1879	1287	592	0.6849387972325706	777	622	411	331
+METPO:1000446	temperature optimum mid4	PhenotypicQuality	False	dec	decreased profiles	1840	1262	578	0.6858695652173913	787	627	415	330
+METPO:1000615	mesophilic	PhenotypicQuality	False	inc	increased profiles	1879	1256	623	0.6684406599254923	777	578	411	334
+METPO:1000446	temperature optimum mid4	PhenotypicQuality	False	inc	increased profiles	1879	1230	649	0.6546035125066525	777	619	411	336
+METPO:1002005	Fermentation	OntologyClass	False	dec	decreased profiles	1840	1221	619	0.6635869565217392	787	613	415	327
+METPO:1000456	pH optimum mid1	PhenotypicQuality	False	dec	decreased profiles	1840	1209	631	0.6570652173913043	787	605	415	320
+METPO:2000006|CHEBI:17234	D-glucose	SmallMolecule	False	dec	decreased profiles	1840	1172	668	0.6369565217391304	787	596	415	308
+METPO:2000006|CHEBI:17306	maltose	SmallMolecule	False	dec	decreased profiles	1840	1154	686	0.6271739130434782	787	596	415	305
+METPO:1000456	pH optimum mid1	PhenotypicQuality	False	inc	increased profiles	1879	1154	725	0.6141564662054284	777	587	411	320
+METPO:1002005	Fermentation	OntologyClass	False	inc	increased profiles	1879	1142	737	0.6077700904736562	777	567	411	313
+METPO:1000453	temperature range mid4	PhenotypicQuality	False	inc	increased profiles	1879	1139	740	0.6061734965407132	777	592	411	320
+METPO:2000006|CHEBI:17234	D-glucose	SmallMolecule	False	inc	increased profiles	1879	1132	747	0.6024481106971793	777	583	411	313
+METPO:1000889	cell width medium	PhenotypicQuality	False	dec	decreased profiles	1840	1129	711	0.6135869565217391	787	590	415	309
+METPO:1000886	cell length large	PhenotypicQuality	False	dec	decreased profiles	1840	1129	711	0.6135869565217391	787	586	415	312
+METPO:2000006|CHEBI:17306	maltose	SmallMolecule	False	inc	increased profiles	1879	1126	753	0.5992549228312932	777	581	411	314
+METPO:2000006|CHEBI:17992	sucrose	SmallMolecule	False	dec	decreased profiles	1840	1125	715	0.6114130434782609	787	587	415	303
+METPO:1000452	temperature range mid3	PhenotypicQuality	False	inc	increased profiles	1879	1119	760	0.5955295369877595	777	585	411	317
+METPO:2000006|CHEBI:17057	cellobiose	SmallMolecule	False	dec	decreased profiles	1840	1115	725	0.6059782608695652	787	578	415	301
+METPO:2000006|CHEBI:37684	mannose	SmallMolecule	False	dec	decreased profiles	1840	1109	731	0.6027173913043479	787	574	415	304
+METPO:1000453	temperature range mid4	PhenotypicQuality	False	dec	decreased profiles	1840	1108	732	0.6021739130434782	787	590	415	305
+METPO:1000886	cell length large	PhenotypicQuality	False	inc	increased profiles	1879	1101	778	0.5859499733901011	777	564	411	316
+METPO:1000699	gram negative	PhenotypicQuality	False	dec	decreased profiles	1840	1100	740	0.5978260869565217	787	544	415	322
+METPO:1000699	gram negative	PhenotypicQuality	False	inc	increased profiles	1879	1099	780	0.5848855774348057	777	561	411	319
+METPO:1000889	cell width medium	PhenotypicQuality	False	inc	increased profiles	1879	1095	784	0.5827567855242151	777	567	411	313
+METPO:2000006|CHEBI:16634	raffinose	SmallMolecule	False	dec	decreased profiles	1840	1089	751	0.5918478260869565	787	569	415	298
+METPO:1000452	temperature range mid3	PhenotypicQuality	False	dec	decreased profiles	1840	1083	757	0.5885869565217391	787	583	415	302
+METPO:1000451	temperature range mid2	PhenotypicQuality	False	inc	increased profiles	1879	1083	796	0.5763704097924428	777	577	411	307
+METPO:2000006|CHEBI:17992	sucrose	SmallMolecule	False	inc	increased profiles	1879	1078	801	0.5737094199042043	777	565	411	309
+METPO:2000006|CHEBI:17716	lactose	SmallMolecule	False	inc	increased profiles	1879	1062	817	0.5651942522618414	777	557	411	305
+METPO:1000451	temperature range mid2	PhenotypicQuality	False	dec	decreased profiles	1840	1060	780	0.5760869565217391	787	573	415	294
+METPO:2000006|CHEBI:37684	mannose	SmallMolecule	False	inc	increased profiles	1879	1050	829	0.5588078765300691	777	566	411	308
+METPO:2000006|CHEBI:17716	lactose	SmallMolecule	False	dec	decreased profiles	1840	1043	797	0.5668478260869565	787	543	415	296
+METPO:1000450	temperature range mid1	PhenotypicQuality	False	inc	increased profiles	1879	1039	840	0.5529536987759447	777	560	411	301
+METPO:1000887	cell width very small	PhenotypicQuality	False	inc	increased profiles	1879	1038	841	0.552421500798297	777	558	411	308
+METPO:2000006|CHEBI:17057	cellobiose	SmallMolecule	False	inc	increased profiles	1879	1038	841	0.552421500798297	777	553	411	296
+METPO:1000887	cell width very small	PhenotypicQuality	False	dec	decreased profiles	1840	1030	810	0.5597826086956522	787	562	415	282
+METPO:1000450	temperature range mid1	PhenotypicQuality	False	dec	decreased profiles	1840	1022	818	0.5554347826086956	787	559	415	291
+METPO:2000006|CHEBI:16634	raffinose	SmallMolecule	False	inc	increased profiles	1879	1020	859	0.5428419372006387	777	538	411	301
+METPO:2000103|GO:0045493	xylan catabolic process	BiologicalProcess	False	dec	decreased profiles	1840	995	845	0.5407608695652174	787	540	415	289
+METPO:1000702	motile	PhenotypicQuality	False	inc	increased profiles	1879	995	884	0.5295369877594465	777	525	411	287
+METPO:2000006|CHEBI:22599	arabinose	SmallMolecule	False	dec	decreased profiles	1840	983	857	0.5342391304347827	787	524	415	284
+METPO:1000460	pH range low	PhenotypicQuality	False	inc	increased profiles	1879	982	897	0.5226184140500266	777	527	411	294
+METPO:1000461	pH range mid1	PhenotypicQuality	False	inc	increased profiles	1879	982	897	0.5226184140500266	777	527	411	292
+METPO:1000460	pH range low	PhenotypicQuality	False	dec	decreased profiles	1840	976	864	0.5304347826086957	787	539	415	286
+METPO:1000702	motile	PhenotypicQuality	False	dec	decreased profiles	1840	973	867	0.528804347826087	787	543	415	296
+METPO:1000461	pH range mid1	PhenotypicQuality	False	dec	decreased profiles	1840	973	867	0.528804347826087	787	538	415	286
+METPO:2000006|CHEBI:18222	xylose	SmallMolecule	False	dec	decreased profiles	1840	971	869	0.5277173913043478	787	521	415	270
+METPO:1000884	cell length small	PhenotypicQuality	False	dec	decreased profiles	1840	964	876	0.5239130434782608	787	516	415	282
+METPO:1000668	coccus shaped	PhenotypicQuality	False	inc	increased profiles	1879	962	917	0.5119744544970729	777	509	411	286
+METPO:1000462	pH range mid2	PhenotypicQuality	False	inc	increased profiles	1879	958	921	0.5098456625864821	777	517	411	287
+METPO:1000462	pH range mid2	PhenotypicQuality	False	dec	decreased profiles	1840	943	897	0.5125	787	532	415	286
+METPO:1000449	temperature range low	PhenotypicQuality	False	inc	increased profiles	1879	926	953	0.49281532730175626	777	518	411	281
+METPO:1000624	non halophilic	PhenotypicQuality	False	inc	increased profiles	1879	924	955	0.49175093134646086	777	490	411	282
+METPO:1000624	non halophilic	PhenotypicQuality	False	dec	decreased profiles	1840	918	922	0.4989130434782609	787	514	415	286
+METPO:2000006|CHEBI:22599	arabinose	SmallMolecule	False	inc	increased profiles	1879	913	966	0.48589675359233636	777	496	411	277
+METPO:1000449	temperature range low	PhenotypicQuality	False	dec	decreased profiles	1840	909	931	0.4940217391304348	787	510	415	269
+METPO:2000006|CHEBI:18222	xylose	SmallMolecule	False	inc	increased profiles	1879	894	985	0.47578499201703034	777	493	411	278
+METPO:1000883	cell length very small	PhenotypicQuality	False	inc	increased profiles	1879	891	988	0.4741883980840873	777	502	411	280
+METPO:2000103|GO:0045493	xylan catabolic process	BiologicalProcess	False	inc	increased profiles	1879	890	989	0.4736562001064396	777	492	411	276
+METPO:1000884	cell length small	PhenotypicQuality	False	inc	increased profiles	1879	871	1008	0.4635444385311336	777	479	411	279
+METPO:1000608	facultatively aerobic	PhenotypicQuality	False	inc	increased profiles	1879	862	1017	0.4587546567323044	777	473	411	257
+METPO:1000470	NaCl range mid1	PhenotypicQuality	False	inc	increased profiles	1879	845	1034	0.4497072911122938	777	486	411	271
+METPO:1000463	pH range mid3	PhenotypicQuality	False	inc	increased profiles	1879	836	1043	0.44491750931346463	777	471	411	264
+METPO:1000604	microaerophilic	PhenotypicQuality	False	inc	increased profiles	1879	835	1044	0.44438531133581693	777	479	411	267
+METPO:1000469	NaCl range low	PhenotypicQuality	False	inc	increased profiles	1879	835	1044	0.44438531133581693	777	475	411	269
+METPO:2000103|GO:0030245	cellulose catabolic process	BiologicalProcess	False	dec	decreased profiles	1840	834	1006	0.4532608695652174	787	450	415	249
+METPO:1000668	coccus shaped	PhenotypicQuality	False	dec	decreased profiles	1840	831	1009	0.45163043478260867	787	478	415	270
+METPO:1000470	NaCl range mid1	PhenotypicQuality	False	dec	decreased profiles	1840	824	1016	0.44782608695652176	787	478	415	254
+METPO:1000871	spore forming	PhenotypicQuality	False	inc	increased profiles	1879	820	1059	0.43640234167110165	777	442	411	253
+METPO:1000871	spore forming	PhenotypicQuality	False	dec	decreased profiles	1840	815	1025	0.4429347826086957	787	460	415	256
+METPO:1000469	NaCl range low	PhenotypicQuality	False	dec	decreased profiles	1840	813	1027	0.4418478260869565	787	476	415	253
+METPO:1000463	pH range mid3	PhenotypicQuality	False	dec	decreased profiles	1840	798	1042	0.43369565217391304	787	470	415	255
+METPO:2000103|pathways:nitrate_reduction	nitrate_reduction	BiologicalProcess	False	inc	increased profiles	1879	796	1083	0.4236295902075572	777	482	411	270
+METPO:1000883	cell length very small	PhenotypicQuality	False	dec	decreased profiles	1840	791	1049	0.4298913043478261	787	467	415	271
+METPO:1000602	aerobic	PhenotypicQuality	False	inc	increased profiles	1879	775	1104	0.41245343267695583	777	448	411	265
+METPO:1000616	thermophilic	PhenotypicQuality	False	inc	increased profiles	1879	775	1104	0.41245343267695583	777	438	411	250
+METPO:1000471	NaCl range mid2	PhenotypicQuality	False	dec	decreased profiles	1840	773	1067	0.4201086956521739	787	443	415	234
+METPO:1000471	NaCl range mid2	PhenotypicQuality	False	inc	increased profiles	1879	761	1118	0.40500266098988824	777	451	411	251
+METPO:1000683	sphere shaped	PhenotypicQuality	False	inc	increased profiles	1879	759	1120	0.40393826503459285	777	436	411	252
+METPO:1000614	psychrophilic	PhenotypicQuality	False	inc	increased profiles	1879	751	1128	0.3996806812134114	777	436	411	256
+METPO:1000608	facultatively aerobic	PhenotypicQuality	False	dec	decreased profiles	1840	747	1093	0.40597826086956523	787	448	415	255
+METPO:1000614	psychrophilic	PhenotypicQuality	False	dec	decreased profiles	1840	735	1105	0.39945652173913043	787	452	415	245
+METPO:1000616	thermophilic	PhenotypicQuality	False	dec	decreased profiles	1840	734	1106	0.39891304347826084	787	449	415	238
+METPO:2000103|pathways:nitrate_reduction	nitrate_reduction	BiologicalProcess	False	dec	decreased profiles	1840	715	1125	0.38858695652173914	787	452	415	244
+METPO:1000444	temperature optimum mid2	PhenotypicQuality	False	inc	increased profiles	1879	706	1173	0.37573177221926557	777	437	411	242
+METPO:1000604	microaerophilic	PhenotypicQuality	False	dec	decreased profiles	1840	695	1145	0.37771739130434784	787	426	415	241
+METPO:1000431	GC mid2	PhenotypicQuality	False	inc	increased profiles	1879	694	1185	0.36934539648749337	777	410	411	253
+METPO:1000444	temperature optimum mid2	PhenotypicQuality	False	dec	decreased profiles	1840	683	1157	0.37119565217391304	787	412	415	229
+METPO:1000602	aerobic	PhenotypicQuality	False	dec	decreased profiles	1840	681	1159	0.3701086956521739	787	430	415	245
+METPO:2000103|GO:0030245	cellulose catabolic process	BiologicalProcess	False	inc	increased profiles	1879	669	1210	0.3560404470463012	777	385	411	240
+METPO:1000688	coccobacillus shaped	PhenotypicQuality	False	inc	increased profiles	1879	667	1212	0.35497605109100583	777	386	411	235
+METPO:1000688	coccobacillus shaped	PhenotypicQuality	False	dec	decreased profiles	1840	665	1175	0.36141304347826086	787	392	415	228
+METPO:1000431	GC mid2	PhenotypicQuality	False	dec	decreased profiles	1840	637	1203	0.34619565217391307	787	379	415	238
+METPO:1000683	sphere shaped	PhenotypicQuality	False	dec	decreased profiles	1840	609	1231	0.3309782608695652	787	376	415	226
+METPO:1000686	vibrio shaped	PhenotypicQuality	False	dec	decreased profiles	1840	584	1256	0.3173913043478261	787	367	415	219
+METPO:1000674	filament shaped	PhenotypicQuality	False	dec	decreased profiles	1840	572	1268	0.3108695652173913	787	355	415	203
+METPO:1000674	filament shaped	PhenotypicQuality	False	inc	increased profiles	1879	558	1321	0.2969664715274082	777	362	411	208
+METPO:1000686	vibrio shaped	PhenotypicQuality	False	inc	increased profiles	1879	542	1337	0.28845130388504525	777	343	411	205
+METPO:1000606	obligately aerobic	PhenotypicQuality	False	inc	increased profiles	1879	531	1348	0.2825971261309207	777	357	411	219
+METPO:1000606	obligately aerobic	PhenotypicQuality	False	dec	decreased profiles	1840	514	1326	0.2793478260869565	787	345	415	208
+METPO:1000430	GC mid1	PhenotypicQuality	False	dec	decreased profiles	1840	371	1469	0.2016304347826087	787	263	415	172
+METPO:1000430	GC mid1	PhenotypicQuality	False	inc	increased profiles	1879	370	1509	0.19691325172964344	777	252	411	161
+METPO:1000684	spiral shaped	PhenotypicQuality	False	inc	increased profiles	1879	321	1558	0.17083555082490687	777	224	411	145
+METPO:1000684	spiral shaped	PhenotypicQuality	False	dec	decreased profiles	1840	240	1600	0.13043478260869565	787	175	415	130
+METPO:1000844	Methanogenesis	OntologyClass	False	dec	decreased profiles	1840	31	1809	0.01684782608695652	787	25	415	24
+METPO:1000844	Methanogenesis	OntologyClass	False	inc	increased profiles	1879	29	1850	0.015433741351782864	777	21	411	18

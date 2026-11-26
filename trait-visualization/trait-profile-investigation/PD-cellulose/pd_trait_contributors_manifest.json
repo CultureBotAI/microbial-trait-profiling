@@ -1,6 +1,15 @@
 {
   "method": "Table 1 contribution ledger (#190) restricted to PD fecal profiles",
   "profile_scope": "human PD fecal profiles in experiments with both directions",
+  "strain_rollup": "phenotype",
+  "trait_key_policy": "facultative_union_v1",
+  "trait_key_policy_resolution": {
+    "policy": "facultative_union_v1",
+    "basis": "column_metadata",
+    "source_sha256": {
+      "taxa_trait_matrix_columns.tsv": "db8cdc96a95a758d4685807a7eedc9967c468299d83c85c02e5102eb81774cae"
+    }
+  },
   "pd_feces_profiles": 242,
   "ledger_profiles": 194,
   "ledger_increased_profiles": 97,
@@ -22,7 +31,7 @@
     {
       "trait_key": "METPO:1000608",
       "trait_slug": "facultatively_aerobic",
-      "trait_label": "facultatively aerobic (METPO:1000608)",
+      "trait_label": "facultative (aerobe or anaerobe) (METPO:1000608)",
       "trait_direction": "increased"
     },
     {
@@ -59,14 +68,14 @@
   "kg_md5_verified_against": "methods/table1_taxon_influence_protocol.json",
   "input_sha256_chunks": {
     "study_trait_profiles_wide.tsv": [
-      "519a095b",
-      "09e179dc",
-      "92fb51f9",
-      "d892984a",
-      "52dd100d",
-      "ece4dadf",
-      "6c94b036",
-      "a5323e6c"
+      "dd20b920",
+      "308d1ab9",
+      "dd9ff586",
+      "81e17de2",
+      "526d2e70",
+      "cc2cbce0",
+      "b55e924e",
+      "0a661ba2"
     ],
     "experiments.tsv": [
       "16271237",
@@ -89,14 +98,14 @@
       "db271c59"
     ],
     "taxa_trait_matrix.tsv": [
-      "f6de0576",
-      "63f3a3b0",
-      "026579df",
-      "af341745",
-      "faac27df",
-      "7f9c0afd",
-      "6f5fa3e6",
-      "aa034178"
+      "6638849b",
+      "04137de7",
+      "3cad5564",
+      "46a1de02",
+      "4765b2a6",
+      "4301f841",
+      "386fd9ed",
+      "7bf389af"
     ]
   },
   "sha256_chunk_encoding": "concatenate each input's eight chunks in order"

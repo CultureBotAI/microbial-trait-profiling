@@ -30,9 +30,9 @@ The target conditions for this run are selected from the top 3 paired-profile co
 
 | condition | paired absolute contrast load | local profiles | studies | experiments | local mean nonzero traits/profile | local percentile | local outlier? |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Multiple sclerosis | 1.00 | 28 | 6 | 14 | 97.1 | 40.3% | no |
-| Stroke | 0.92 | 43 | 5 | 28 | 134.0 | 68.0% | no |
-| Constipation | 0.76 | 23 | 7 | 12 | 104.0 | 45.7% | no |
+| Multiple sclerosis | 0.94 | 28 | 6 | 14 | 101.5 | 42.6% | no |
+| Stroke | 0.92 | 43 | 5 | 28 | 140.1 | 69.3% | no |
+| Helminthiasis | 0.76 | 27 | 1 | 15 | 223.7 | 91.4% | no |
 
 Interpretation: condition support matters because profile counts, study counts, and body-site mix vary across exact BugSigDB condition labels.
 
@@ -40,18 +40,21 @@ Interpretation: condition support matters because profile counts, study counts, 
 
 | condition | study | year | experiment | profiles |
 | --- | --- | ---: | --- | ---: |
-| Constipation | Structural changes in the gut microbiome of constipated patients (bsdb:25073603) | 2014 | Experiment 1: Control vs Constipation | 2 |
-| Constipation | The Effect of Psyllium Husk on Intestinal Microbiota in Constipated Patients and Healthy Controls (bsdb:30669509) | 2019 | Experiment 1: healthy participants at  baseline vs healthy participants following high dose of Psyllium supplementation | 2 |
-| Constipation | The Effect of Psyllium Husk on Intestinal Microbiota in Constipated Patients and Healthy Controls (bsdb:30669509) | 2019 | Experiment 2: constipated patients at baseline vs constipated participants following Psyllium supplementation | 2 |
-| Constipation | The Effect of Psyllium Husk on Intestinal Microbiota in Constipated Patients and Healthy Controls (bsdb:30669509) | 2019 | Experiment 3: healthy participants at baseline vs constipated participants at baseline | 2 |
-| Constipation | Fecal Microbiota Transplantation Modulates the Gut Flora Favoring Patients With Functional Constipation (bsdb:34690948) | 2021 | Experiment 2: bef (pre-Fecal microbiota transplantation) vs aft (post-Fecal microbiota transplantation) | 2 |
-| Constipation | Fecal Microbiota Transplantation Modulates the Gut Flora Favoring Patients With Functional Constipation (bsdb:34690948) | 2021 | Experiment 5: Low BSFS (Bristol stool form scale) score vs High BSFS (Bristol stool form scale) score | 1 |
-| Constipation | Protective effect of L-pipecolic acid on constipation in C57BL/6 mice based on gut microbiome and serum metabolomic (bsdb:37210496) | 2023 | Experiment 1: Healthy Controls vs Functional Constipation(FC) | 2 |
-| Constipation | The gut microbiome and metabolites are altered and interrelated in patients with functional constipation (bsdb:38125567) | 2023 | Experiment 5: Low level of straining during defecation vs High level of straining during defecation | 2 |
-| Constipation | Altered gut microbial profile is associated with differentially expressed fecal microRNAs in patients with functional constipation (bsdb:38274754) | 2023 | Experiment 5: Low levels of straining during defecation vs High levels of straining during defecation | 2 |
-| Constipation | Intestinal microbiome changes and mechanisms of maintenance hemodialysis patients with constipation (bsdb:39588509) | 2024 | Experiment 2: Healthy Control Group (HCG) vs Maintenance Hemodialysis with Constipation (MHDCG) | 2 |
-| Constipation | Intestinal microbiome changes and mechanisms of maintenance hemodialysis patients with constipation (bsdb:39588509) | 2024 | Experiment 4: Maintenance Hemodialysis without Constipation (MHDNCG) vs Maintenance Hemodialysis with Constipation (MHDCG) | 2 |
-| Constipation | Intestinal microbiome changes and mechanisms of maintenance hemodialysis patients with constipation (bsdb:39588509) | 2024 | Experiment 5: Maintenance Hemodialysis without Constipation (MHDNCG) vs Maintenance Hemodialysis with Constipation (MHDCG) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 1: Zero Soil Transmitted Helminth infection (Zero STH infection) vs High Soil Transmitted Helminth infection (High STH infection) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 10: 2008 - Uninfected vs 2010 - Uninfected | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 11: 2010 - Treated with albendazole vs 2008 - Infected | 1 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 12: 2010 - Treated with albendazole and dewormed vs 2008 - Infected | 1 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 13: 2010 - Self cleared individuals vs 2008 - Infected | 1 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 14: Uninfected (Zero STH infection) vs Heavy Infected (Ascaris) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 15: Uninfected (Zero STH infection) vs Heavy Infected (Necator) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 16: Uninfected (Zero STH infection) vs Heavy Infected (Trichuris) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 2: Zero Soil Transmitted Helminth infection (Zero STH infection) vs High Soil Transmitted Helminth infection (High STH infection) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 3: Zero Soil Transmitted Helminth infection (Zero STH infection) vs High Soil Transmitted Helminth infection (High STH infection) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 5: Zero Soil Transmitted Helminth infection (Zero STH infection) vs High Soil Transmitted Helminth infection (High STH infection) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 6: Zero Soil Transmitted Helminth infection (Zero STH infection) vs High Soil Transmitted Helminth infection (High STH infection) | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 7: 2008 - Uninfected vs 2010 - Uninfected | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 8: 2008 - Uninfected vs 2010 - Uninfected | 2 |
+| Helminthiasis | Differential human gut microbiome assemblages during soil-transmitted helminth infections in Indonesia and Liberia (bsdb:29486796) | 2018 | Experiment 9: 2008 - Uninfected vs 2010 - Uninfected | 2 |
 | Multiple sclerosis | Dysbiosis in the Gut Microbiota of Patients with Multiple Sclerosis, with a Striking Depletion of Species Belonging to Clostridia XIVa and IV Clusters (bsdb:26367776) | 2015 | Experiment 1: Healthy subjects (controls) vs Multiple sclerosis (MS), | 2 |
 | Multiple sclerosis | Dysbiosis in the Gut Microbiota of Patients with Multiple Sclerosis, with a Striking Depletion of Species Belonging to Clostridia XIVa and IV Clusters (bsdb:26367776) | 2015 | Experiment 2: Healthy subjects (controls) vs Multiple sclerosis (MS), | 2 |
 | Multiple sclerosis | Gut microbiota in early pediatric multiple sclerosis: a case-control study (bsdb:27176462) | 2016 | Experiment 1: healthy controls vs pediatric multiple sclerosis | 2 |
@@ -110,21 +113,21 @@ Profile similarity uses cosine similarity over log1p-transformed full non-MediaD
 
 | query condition | rank | neighbor condition | similarity | study title | experiment |
 | --- | ---: | --- | ---: | --- | --- |
-| Multiple sclerosis | 1 | HIV infection | 0.935 | Longitudinal gut microbiota composition of South African and Nigerian infants in relation to tetanus vaccine responses | Experiment 3: Infants who are HIV unexposed and uninfected (iHUU) at week 15 vs Infants who are HIV exposed but uninfected (iHEU) at week 15 |
-| Multiple sclerosis | 2 | Chlamydia trachomatis | 0.931 | Cervicovaginal microbiome and natural history of Chlamydia trachomatis in adolescents and young women | Experiment 1: Chlamydia trichomonas Controls (t0) vs Chlamydia trichomonas Cases (t0) |
-| Multiple sclerosis | 3 | Adverse effect | 0.931 | Intestinal microbiota influences clinical outcome and side effects of early breast cancer treatment | Experiment 13: No - increased BMI (Post-Chemo) vs Yes - increased BMI (Post-Chemo) |
-| Multiple sclerosis | 4 | Root caries | 0.929 | Comparative analysis of microbiome in coronal and root caries | Experiment 1: Coronal Caries group vs Root Caries group |
-| Multiple sclerosis | 5 | Age | 0.927 | Faecal microbiota of schoolchildren is associated with nutritional status and markers of inflammation: a double-blinded cluster-randomized controlled trial using multi-micronutrient fortified rice | Experiment 8: 10-14 years old vs 6-9 years old |
-| Stroke | 1 | Response to drug | 0.959 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 10: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 3 |
-| Stroke | 2 | Response to drug | 0.959 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 9: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 2 |
-| Stroke | 3 | HIV infection | 0.957 | Impact of Acute HIV Infection and Early Antiretroviral Therapy on the Human Gut Microbiome | Experiment 1: Human immunodeficiency virus negative (HIV-)Uninfected Controls vs Human immunodeficiency virus positive(HIV+) pre - antiretroviral therapy(ART) |
-| Stroke | 4 | Parkinson's disease | 0.956 | Gut microbiota in Parkinson's disease: Temporal stability and relations to disease progression | Experiment 4: Tremor-dominant phenotype (TD) at baseline vs Postural instability and gait difficulty (PIGD) phenotype at baseline |
-| Stroke | 5 | Antimicrobial agent | 0.956 | Association of prenatal antibiotics with measures of infant adiposity and the gut microbiome | Experiment 3: 12-month-old infants not exposed to antibiotics during the second trimester vs 12-month-old infants exposed to antibiotics during the second trimester |
-| Constipation | 1 | COVID-19 | 0.953 | The gut microbiome of COVID-19 recovered patients returns to uninfected status in a minority-dominated United States cohort | Experiment 1: Non-infected patients with unrelated respiratory medical conditions vs SARS-CoV-2 infected patients |
-| Constipation | 2 | Gestational diabetes | 0.950 | Gestational diabetes is associated with change in the gut microbiota composition in third trimester of pregnancy and postpartum | Experiment 4: Previous normoglycaemic  pregnancy vs Previous gestational diabetes mellitus (GDM) pregnancy |
-| Constipation | 3 | Response to drug | 0.948 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 10: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 3 |
-| Constipation | 4 | Response to drug | 0.948 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 9: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 2 |
-| Constipation | 5 | Population | 0.948 | Oral microbiome homogeneity across diverse human groups from southern Africa: first results from southwestern Angola and Zimbabwe | Experiment 6: Kuvale vs Tshwa |
+| Multiple sclerosis | 1 | Chlamydia trachomatis | 0.935 | Cervicovaginal microbiome and natural history of Chlamydia trachomatis in adolescents and young women | Experiment 1: Chlamydia trichomonas Controls (t0) vs Chlamydia trichomonas Cases (t0) |
+| Multiple sclerosis | 2 | HIV infection | 0.932 | Longitudinal gut microbiota composition of South African and Nigerian infants in relation to tetanus vaccine responses | Experiment 3: Infants who are HIV unexposed and uninfected (iHUU) at week 15 vs Infants who are HIV exposed but uninfected (iHEU) at week 15 |
+| Multiple sclerosis | 3 | Root caries | 0.928 | Comparative analysis of microbiome in coronal and root caries | Experiment 1: Coronal Caries group vs Root Caries group |
+| Multiple sclerosis | 4 | Endometriosis | 0.928 | The Endobiota Study: Comparison of Vaginal, Cervical and Gut Microbiota Between Women with Stage 3/4 Endometriosis and Healthy Controls | Experiment 1: Healthy controls vs Stage 3/4 endometriosis patients |
+| Multiple sclerosis | 5 | Adverse effect | 0.927 | Intestinal microbiota influences clinical outcome and side effects of early breast cancer treatment | Experiment 13: No - increased BMI (Post-Chemo) vs Yes - increased BMI (Post-Chemo) |
+| Stroke | 1 | Response to drug | 0.958 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 10: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 3 |
+| Stroke | 2 | Response to drug | 0.958 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 9: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 2 |
+| Stroke | 3 | HIV infection | 0.955 | Impact of Acute HIV Infection and Early Antiretroviral Therapy on the Human Gut Microbiome | Experiment 1: Human immunodeficiency virus negative (HIV-)Uninfected Controls vs Human immunodeficiency virus positive(HIV+) pre - antiretroviral therapy(ART) |
+| Stroke | 4 | Chronic hepatitis B virus infection | 0.955 | Gut Microbial Dysbiosis Is Associated with Altered Hepatic Functions and Serum Metabolites in Chronic Hepatitis B Patients | Experiment 1: healthy controls vs chronic hepatitis B patients |
+| Stroke | 5 | Parkinson's disease | 0.955 | Gut microbiota in Parkinson's disease: Temporal stability and relations to disease progression | Experiment 4: Tremor-dominant phenotype (TD) at baseline vs Postural instability and gait difficulty (PIGD) phenotype at baseline |
+| Helminthiasis | 1 | Cardiovascular disease | 0.992 | Sex-specific differences in intestinal microbiota associated with cardiovascular diseases | Experiment 4: Women without cardiovascular disease vs Women with coronary heart disease (CHD) |
+| Helminthiasis | 2 | Chronic constipation | 0.990 | Mucosa-associated gut microbiome in Japanese patients with functional constipation | Experiment 2: Healthy controls vs Patients with Functional constipation (FC) |
+| Helminthiasis | 3 | HIV infection | 0.990 | The semen microbiome and its relationship with local immunology and viral load in HIV infection | Experiment 1: HIV-uninfected men vs HIV-infected men |
+| Helminthiasis | 4 | Age-related macular degeneration | 0.988 | Beneficial Effects of Micronutrient Supplementation in Restoring the Altered Microbiota and Gut-Retina Axis in Patients with Neovascular Age-Related Macular Degeneration-A Randomized Clinical Trial | Experiment 1: Healthy controls vs nAMD (neovascular Age-related macular degeneration) patients |
+| Helminthiasis | 5 | Gastric cancer | 0.988 | Association Between Gut Microbiota and <i>Helicobacter pylori</i>-Related Gastric Lesions in a High-Risk Population of Gastric Cancer | Experiment 2: past H.pylori infection vs current H.pylori infection patients |
 
 ### Cross-Target Check
 
@@ -132,27 +135,27 @@ Profile similarity uses cosine similarity over log1p-transformed full non-MediaD
 | --- | --- | --- |
 | Multiple sclerosis | no | NA |
 | Stroke | no | NA |
-| Constipation | no | NA |
+| Helminthiasis | no | NA |
 
 Top five condition-centroid neighbors are also written to `target_condition_centroid_neighbors.tsv`; this checks whether the three conditions find each other at condition rather than individual-profile level.
 
 | query condition | rank | centroid neighbor | similarity | other target? |
 | --- | ---: | --- | ---: | --- |
-| Multiple sclerosis | 1 | Ulcerative colitis | 0.979 | no |
-| Multiple sclerosis | 2 | Physical activity | 0.974 | no |
-| Multiple sclerosis | 3 | Chronic kidney disease | 0.974 | no |
-| Multiple sclerosis | 4 | Obesity | 0.973 | no |
-| Multiple sclerosis | 5 | Socioeconomic status | 0.973 | no |
-| Stroke | 1 | Age | 0.989 | no |
-| Stroke | 2 | Response to immunochemotherapy | 0.986 | no |
-| Stroke | 3 | Inflammatory bowel disease | 0.986 | no |
-| Stroke | 4 | Cervical cancer | 0.985 | no |
-| Stroke | 5 | Polycystic ovary syndrome | 0.985 | no |
-| Constipation | 1 | Schizophrenia | 0.991 | no |
-| Constipation | 2 | Colorectal cancer | 0.988 | no |
-| Constipation | 3 | HIV infection | 0.988 | no |
-| Constipation | 4 | Polycystic ovary syndrome | 0.987 | no |
-| Constipation | 5 | Obesity | 0.987 | no |
+| Multiple sclerosis | 1 | Ulcerative colitis | 0.981 | no |
+| Multiple sclerosis | 2 | Psoriasis | 0.977 | no |
+| Multiple sclerosis | 3 | Chronic kidney disease | 0.977 | no |
+| Multiple sclerosis | 4 | Physical activity | 0.976 | no |
+| Multiple sclerosis | 5 | Obesity | 0.976 | no |
+| Stroke | 1 | Age | 0.990 | no |
+| Stroke | 2 | Cervical cancer | 0.987 | no |
+| Stroke | 3 | Response to immunochemotherapy | 0.987 | no |
+| Stroke | 4 | Parkinson's disease | 0.986 | no |
+| Stroke | 5 | Polycystic ovary syndrome | 0.986 | no |
+| Helminthiasis | 1 | Air pollution | 0.994 | no |
+| Helminthiasis | 2 | Thyroid carcinoma | 0.993 | no |
+| Helminthiasis | 3 | Chronic kidney disease,Stage 5 chronic kidney disease | 0.993 | no |
+| Helminthiasis | 4 | Peutz-Jeghers Polyp | 0.993 | no |
+| Helminthiasis | 5 | Constipation,Parkinson's disease | 0.993 | no |
 
 ## How Trait Sets Connect To Profiles
 
@@ -160,12 +163,12 @@ A profile is one BugSigDB study/experiment/direction row. Its trait vector count
 
 | trait set | condition | profiles | mean trait-set signal | mean relative trait-set signal |
 | --- | --- | ---: | ---: | ---: |
-| aerobe_v2 | Constipation | 23 | 104.507 | 0.01764 |
-| aerobe_v2 | Multiple sclerosis | 28 | 318.560 | 0.01480 |
-| aerobe_v2 | Stroke | 43 | 1259.124 | 0.01902 |
-| anaerobe_v2_depletion | Constipation | 23 | 178.196 | 0.06034 |
-| anaerobe_v2_depletion | Multiple sclerosis | 28 | 182.714 | 0.06272 |
-| anaerobe_v2_depletion | Stroke | 43 | 398.965 | 0.04019 |
+| aerobe_v2 | Multiple sclerosis | 28 | 421.607 | 0.01390 |
+| aerobe_v2 | Helminthiasis | 27 | 1861.500 | 0.03166 |
+| aerobe_v2 | Stroke | 43 | 1154.360 | 0.01637 |
+| anaerobe_v2_depletion | Multiple sclerosis | 28 | 207.893 | 0.05752 |
+| anaerobe_v2_depletion | Helminthiasis | 27 | 909.667 | 0.01614 |
+| anaerobe_v2_depletion | Stroke | 43 | 444.012 | 0.04248 |
 
 ## Companion Traits Vs Organisms Heatmap
 

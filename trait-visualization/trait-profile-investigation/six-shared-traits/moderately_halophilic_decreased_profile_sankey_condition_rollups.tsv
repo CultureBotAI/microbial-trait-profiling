@@ -1,15 +1,15 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_condition	condition	condition_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	271	57	130	110
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	93	105
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	93	104
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	83	66
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	COVID-19	Infectious disease	infectious-disease condition group	123	31	62	63
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	98	16	48	59
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Population	Population / social covariates	population/social-covariate condition group	96	4	44	38
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	HIV infection	Infectious disease	infectious-disease condition group	94	30	47	38
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	40	27
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	93	20	50	39
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	HIV infection	Infectious disease	infectious-disease condition group	94	30	47	39
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	40	26
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	93	20	50	38
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Chronic constipation	GI / digestive disease	gi/digestive condition group	89	15	41	37
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Human papilloma virus infection	Infectious disease	infectious-disease condition group	81	22	36	52
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Human papilloma virus infection	Infectious disease	infectious-disease condition group	81	22	36	51
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	67	13	33	44
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	67	12	32	39
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	60	21	29	24
@@ -17,14 +17,14 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	54	13	25	27
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Asthma	Respiratory / airway disease	respiratory/airway condition group	54	12	26	23
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Metabolic toxicity	Metabolic / endocrine	metabolic/endocrine condition group	53	1	27	9
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	20	30
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Dry eye syndrome	Ocular / eye disease	ocular/eye condition group	50	11	21	29
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	48	16	25	25
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	20	32
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Dry eye syndrome	Ocular / eye disease	ocular/eye condition group	50	11	21	30
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	48	16	25	23
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Aging	Age / development / sex	age/development/sex condition group	48	5	21	27
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Diet measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	47	6	30	5
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Crohn's disease	Inflammatory bowel disease	ibd condition group	45	13	24	20
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Crohn's disease	Inflammatory bowel disease	ibd condition group	45	13	24	19
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	43	13	21	21
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ulcerative colitis	Inflammatory bowel disease	ibd condition group	43	13	22	14
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ulcerative colitis	Inflammatory bowel disease	ibd condition group	43	13	22	15
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	43	12	15	19
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Stroke	Stroke	stroke condition group	43	5	15	24
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	43	3	17	32
@@ -38,15 +38,15 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Response to antiviral drug	Infectious disease	infectious-disease condition group	32	6	18	11
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Chronic kidney disease	Renal / urinary disease	renal/urinary condition group	31	10	15	16
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Breast cancer	Cancer / neoplasia	cancer/neoplasia condition group	31	8	15	14
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Atopic asthma	Respiratory / airway disease	respiratory/airway condition group	30	2	14	20
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Atopic asthma	Respiratory / airway disease	respiratory/airway condition group	30	2	14	19
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cesarean section	Pregnancy / neonatal	pregnancy/neonatal condition group	29	8	15	18
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	28	6	14	9
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Response to diet	Medication / clinical treatment	medication/clinical-treatment condition group	28	6	14	9
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Socioeconomic status	Population / social covariates	population/social-covariate condition group	27	11	13	14
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Lung cancer	Respiratory / airway disease	respiratory/airway condition group	27	8	11	19
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Hypertension	Cardiovascular disease	cardiovascular condition group	27	3	15	7
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Phenylketonuria	Metabolic / endocrine	metabolic/endocrine condition group	27	2	14	13
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Helminthiasis	Infectious disease	infectious-disease condition group	27	1	15	25
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Phenylketonuria	Metabolic / endocrine	metabolic/endocrine condition group	27	2	14	12
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Helminthiasis	Infectious disease	infectious-disease condition group	27	1	15	24
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Smoking behaviour measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	27	1	13	11
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Response to transplant	Transplant / graft response	transplant/graft condition group	26	5	11	8
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Eczema	Skin / hair disease	skin/hair condition group	26	4	16	14
@@ -89,9 +89,9 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	15	6	7	6
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Chronic fatigue syndrome	Psychiatric / behavioral health	psychiatric/behavioral condition group	15	4	8	4
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cognitive impairment	Neurologic / cognitive disease	neurologic/cognitive condition group	15	4	7	5
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	HIV mother to child transmission	Infectious disease	infectious-disease condition group	15	1	8	12
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	HIV mother to child transmission	Infectious disease	infectious-disease condition group	15	1	8	11
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Viral disease	Infectious disease	infectious-disease condition group	15	1	7	6
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	14	5	7	10
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	14	5	7	9
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Graft versus host disease	Transplant / graft response	transplant/graft condition group	14	5	7	8
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Autism	Neurologic / cognitive disease	neurologic/cognitive condition group	14	4	6	8
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Milk allergic reaction	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	14	4	6	9
@@ -160,13 +160,13 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Peutz-Jeghers Polyp	Cancer / neoplasia	cancer/neoplasia condition group	8	1	4	8
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Preeclampsia	Pregnancy / neonatal	pregnancy/neonatal condition group	8	1	4	3
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	SARS coronavirus	Infectious disease	infectious-disease condition group	8	1	4	0
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Vesicle membrane	Experimental phenotype labels	experimental-phenotype-label condition group	8	1	4	4
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Vesicle membrane	Experimental phenotype labels	experimental-phenotype-label condition group	8	1	4	3
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Visceral adipose tissue measurement	Body composition / growth	body-composition/growth condition group	8	1	4	3
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	White matter volume measurement	Other specific clinical labels	other-specific-clinical-label condition group	8	1	4	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Anorexia nervosa	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	3	4	4
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Autism spectrum disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	7	3	2	5
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Inflammatory bowel disease	Inflammatory bowel disease	ibd condition group	7	3	2	4
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Anxiety disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	2	3	6
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Anxiety disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	2	3	5
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Head and neck carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	7	2	4	6
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Human papillomavirus	Infectious disease	infectious-disease condition group	7	2	4	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Metastatic colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	7	2	3	6
@@ -190,7 +190,7 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Sampling site	Sampling site / time protocol	sampling-site/time condition group	6	3	2	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Acute graft vs. host disease	Transplant / graft response	transplant/graft condition group	6	2	4	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Biliary atresia	GI / digestive disease	gi/digestive condition group	6	2	3	5
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Breast carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Breast carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	6
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Menopause	Reproductive / hormonal health	reproductive/hormonal condition group	6	2	3	5
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Non-alcoholic steatohepatitis	Infectious disease	infectious-disease condition group	6	2	2	3
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Prediabetes syndrome	Metabolic / endocrine	metabolic/endocrine condition group	6	2	3	2
@@ -221,7 +221,7 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Response to combination chemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	5	2	3	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Vulvovaginitis	Reproductive / hormonal health	reproductive/hormonal condition group	5	2	2	3
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Chronic kidney disease,Stage 5 chronic kidney disease	Renal / urinary disease	renal/urinary condition group	5	1	2	4
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectal cancer,Diabetes mellitus	Colorectal neoplasia	colorectal neoplasia condition group	5	1	2	5
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectal cancer,Diabetes mellitus	Colorectal neoplasia	colorectal neoplasia condition group	5	1	2	4
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Dementia	Neurologic / cognitive disease	neurologic/cognitive condition group	5	1	1	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Fat intake measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	5	1	3	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Hyperglycemia	Other specific clinical labels	other-specific-clinical-label condition group	5	1	2	3
@@ -236,7 +236,7 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Total cholesterol measurement	Metabolic / endocrine	metabolic/endocrine condition group	4	3	2	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Attention deficit hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	4	2	2	4
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Estradiol measurement	Reproductive / hormonal health	reproductive/hormonal condition group	4	2	3	2
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Health trait	Experimental phenotype labels	experimental-phenotype-label condition group	4	2	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Health trait	Experimental phenotype labels	experimental-phenotype-label condition group	4	2	2	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Leukemia	Cancer / neoplasia	cancer/neoplasia condition group	4	2	2	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Lower respiratory tract disease	Respiratory / airway disease	respiratory/airway condition group	4	2	2	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Malnutrition	Metabolic / endocrine	metabolic/endocrine condition group	4	2	2	2
@@ -263,7 +263,7 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Glucose metabolism measurement	Metabolic / endocrine	metabolic/endocrine condition group	4	1	2	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Gut microbiome measurement	Microbiome phenotype	microbiome-phenotype condition group	4	1	2	3
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Hepatitis virus-related hepatocellular carcinoma	Infectious disease	infectious-disease condition group	4	1	2	1
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	High fat diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	4	1	2	2
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	High fat diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	4	1	2	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Intestinal helminthiasis	Infectious disease	infectious-disease condition group	4	1	2	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Melanoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Neonatal jaundice	Pregnancy / neonatal	pregnancy/neonatal condition group	4	1	2	1
@@ -274,7 +274,7 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Periapical Periodontitis	Oral / periodontal disease	oral/periodontal condition group	4	1	2	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Periodontitis,Type II diabetes mellitus	Oral / periodontal disease	oral/periodontal condition group	4	1	2	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Primary bacterial infectious disease	Infectious disease	infectious-disease condition group	4	1	2	4
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Reaction time measurement	Sampling site / time protocol	sampling-site/time condition group	4	1	2	3
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Reaction time measurement	Sampling site / time protocol	sampling-site/time condition group	4	1	2	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Remission	Disease activity / severity	disease-activity/severity condition group	4	1	2	4
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Response to proton-pump inhibitor	Medication / clinical treatment	medication/clinical-treatment condition group	4	1	2	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Schizophrenia,Metabolic syndrome	Metabolic / endocrine	metabolic/endocrine condition group	4	1	2	4
@@ -334,14 +334,14 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Abnormality of the respiratory system	Respiratory / airway disease	respiratory/airway condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Abnormality on pulmonary function testing	Respiratory / airway disease	respiratory/airway condition group	2	1	1	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Adenomyosis	Reproductive / hormonal health	reproductive/hormonal condition group	2	1	1	2
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Age at assessment	Age / development / sex	age/development/sex condition group	2	1	1	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Age at assessment	Age / development / sex	age/development/sex condition group	2	1	1	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Age at menarche	Age / development / sex	age/development/sex condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Age,Human papilloma virus infection	Infectious disease	infectious-disease condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Allergic asthma	Respiratory / airway disease	respiratory/airway condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Amyotrophic lateral sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Ankylosing spondylitis	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	2	1	1	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Anterior uveitis,Ankylosing spondylitis	Ocular / eye disease	ocular/eye condition group	2	1	1	0
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Antimicrobial agent,Urinary tract infection	Infectious disease	infectious-disease condition group	2	1	0	1
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Antimicrobial agent,Urinary tract infection	Infectious disease	infectious-disease condition group	2	1	0	0
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Asthma,Allergic rhinitis,Food allergy,Dermatitis	Respiratory / airway disease	respiratory/airway condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Autism spectrum disorder,Digestive system disease	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Autoimmune Hepatitis	Infectious disease	infectious-disease condition group	2	1	1	2
@@ -368,7 +368,7 @@ moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_h
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Clonorchiasis	Infectious disease	infectious-disease condition group	2	1	1	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Cognitive impairment measurement	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	2	2
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Coinfection,Age	Infectious disease	infectious-disease condition group	2	1	1	1
-moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colon carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	0
+moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colon carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectal adenoma,Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	2	1	0	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Colorectal cancer,Nutraceutical	Colorectal neoplasia	colorectal neoplasia condition group	2	1	1	1
 moderately_halophilic_decreased	METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	decreased	Complicated disease course	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1

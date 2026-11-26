@@ -1,2 +1,2 @@
-trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	7.633604503335897e-07	4.877702558042106e-09	-0.1645451409552772	trait enriched in decreased profiles
+trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction	paired_p_value_type	displayed_nominal_test_count	bh_family_size	bh_unfiltered_trait_count	paired_q_value_family
+METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	1.1760704226360929e-06	6.9589965836455195e-09	-0.16308758916738428	trait enriched in decreased profiles	nominal	1	338	342	pooled pair-level BH over 338 support/variance-selected traits (of 342 retained; select_stratum_traits support, positive-variance, and MediaDive-exclusion filter)

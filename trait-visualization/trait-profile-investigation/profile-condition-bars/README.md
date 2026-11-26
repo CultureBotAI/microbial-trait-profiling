@@ -39,25 +39,25 @@ They do not rerun the hypergeometric ORA. Instead, they use the selected profile
 
 | condition | decreased mean | increased mean | direction-mean total | profiles | studies |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Chronic obstructive pulmonary disease | 45.67 | 47.71 | 93.38 | 13 | 4 |
-| Glaucoma | 43.80 | 46.62 | 90.42 | 23 | 5 |
-| Response to vaccine | 43.40 | 45.67 | 89.07 | 11 | 2 |
-| Human immunodeficiency virus | 46.69 | 38.82 | 85.51 | 24 | 4 |
-| Alzheimer's disease | 42.71 | 41.71 | 84.43 | 14 | 5 |
+| Chronic obstructive pulmonary disease | 46.00 | 48.00 | 94.00 | 13 | 4 |
+| Glaucoma | 44.30 | 47.00 | 91.30 | 23 | 5 |
+| Response to vaccine | 43.20 | 46.67 | 89.87 | 11 | 2 |
+| Human immunodeficiency virus | 46.62 | 39.36 | 85.98 | 24 | 4 |
+| Alzheimer's disease | 43.29 | 41.86 | 85.14 | 14 | 5 |
 
 ## Top Depleted-Profile Conditions
 
 | condition | direction delta | focus mean | comparator mean | focus profiles | comparator profiles | studies |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Diarrhea | 16.83 | 37.58 | 20.75 | 12 | 12 | 3 |
-| Acute lymphoblastic leukemia | 16.55 | 43.17 | 26.62 | 6 | 13 | 5 |
-| Response to allogeneic hematopoietic stem cell transplant | 13.02 | 35.91 | 22.89 | 11 | 9 | 5 |
-| Lung cancer | 10.94 | 42.82 | 31.88 | 11 | 16 | 8 |
-| Endometrial cancer | 10.67 | 45.00 | 34.33 | 5 | 6 | 3 |
+| Acute lymphoblastic leukemia | 18.85 | 45.00 | 26.15 | 6 | 13 | 5 |
+| Diarrhea | 16.67 | 37.00 | 20.33 | 12 | 12 | 3 |
+| Response to allogeneic hematopoietic stem cell transplant | 13.68 | 36.45 | 22.78 | 11 | 9 | 5 |
+| Lung cancer | 11.01 | 42.82 | 31.81 | 11 | 16 | 8 |
+| Endometrial cancer | 10.90 | 45.40 | 34.50 | 5 | 6 | 3 |
 
 ## Uncapped Follow-Up Figures
 
-The scatterplot and condition x trait heatmap include all 48 focus-eligible condition rows after the shared filters, minimum focus-direction profile filter, and positive direction-delta filter. The heatmap includes all 60 selected trait columns from the input matrix.
+The scatterplot and condition x trait heatmap include all 47 focus-eligible condition rows after the shared filters, minimum focus-direction profile filter, and positive direction-delta filter. The heatmap includes all 60 selected trait columns from the input matrix.
 
 The scatterplot is intended to separate large but sparsely supported direction deltas from conditions with broader profile/study support. `coverage_weighted_signal` in the scatter TSV is a descriptive product of the direction delta, square-root positive-signal profile count, and square-root study count; it is not used as a filter.
 
