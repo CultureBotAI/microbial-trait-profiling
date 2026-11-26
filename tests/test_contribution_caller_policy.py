@@ -179,6 +179,7 @@ def test_pd_ledger_reconstructs_selected_policy_and_refuses_the_other(
 
 @pytest.mark.parametrize("policy", ["raw_object_v1", "facultative_union_v1"])
 def test_pd_cli_forwards_policy_before_analysis(
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     contributors: ModuleType,
     policy: TraitKeyPolicy,
@@ -186,6 +187,9 @@ def test_pd_cli_forwards_policy_before_analysis(
     class Reached(Exception):
         pass
 
+    # An empty inputs dir records no policy, so the repo's local data/derived cannot
+    # contradict the requested one (#2434).
+    monkeypatch.setattr(contributors, "DERIVED_DIR", tmp_path)
     monkeypatch.setattr(contributors, "load_profile_metadata", lambda: None)
     monkeypatch.setattr(contributors, "require_current_trait_taxa_evidence", lambda *_a: None)
     monkeypatch.setattr(contributors, "read_tsv", lambda *_a: None)
