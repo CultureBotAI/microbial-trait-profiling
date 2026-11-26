@@ -21,6 +21,7 @@ from mtp.composition_denominators import load_retained_profiles, trait_fractions
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
+from mtp.profile_metadata import with_profile_id_column
 from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
 
 
@@ -185,9 +186,8 @@ def load_traits() -> pd.DataFrame:
 def load_metadata() -> pd.DataFrame:
     """Load profile metadata and retain normalized direction labels."""
     metadata = read_tsv(PROFILE_METADATA_PATH, index_col=0)
-    metadata = metadata.copy()
     metadata.index = metadata.index.astype(str)
-    metadata["profile_id"] = metadata.index
+    metadata = with_profile_id_column(metadata)
     text_columns = [
         "study_id",
         "experiment_id",

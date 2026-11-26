@@ -26,6 +26,7 @@ from mtp.composition_denominators import (
     profile_trait_z_scores,
 )
 from mtp.guild_trait_scores import guild_trait_z_scores, read_guild_trait_selection
+from mtp.profile_metadata import with_profile_id_column
 from sankey_v3_rollups import (
     body_site_display_label,
     condition_display_label,
@@ -333,8 +334,7 @@ def add_guild_scores(
     if not guild_z.index.equals(metadata.index):
         raise ValueError(f"Guild scores for {config.key} are not aligned with profile metadata")
 
-    scored = metadata.copy()
-    scored["profile_id"] = scored.index
+    scored = with_profile_id_column(metadata)
     scored["guild_z_mean"] = guild_z.mean(axis=1)
     scored["guild_positive_trait_count"] = guild_z.gt(0.0).sum(axis=1)
     scored["has_guild_enriched_trait"] = scored["guild_positive_trait_count"] > 0

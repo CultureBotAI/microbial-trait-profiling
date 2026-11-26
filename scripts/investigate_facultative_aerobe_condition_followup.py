@@ -28,6 +28,7 @@ from mtp.human_host_corpus import (
     excluded_host_summary,
     join_human_host_profiles,
 )
+from mtp.profile_metadata import with_profile_id_column
 
 OUTPUT_DIR = FACULTATIVE_OUTPUT_DIR
 CONDITION_GROUPS = {
@@ -78,7 +79,7 @@ def load_scored_condition_profiles() -> pd.DataFrame:
     lookup = condition_group_lookup()
     profiles = scored_profiles[scored_profiles["condition"].isin(lookup)].copy()
     profiles["condition_group_followup"] = profiles["condition"].map(lookup)
-    profiles["profile_id"] = profiles.index
+    profiles = with_profile_id_column(profiles)
     return profiles
 
 
