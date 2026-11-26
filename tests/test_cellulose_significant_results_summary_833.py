@@ -12,10 +12,22 @@ from types import ModuleType
 import pytest
 from scipy import stats
 
+from mtp.cellulose_decr import analysis
+from test_cellulose_narrative_labels import narrative_inputs
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS_DIR = REPO_ROOT / "data" / "analysis" / "cellulose_decr"
 RECOUNT_SCRIPT = REPO_ROOT / "scripts" / "adhoc" / "recount_cellulose_readme_numbers_799.py"
 LE = "\u2264"
+# Sentence naming the per-definition range of the pooled sign-test p-values. The producer
+# writes ", nominal sign-test p-values range from X to Y." since #1864; tables written
+# before #1864 (still committed until the regeneration of #2397 lands) say
+# " this p runs from X to Y." (#2400). Drop that alternative once the regeneration lands (#2411).
+POOLED_RANGE_PATTERN = re.compile(
+    r"Across the condition definitions of condition_definition_sensitivity\.tsv"
+    r"(?:, nominal sign-test p-values range from| this p runs from) "
+    r"([0-9.eE+-]+) to ([0-9.eE+-]+)\."
+)
 
 
 def _load_recount_module(script_path: Path = RECOUNT_SCRIPT) -> ModuleType:
@@ -177,11 +189,7 @@ def assert_significant_results_summary_matches_tables(
             if row["contrast_population"] == pop
         ]
         interp = sig_by_id[f"feces_Pooled_study_direction_{pop}"]["summary_interpretation"]
-        range_match = re.search(
-            r"Across the condition definitions of condition_definition_sensitivity\.tsv "
-            r"this p runs from ([0-9.eE+-]+) to ([0-9.eE+-]+)\.",
-            interp,
-        )
+        range_match = POOLED_RANGE_PATTERN.search(interp)
         assert range_match is not None
         low_str, high_str = range_match.groups()
         assert float(low_str) == pytest.approx(min(pop_p_vals), rel=1e-2)
@@ -243,6 +251,24 @@ def assert_significant_results_summary_matches_tables(
 def test_pooled_sign_test_bound_matches_worst_scenario_across_all_populations() -> None:
     """Pooled sign-test bound in SIGNIFICANT_RESULTS_SUMMARY.md holds across scenarios (#833)."""
     assert_significant_results_summary_matches_tables(ANALYSIS_DIR, RECOUNT_SCRIPT)
+
+
+def test_pooled_range_pattern_matches_the_producer_sentence() -> None:
+    """The guard reads the whole sentence the cellulose_decr producer writes today.
+
+    The interpretations are built by the producer itself, on the narrative-label
+    fixture, so a rewording anywhere in the sentence fails here (#2400, #2410).
+    """
+    compartments, scenarios, *_ = narrative_inputs()
+    rows = analysis.direction_summary_rows(compartments, scenarios)
+    ranges = []
+    for row in rows:
+        match = POOLED_RANGE_PATTERN.search(row["summary_interpretation"])
+        assert match is not None, row["summary_interpretation"]
+        ranges.append((float(match.group(1)), float(match.group(2))))
+    # The finite per-definition sign-test p-values of the fixture's experiment and
+    # study rows (tests/test_cellulose_narrative_labels.py).
+    assert ranges == [(0.0, 0.4), (0.2, 0.2)]
 
 
 @pytest.mark.parametrize(
