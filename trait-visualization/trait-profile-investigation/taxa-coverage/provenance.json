@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "recipe": "just taxa-coverage",
-  "generated_at": "2026-11-25T19:23:59.005896+00:00",
+  "generated_at": "2026-11-26T07:23:02.942590+00:00",
   "tables_only": false,
   "strain_rollup": "phenotype",
   "strain_rollup_evidence": {
@@ -143,7 +143,7 @@
   "bugsigdb_vintage_source": "raw_dump_header",
   "core_feature_filter": "exclude columns containing mediadive case-insensitively",
   "producer": {
-    "code_commit": "da35d9e5dd40483791667a9f07ed15eed5ac08b5",
+    "code_commit": "b57c82d313cb2e45b4524ca16f6e638774949239",
     "script_sha256": "08e77d882c6b573b0c25d9d7a66b3ddb6e3dc8a265491cc00c0ce79585cca2f8",
     "corpus_policy_sha256": "cf9e250049f80f250d9b9c0bdbbf7495053c0f123b15407a3e3a1b9206aee75e",
     "profile_builder_sha256": "f949445b870d03d18fb1c60272b4a6267fa3bb08c139d7600114e1c140adc738",
