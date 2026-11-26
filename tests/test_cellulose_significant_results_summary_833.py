@@ -12,10 +12,21 @@ from types import ModuleType
 import pytest
 from scipy import stats
 
+from mtp.cellulose_decr.analysis import _range_statement
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS_DIR = REPO_ROOT / "data" / "analysis" / "cellulose_decr"
 RECOUNT_SCRIPT = REPO_ROOT / "scripts" / "adhoc" / "recount_cellulose_readme_numbers_799.py"
 LE = "\u2264"
+# Sentence naming the per-definition range of the pooled sign-test p-values. The producer
+# writes ", nominal sign-test p-values range from X to Y." since #1864; tables written
+# before #1864 (still committed until the regeneration of #2397 lands) say
+# " this p runs from X to Y." (#2400).
+POOLED_RANGE_PATTERN = re.compile(
+    r"Across the condition definitions of condition_definition_sensitivity\.tsv"
+    r"(?:, nominal sign-test p-values range from| this p runs from) "
+    r"([0-9.eE+-]+) to ([0-9.eE+-]+)\."
+)
 
 
 def _load_recount_module(script_path: Path = RECOUNT_SCRIPT) -> ModuleType:
@@ -177,11 +188,7 @@ def assert_significant_results_summary_matches_tables(
             if row["contrast_population"] == pop
         ]
         interp = sig_by_id[f"feces_Pooled_study_direction_{pop}"]["summary_interpretation"]
-        range_match = re.search(
-            r"Across the condition definitions of condition_definition_sensitivity\.tsv "
-            r"this p runs from ([0-9.eE+-]+) to ([0-9.eE+-]+)\.",
-            interp,
-        )
+        range_match = POOLED_RANGE_PATTERN.search(interp)
         assert range_match is not None
         low_str, high_str = range_match.groups()
         assert float(low_str) == pytest.approx(min(pop_p_vals), rel=1e-2)
@@ -243,6 +250,19 @@ def assert_significant_results_summary_matches_tables(
 def test_pooled_sign_test_bound_matches_worst_scenario_across_all_populations() -> None:
     """Pooled sign-test bound in SIGNIFICANT_RESULTS_SUMMARY.md holds across scenarios (#833)."""
     assert_significant_results_summary_matches_tables(ANALYSIS_DIR, RECOUNT_SCRIPT)
+
+
+def test_pooled_range_pattern_matches_the_producer_sentence() -> None:
+    """The guard reads the sentence the cellulose_decr producer writes today (#2400)."""
+    low, high = 8.22e-05, 0.000121
+    sentence = (
+        "Across the condition definitions of condition_definition_sensitivity.tsv, "
+        f"{_range_statement('sign-test', [high, low])}. Describes curated signature annotations."
+    )
+    match = POOLED_RANGE_PATTERN.search(sentence)
+    assert match is not None, sentence
+    assert float(match.group(1)) == pytest.approx(low, rel=1e-2)
+    assert float(match.group(2)) == pytest.approx(high, rel=1e-2)
 
 
 @pytest.mark.parametrize(
