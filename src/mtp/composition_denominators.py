@@ -7,6 +7,8 @@ MediaDive-only rows remain in the corpus with all-zero fractions.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +21,7 @@ __all__ = [
     "DENOMINATOR_DEFINITION",
     "MEDIADIVE_MARKER",
     "load_retained_profiles",
+    "profile_trait_z_scores",
     "retained_trait_counts",
     "trait_fractions",
     "validate_cached_totals",
@@ -42,6 +45,25 @@ def trait_fractions(counts: pd.DataFrame) -> pd.DataFrame:
     retained = retained_trait_counts(counts)
     totals = retained.sum(axis=1)
     return retained.div(totals.where(totals.ne(0)), axis=0).fillna(0.0)
+
+
+def profile_trait_z_scores(counts: pd.DataFrame, trait_ids: Sequence[str]) -> pd.DataFrame:
+    """Z-score log1p(1000 * retained fraction) per trait across the given profiles.
+
+    This is the transform of the study heatmap cells (population SD, a constant
+    column scores 0), applied to any trait of the full profile table, so a trait
+    outside the heatmap selection is scored on the same scale as one inside it
+    (#2399, #2403).
+    """
+    fractions = trait_fractions(counts)
+    missing = [trait_id for trait_id in trait_ids if trait_id not in fractions.columns]
+    if missing:
+        raise ValueError(f"Traits missing from the retained profile table: {missing}")
+    composition = fractions.loc[:, list(trait_ids)]
+    scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
+    spread = scaled.std(axis=0, ddof=0).replace(0, float("nan"))
+    z_scores: pd.DataFrame = scaled.sub(scaled.mean(axis=0), axis=1).div(spread, axis=1)
+    return z_scores.fillna(0.0)
 
 
 def validate_cached_totals(counts: pd.DataFrame, metadata: pd.DataFrame) -> None:
