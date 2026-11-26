@@ -27,6 +27,7 @@ from create_condition_body_site_guild_maps import (
     v3_body_site_display_label,
     v3_fully_grouped_condition_display_label,
 )
+from mtp.profile_metadata import with_profile_id_column
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -224,7 +225,7 @@ def load_profile_metadata(path: Path = METADATA_PATH) -> pd.DataFrame:
     """Load all study/experiment/direction profiles used by the trait-profile figures."""
     metadata = pd.read_csv(path, sep="\t", index_col=0)
     metadata = metadata.copy()
-    metadata["profile_id"] = metadata.index
+    metadata = with_profile_id_column(metadata)
     for column in ["study_id", "experiment_id", "inc_dec", "condition", "body_site_group"]:
         metadata[column] = metadata[column].map(clean_text)
     metadata["direction_label"] = (

@@ -12,6 +12,7 @@ from scipy import stats
 
 from mtp.composition_denominators import DENOMINATOR_DEFINITION, load_retained_profiles
 from mtp.guild_trait_scores import guild_trait_z_scores, read_guild_trait_selection
+from mtp.profile_metadata import with_profile_id_column
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -154,8 +155,7 @@ def load_profiles() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def add_trait_scores(counts: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
-    scored = metadata.copy()
-    scored["profile_id"] = scored.index
+    scored = with_profile_id_column(metadata)
 
     for config in ANALYSIS_CONFIGS:
         guild_z = guild_trait_z_scores(

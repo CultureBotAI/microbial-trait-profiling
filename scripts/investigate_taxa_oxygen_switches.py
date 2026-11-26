@@ -16,6 +16,7 @@ from create_condition_body_site_guild_maps import (
     v3_body_site_display_label,
     v3_fully_grouped_condition_display_label,
 )
+from mtp.profile_metadata import with_profile_id_column
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROFILE_METADATA_PATH = REPO_ROOT / "trait-visualization/study_trait_profile_study_metadata.tsv"
@@ -185,7 +186,7 @@ def load_profile_metadata() -> pd.DataFrame:
     """Load human-host profile metadata from the existing trait visualization artifacts."""
     metadata = pd.read_csv(PROFILE_METADATA_PATH, sep="\t", index_col=0)
     metadata = metadata.copy()
-    metadata["profile_id"] = metadata.index
+    metadata = with_profile_id_column(metadata)
     for column in [
         "study_id",
         "experiment_id",
