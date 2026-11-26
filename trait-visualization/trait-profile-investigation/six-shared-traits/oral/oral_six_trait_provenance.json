@@ -3,7 +3,7 @@
   "source_table_sha256": "6f8c731bf44720671bd9653d608d82c56efaf73f97c9e235a83de0d88f2ad2f4",
   "source_trait_table": "six_shared_trait_selection.tsv",
   "source_trait_table_sha256": "7ef813ba327b583da0806aa2145c53b9973bef29670976d76cc557267cf84b65",
-  "source_artifact_commit": "uncommitted",
+  "source_artifact_commit": "d38e4badf3a170570bbef44ea2abf9460a3a1a85",
   "selection": "oral_site OR oral_disease; individual condition labels only",
   "oral_body_site_groups": [
     "Oral cavity / dental"
