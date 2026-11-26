@@ -199,19 +199,21 @@ def test_ontology_redundancy_audit_integration(tmp_path: Path) -> None:
     assert results["n_clusters"] == 10
     assert results["n_redundant_pairs"] == 24
     assert results["n_collapsed_features"] == 16
-    assert results["bounded_trait_space"] == 301
+    assert results["bounded_trait_space"] == 326
 
-    # Verify that raw traits were 317
-    assert results["raw_metrics"].n_traits == 317
-    assert results["native_metrics"].n_traits == 301
-    assert results["max_metrics"].n_traits == 301
-    assert results["adj_collapsed_metrics"].n_traits == 301
+    # Raw traits in the #2397 regenerated profiles (342; 317 before the regeneration, #2433).
+    # The configuration labels below still say 317/301: the producer hard-codes them (#2435).
+    assert results["raw_metrics"].n_traits == 342
+    assert results["native_metrics"].n_traits == 326
+    assert results["max_metrics"].n_traits == 326
+    assert results["adj_collapsed_metrics"].n_traits == 326
 
     # Key scientific assertions:
     # 1. PC1 variance in collapsed matrix remains > 60% (curation density, not redundancy!)
     assert results["max_metrics"].pc1_variance_pct > 60.0
 
-    # 2. PC1 regression residualization drops PC1 variance substantially (from ~66.9% to ~38.7%)
+    # 2. PC1 regression residualization drops PC1 variance substantially
+    #    (from ~65.7% to ~39.3% in the #2397 regeneration)
     assert results["adj_collapsed_metrics"].pc1_variance_pct < 40.0
 
     # 3. Post-PC1 residualization median pairwise r is centered near 0
