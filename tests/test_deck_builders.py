@@ -1039,9 +1039,11 @@ def _plate_one_tables(halophily_selected: bool) -> tuple[Any, ...]:
         "decreased_profile_count": "50",
         "body_site_group": "Feces",
     }
+    ids = {label: tid for tid, label, *_ in plates.TABLE1_TRAITS}
     contrasts = [
         {
             **cell,
+            "trait_id": ids["cellulose catabolic process"],
             "trait_label": "cellulose catabolic process",
             "condition": condition,
             "fisher_q_value": "0.008",
@@ -1051,6 +1053,7 @@ def _plate_one_tables(halophily_selected: bool) -> tuple[Any, ...]:
     ] + [
         {
             **cell,
+            "trait_id": ids["moderately halophilic"],
             "trait_label": "moderately halophilic",
             "condition": "Parkinson's disease",
             "fisher_q_value": "0.026",
@@ -1058,6 +1061,7 @@ def _plate_one_tables(halophily_selected: bool) -> tuple[Any, ...]:
         },
         {
             **cell,
+            "trait_id": ids["coccus shaped"],
             "trait_label": "coccus shaped",
             "condition": "Aging",
             "passes_support": "False",
@@ -1065,15 +1069,30 @@ def _plate_one_tables(halophily_selected: bool) -> tuple[Any, ...]:
             "selected_after_bh": "False",
         },
     ]
+    # The plate stops on a contrast table without every Table 1 trait (#2436)
+    contrasts += [
+        {
+            **cell,
+            "trait_id": tid,
+            "trait_label": label,
+            "condition": "Aging",
+            "passes_support": "False",
+            "fisher_q_value": "0.5",
+            "selected_after_bh": "False",
+        }
+        for tid, label, *_ in plates.TABLE1_TRAITS
+        if tid not in {row["trait_id"] for row in contrasts}
+    ]
     wilcoxon = [
         {
+            "trait_id": tid,
             "trait": label,
             "condition": "Parkinson's disease",
             "q_value": q,
             "paired_study_count": n,
             "selected_after_bh": "False",
         }
-        for (_, label, *_), q, n in zip(
+        for (tid, label, *_), q, n in zip(
             plates.TABLE1_TRAITS,
             ["0.6", "0.5", "0.4", "0.3", "0.2", "0.0561"],
             ["3", "45", "9", "9", "9", "45"],
@@ -1087,10 +1106,11 @@ def test_plate_one_counts_survivors_from_its_tables() -> None:
     """Plate I claimed survivors its own tables do not have (#636)."""
     summary = plates.plate1_summary(*_plate_one_tables(halophily_selected=True))
     assert summary["survivors"] == [6, 6, 6, 6, 2, 0]
-    assert summary["m"] == [6, 6, 6, 6, 4, 6]
+    # 4 cells, and an unsupported one for each of the other 3 Table 1 traits
+    assert summary["m"] == [6, 6, 6, 6, 7, 6]
     assert summary["wilcoxon_studies"] == (3, 45)
     # An unsupported cell's q is not plotted as the trait's best Scale 5 result.
-    assert summary["points"]["coccus shaped"][4] == 1.0
+    assert summary["points"]["METPO:1000668"][4] == 1.0
     assert plates.plate1_subtitle(summary) == (
         "All 6 pass Scales 1\N{EN DASH}4; 2 pass Scale 5 (cellulose: HIV, PD; halophily: PD); "
         "none passes Scale 6 (lowest q = 0.056, halophily in PD)"
@@ -1359,6 +1379,153 @@ def test_slide_eight_says_whether_the_mucosa_stratum_is_shown() -> None:
 def test_plate_one_subtitle_grammar_for_one_survivor() -> None:
     summary = plates.plate1_summary(*_plate_one_tables(halophily_selected=False))
     assert "1 passes Scale 5 (cellulose: HIV, PD)" in plates.plate1_subtitle(summary)
+
+
+# ------------------------------------------- Table 1 traits found by trait id (#2436)
+
+FACULTATIVE = "METPO:1000608"
+RAW_FACULTATIVE = "facultatively aerobic"
+MERGED_FACULTATIVE = "facultative (aerobe or anaerobe)"
+
+
+def _label_facultative(rows: list[dict[str, str]], column: str, label: str) -> list[dict[str, str]]:
+    return [{**r, column: label} if r.get("trait_id") == FACULTATIVE else r for r in rows]
+
+
+def test_table1_labels_read_either_policy_label() -> None:
+    rows = [{"trait_id": tid, "trait": label} for tid, label, *_ in plates.TABLE1_TRAITS]
+    assert plates.table1_labels(rows, "trait", "t")[FACULTATIVE] == RAW_FACULTATIVE
+    merged = _label_facultative(rows, "trait", MERGED_FACULTATIVE)
+    assert plates.table1_labels(merged, "trait", "t")[FACULTATIVE] == MERGED_FACULTATIVE
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        # METPO:1000608 is missing
+        [
+            {"trait_id": tid, "trait": label}
+            for tid, label, *_ in plates.TABLE1_TRAITS
+            if tid != FACULTATIVE
+        ],
+        # a label no trait-key policy gives it
+        [
+            {"trait_id": tid, "trait": "facultatively anaerobic" if tid == FACULTATIVE else label}
+            for tid, label, *_ in plates.TABLE1_TRAITS
+        ],
+        # two labels for one id
+        [{"trait_id": tid, "trait": label} for tid, label, *_ in plates.TABLE1_TRAITS]
+        + [{"trait_id": FACULTATIVE, "trait": MERGED_FACULTATIVE}],
+    ],
+)
+def test_table1_labels_stop_on_a_missing_or_unknown_trait(rows: list[dict[str, str]]) -> None:
+    with pytest.raises(ValueError, match="t labels Table 1 trait METPO:1000608"):
+        plates.table1_labels(rows, "trait", "t")
+
+
+def test_plate_one_reads_the_merged_facultative_trait_by_id() -> None:
+    """Under facultative_union_v1 the raw label found none of its rows (#2436)."""
+    pooled, feces, sign, contrasts, wilcoxon = _plate_one_tables(halophily_selected=True)
+    contrasts = [
+        *contrasts,
+        {
+            **contrasts[0],
+            "trait_id": FACULTATIVE,
+            "trait_label": RAW_FACULTATIVE,
+            "condition": "Colorectal cancer",
+            "fisher_q_value": "0.004",
+        },
+    ]
+    raw = plates.plate1_summary(pooled, feces, sign, contrasts, wilcoxon)
+    merged = plates.plate1_summary(
+        pooled,
+        feces,
+        sign,
+        _label_facultative(contrasts, "trait_label", MERGED_FACULTATIVE),
+        _label_facultative(wilcoxon, "trait", MERGED_FACULTATIVE),
+    )
+    assert merged["points"] == raw["points"]
+    assert merged["survivors"] == raw["survivors"] == [6, 6, 6, 6, 3, 0]
+    # Its Wilcoxon q and supported Fisher q, not the 1.0 a missed lookup gave
+    assert merged["points"][FACULTATIVE][4:] == [0.004, 0.6]
+    assert merged["labels"][FACULTATIVE] == MERGED_FACULTATIVE
+    assert "facultative aerobe: CRC" in plates.plate1_subtitle(raw)
+    assert f"{MERGED_FACULTATIVE}: CRC" in plates.plate1_subtitle(merged)
+
+
+def _plate_four(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, label: str, *, drop_reporter: bool = False
+) -> Any:
+    """Draw Plate 4 from the committed tables with METPO:1000608 labelled ``label``."""
+    closed: list[Any] = []
+    monkeypatch.setattr(plates.plt, "close", lambda fig: closed.append(fig))
+    monkeypatch.setattr(
+        plates.plt.Figure, "savefig", lambda _self, path, *_a, **_kw: Path(path).write_text("ok")
+    )
+    run = tmp_path / ("raw" if label == RAW_FACULTATIVE else "merged")
+    monkeypatch.setattr(plates, "REPO_ROOT", _cellulose_repo(run / "cell_root", "HIV x"))
+    (run / "plates").mkdir()
+    base_read_tsv = plates.read_tsv
+    facultative = {RAW_FACULTATIVE, MERGED_FACULTATIVE}
+
+    def relabelled(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
+        rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
+        if path.name == "pd_ecological_reporter_combined_condition_trait_summary.tsv":
+            # This table records labels only
+            return [
+                {**r, "trait": label} if r["trait"] in facultative else r
+                for r in rows
+                if not (drop_reporter and r["trait"] in facultative)
+            ]
+        column = {
+            "pd_condition_taxon_trait_network_condition_trait_tests.tsv": "trait",
+            "six_shared_trait_condition_body_site_direction_contrasts.tsv": "trait_label",
+        }.get(path.name)
+        return rows if column is None else _label_facultative(rows, column, label)
+
+    monkeypatch.setattr(plates, "read_tsv", relabelled)
+    try:
+        plates.build_plate4(REPO, run / "plates")
+    finally:
+        monkeypatch.setattr(plates, "read_tsv", base_read_tsv)
+    return closed.pop()
+
+
+def _figure_text(fig: Any) -> tuple[list[str], list[str]]:
+    titles = [ax.get_title(loc) for ax in fig.axes for loc in ("center", "left", "right")]
+    cells = [t.get_text() for ax in fig.axes for t in ax.texts]
+    return [*titles, *(t.get_text() for t in fig.texts)], cells
+
+
+def _tick_labels(fig: Any) -> list[str]:
+    return [t.get_text() for ax in fig.axes for t in (*ax.get_xticklabels(), *ax.get_yticklabels())]
+
+
+def test_plate_four_draws_the_merged_facultative_trait(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Plate 4 drew the merged trait's column empty and dropped its lead row (#2436)."""
+    raw = _plate_four(tmp_path, monkeypatch, RAW_FACULTATIVE)
+    merged = _plate_four(tmp_path, monkeypatch, MERGED_FACULTATIVE)
+    try:
+        # The same cells, counts and lead rows under either label
+        assert _figure_text(merged) == _figure_text(raw)
+        raw_ticks, merged_ticks = _tick_labels(raw), _tick_labels(merged)
+        assert "Facultatively\naerobic" in raw_ticks
+        assert "Facultative\n(aerobe or\nanaerobe)" in merged_ticks
+        assert any(t.startswith("PD · Facultatively aerobic") for t in raw_ticks)
+        assert any(t.startswith("PD · Facultative (aerobe or anaerobe)") for t in merged_ticks)
+        assert len(merged_ticks) == len(raw_ticks)
+    finally:
+        plates.plt.close(raw)
+        plates.plt.close(merged)
+
+
+def test_plate_four_stops_without_the_reporter_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with pytest.raises(ValueError, match="ecological-reporter table has no rows"):
+        _plate_four(tmp_path, monkeypatch, MERGED_FACULTATIVE, drop_reporter=True)
 
 
 # ------------------------------------------------------------------------ Table 1 text (#579)

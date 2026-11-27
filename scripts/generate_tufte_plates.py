@@ -61,6 +61,7 @@ from mtp.table1_directions import (
     populations,
 )
 from mtp.trait_guilds import OXYGEN_GUILDS
+from mtp.trait_key_policy import TRAIT_KEY_POLICIES, expected_trait_display_label
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PLATES_DIR = Path("data/derived/tufte_plates")
@@ -1719,8 +1720,11 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 1: Multi-Scale Inference & Attenuation Architecture (Visual Funnel + Slopegraph)
 # ==============================================================================
-# The six Table 1 traits Plate I follows: column id, label, display name and the direction
-# the Table 1 study test found.
+# The six Table 1 traits Plate I follows: column id, raw label, display name and the
+# direction the Table 1 study test found. The raw label is also the trait's key in
+# table1_traits_direction_shift.tsv. The other tables label METPO:1000608 by the
+# trait-key policy they were drawn under, so the plates find each trait by its id and
+# read its label from the table (#2436).
 TABLE1_TRAITS = (
     ("METPO:1000608", "facultatively aerobic", "Facultatively aerobic", "inc"),
     ("METPO:2000103|GO:0030245", "cellulose catabolic process", "Cellulose catabolism", "dec"),
@@ -1735,13 +1739,55 @@ TABLE1_TRAITS = (
     ("METPO:1000623", "moderately halophilic", "Moderately halophilic", "inc"),
 )
 TRAIT_SHORT = {
-    "facultatively aerobic": "facultative aerobe",
-    "cellulose catabolic process": "cellulose",
-    "coccus shaped": "coccus",
-    "arsenate reduction": "arsenate",
-    "sphere shaped": "sphere",
-    "moderately halophilic": "halophily",
+    "METPO:1000608": "facultative aerobe",
+    "METPO:2000103|GO:0030245": "cellulose",
+    "METPO:1000668": "coccus",
+    "METPO:2000103|pathways:arsenate_reduction": "arsenate",
+    "METPO:1000683": "sphere",
+    "METPO:1000623": "halophily",
 }
+TABLE1_RAW_LABELS = {tid: label for tid, label, *_ in TABLE1_TRAITS}
+TABLE1_DISPLAY = {tid: display for tid, _label, display, _direction in TABLE1_TRAITS}
+
+
+def table1_labels(
+    rows: Sequence[Mapping[str, str]], label_column: str, source: str
+) -> dict[str, str]:
+    """Each Table 1 trait's label in ``rows``, found by its trait id (#2436).
+
+    Under ``facultative_union_v1`` the tables label METPO:1000608 "facultative (aerobe or
+    anaerobe)", so looking it up by its raw label found nothing and the plates drew its
+    cells as untested. A table that lacks a Table 1 trait, or labels it with a label no
+    trait-key policy gives it, stops the plate.
+    """
+    labels = {}
+    for tid, raw_label in TABLE1_RAW_LABELS.items():
+        found = {r[label_column] for r in rows if r.get("trait_id") == tid}
+        allowed = {
+            expected_trait_display_label(tid, raw_label, trait_key_policy=policy)
+            for policy in TRAIT_KEY_POLICIES
+        }
+        if len(found) != 1 or not found <= allowed:
+            raise ValueError(
+                f"{source} labels Table 1 trait {tid} {sorted(found)}; "
+                f"expected one of {sorted(allowed)}"
+            )
+        labels[tid] = found.pop()
+    return labels
+
+
+def table1_short(tid: str, label: str) -> str:
+    """A trait's short name on the plates: the label the table gives it, if it is merged."""
+    if tid not in TRAIT_SHORT:
+        return label
+    return TRAIT_SHORT[tid] if label == TABLE1_RAW_LABELS[tid] else label
+
+
+def table1_display(tid: str, label: str) -> str:
+    """A Table 1 trait's display name: the label the table gives it, if it is merged."""
+    return TABLE1_DISPLAY[tid] if label == TABLE1_RAW_LABELS[tid] else label[:1].upper() + label[1:]
+
+
 CONDITION_SHORT = {
     "Parkinson's disease": "PD",
     "HIV infection": "HIV",
@@ -1769,30 +1815,28 @@ def plate1_summary(
     supported = [
         r for r in cells if r.get("passes_support") == "True" and has_value(r.get("fisher_q_value"))
     ]
+    labels = table1_labels(wilcoxon, "trait", "The fecal Wilcoxon table")
+    table1_labels(cells, "trait_label", "The condition x body-site contrast table")
     survivors = [0] * 6
     points: dict[str, list[float]] = {}
     selected: dict[int, list[str]] = {4: [], 5: []}
-    for tid, label, _display, _direction in TABLE1_TRAITS:
-        tests = [r for r in wilcoxon if r["trait"] == label and has_value(r.get("q_value"))]
-        fisher = [float(r["fisher_q_value"]) for r in supported if r["trait_label"] == label]
-        points[label] = [
+    for tid, sign_key, _display, _direction in TABLE1_TRAITS:
+        tests = [r for r in wilcoxon if r["trait_id"] == tid and has_value(r.get("q_value"))]
+        fisher = [float(r["fisher_q_value"]) for r in supported if r["trait_id"] == tid]
+        points[tid] = [
             float(pooled[tid]["q_value"]),
             float(pooled[tid]["study_q_value"]),
             float(feces[tid]["study_q_value"]),
-            float(sign[label]["bh_q"]),
+            float(sign[sign_key]["bh_q"]),
             min(fisher, default=1.0),
             min((float(r["q_value"]) for r in tests), default=1.0),
         ]
         chosen = {
-            4: [
-                r
-                for r in cells
-                if r["trait_label"] == label and r.get("selected_after_bh") == "True"
-            ],
+            4: [r for r in cells if r["trait_id"] == tid and r.get("selected_after_bh") == "True"],
             5: [r for r in tests if r.get("selected_after_bh") == "True"],
         }
         for index in range(4):
-            survivors[index] += points[label][index] <= 0.05
+            survivors[index] += points[tid][index] <= 0.05
         for index, rows in chosen.items():
             if rows:
                 survivors[index] += 1
@@ -1805,7 +1849,7 @@ def plate1_summary(
                     )
                     for r in rows
                 )
-                selected[index].append(f"{TRAIT_SHORT[label]}: {', '.join(places)}")
+                selected[index].append(f"{table1_short(tid, labels[tid])}: {', '.join(places)}")
     studies = [int(r["paired_study_count"]) for r in wilcoxon]
     lowest = min(
         (r for r in wilcoxon if has_value(r.get("q_value"))), key=lambda r: float(r["q_value"])
@@ -1838,10 +1882,11 @@ def plate1_summary(
         "selected": selected,
         "lowest_wilcoxon": (
             float(lowest["q_value"]),
-            f"{TRAIT_SHORT.get(lowest['trait'], lowest['trait'])} in "
+            f"{table1_short(lowest['trait_id'], lowest['trait'])} in "
             f"{CONDITION_SHORT.get(lowest['condition'], lowest['condition'])}",
         ),
         "points": points,
+        "labels": labels,
     }
 
 
@@ -2059,27 +2104,28 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
         ax_slope.axvline(float(xi), color=LIGHT_RULE, linewidth=0.9, zorder=0)
 
     trait_colors = {
-        "facultatively aerobic": "#b8332a",
-        "cellulose catabolic process": "#1b6ca8",
-        "coccus shaped": "#d96b27",
-        "arsenate reduction": "#7b4f9d",
-        "sphere shaped": "#2e8b57",
-        "moderately halophilic": "#b07d12",
+        "METPO:1000608": "#b8332a",
+        "METPO:2000103|GO:0030245": "#1b6ca8",
+        "METPO:1000668": "#d96b27",
+        "METPO:2000103|pathways:arsenate_reduction": "#7b4f9d",
+        "METPO:1000683": "#2e8b57",
+        "METPO:1000623": "#b07d12",
     }
     right_y_Explicit = {
-        "moderately halophilic": 2.20,
-        "cellulose catabolic process": 1.62,
-        "arsenate reduction": 1.05,
-        "facultatively aerobic": 0.52,
-        "coccus shaped": 0.02,
-        "sphere shaped": -0.38,
+        "METPO:1000623": 2.20,
+        "METPO:2000103|GO:0030245": 1.62,
+        "METPO:2000103|pathways:arsenate_reduction": 1.05,
+        "METPO:1000608": 0.52,
+        "METPO:1000668": 0.02,
+        "METPO:1000683": -0.38,
     }
 
-    for _tid, tname, tdisp, tdir in TABLE1_TRAITS:
-        q_vals = summary["points"][tname]
+    for tid, _label, _display, tdir in TABLE1_TRAITS:
+        q_vals = summary["points"][tid]
+        tdisp = table1_display(tid, summary["labels"][tid])
         wilc_q = q_vals[-1]
         y_vals = [min(9.2, -math.log10(max(q, 1e-12))) for q in q_vals]
-        c = trait_colors[tname]
+        c = trait_colors[tid]
         marker = "o" if tdir == "inc" else "s"
 
         ax_slope.plot(
@@ -2095,7 +2141,7 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
         )
 
         # Clean right-hand legend callouts with leader lines from Scale 6
-        ry = right_y_Explicit[tname]
+        ry = right_y_Explicit[tid]
         ax_slope.annotate(
             f"{tdisp} (q={fmt_p(wilc_q)})",
             xy=(len(scales) - 1, y_vals[-1]),
@@ -2858,13 +2904,24 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         "six_shared_trait_condition_body_site_direction_contrasts.tsv"
     )
 
+    # The Wilcoxon and Fisher tables are read by trait id. The reporter table records only
+    # labels, so it is read by the label the Wilcoxon table gives each id (#2436).
+    labels = table1_labels(wilc_tests, "trait", "The fecal Wilcoxon table")
+    individual = [
+        r for r in fisher_rows if r.get("view_key") == "individual_conditions_direction_contrast"
+    ]
+    table1_labels(individual, "trait_label", "The condition x body-site contrast table")
+    missing = sorted(set(labels.values()) - {r["trait"] for r in eco_summary})
+    if missing:
+        raise ValueError(f"The ecological-reporter table has no rows for {missing}")
+    composite = "ecological-reporter composite"
+    eco_labels = {**labels, composite: composite}
     by_eco = {(r["condition"], r["trait"]): r for r in eco_summary}
-    by_wilc = {(r["condition"], r["trait"]): r for r in wilc_tests}
+    by_wilc = {(r["condition"], r["trait_id"]): r for r in wilc_tests}
     by_fish = {
-        (r["condition"], r["trait_label"]): r
-        for r in fisher_rows
-        if r.get("view_key") == "individual_conditions_direction_contrast"
-        and r.get("body_site_group") == "Feces"
+        (r["condition"], r["trait_id"]): r
+        for r in individual
+        if r.get("body_site_group") == "Feces"
     }
 
     # Each row names its paired studies, read from the reporter table (#579)
@@ -2893,15 +2950,24 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         )
     ]
 
+    # Each column: its trait id (the composite's label, which has none) and its header, on
+    # two lines, or three for the merged label "Facultative (aerobe or anaerobe)"
     traits_cols = [
-        ("cellulose catabolic process", "Cellulose\ncatabolism"),
-        ("facultatively aerobic", "Facultatively\naerobic"),
-        ("moderately halophilic", "Moderately\nhalophilic"),
-        ("arsenate reduction", "Arsenate\nreduction"),
-        ("coccus shaped", "Coccus\nshaped"),
-        ("sphere shaped", "Sphere\nshaped"),
-        ("ecological-reporter composite", "Ecological\nComposite"),
-    ]
+        (
+            tid,
+            table1_display(tid, labels[tid]).replace(" ", "\n", 1)
+            if labels[tid] == TABLE1_RAW_LABELS[tid]
+            else textwrap.fill(table1_display(tid, labels[tid]), width=11),
+        )
+        for tid in (
+            "METPO:2000103|GO:0030245",
+            "METPO:1000608",
+            "METPO:1000623",
+            "METPO:2000103|pathways:arsenate_reduction",
+            "METPO:1000668",
+            "METPO:1000683",
+        )
+    ] + [(composite, "Ecological\nComposite")]
 
     fig = plt.figure(figsize=(16.0, 9.1), facecolor=BG_COLOR)
     gs = fig.add_gridspec(
@@ -2941,7 +3007,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     n_panel_a_wilc = 0
     for r_idx, (cond_raw, _cond_disp) in enumerate(conditions):
         for c_idx, (tr_raw, _tr_disp) in enumerate(traits_cols):
-            er = by_eco.get((cond_raw, tr_raw), {})
+            er = by_eco.get((cond_raw, eco_labels[tr_raw]), {})
             wr = by_wilc.get((cond_raw, tr_raw), {})
             fr = by_fish.get((cond_raw, tr_raw), {})
 
@@ -3019,23 +3085,30 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     despine(ax, top=True, right=True, left=True, bottom=True)
 
     # --- Panel B: Lead Fecal Cohort Forest Plot (Mean Δz ± 95% CI + Study Win/Loss + Fisher q) ---
-    # Each label's arrow is the sign of the study-weighted mean it plots (#579)
-    lead_specs = [
-        (condition, trait, f"{short} · {shown} {lead_arrow(by_eco.get((condition, trait), {}))}")
-        for condition, short, trait, shown in (
-            ("Parkinson's disease", "PD", "ecological-reporter composite", "Ecological Composite"),
-            ("Parkinson's disease", "PD", "moderately halophilic", "Moderately halophilic"),
-            ("Parkinson's disease", "PD", "arsenate reduction", "Arsenate reduction"),
-            ("Parkinson's disease", "PD", "facultatively aerobic", "Facultatively aerobic"),
-            ("Colorectal cancer", "CRC", "ecological-reporter composite", "Ecological Composite"),
-            ("Colorectal cancer", "CRC", "moderately halophilic", "Moderately halophilic"),
-            ("HIV infection", "HIV", "ecological-reporter composite", "Ecological Composite"),
-            ("COVID-19", "COVID-19", "cellulose catabolic process", "Cellulose catabolism"),
-            ("Parkinson's disease", "PD", "cellulose catabolic process", "Cellulose catabolism"),
-            ("Colorectal cancer", "CRC", "cellulose catabolic process", "Cellulose catabolism"),
-            ("HIV infection", "HIV", "cellulose catabolic process", "Cellulose catabolism"),
-        )
-    ]
+    # Each label's arrow is the sign of the study-weighted mean it plots (#579). Rows are
+    # keyed by trait id, the composite by its label (#2436).
+    halophily, arsenate, cellulose_id = (
+        "METPO:1000623",
+        "METPO:2000103|pathways:arsenate_reduction",
+        "METPO:2000103|GO:0030245",
+    )
+    lead_specs = []
+    for condition, short, key in (
+        ("Parkinson's disease", "PD", composite),
+        ("Parkinson's disease", "PD", halophily),
+        ("Parkinson's disease", "PD", arsenate),
+        ("Parkinson's disease", "PD", "METPO:1000608"),
+        ("Colorectal cancer", "CRC", composite),
+        ("Colorectal cancer", "CRC", halophily),
+        ("HIV infection", "HIV", composite),
+        ("COVID-19", "COVID-19", cellulose_id),
+        ("Parkinson's disease", "PD", cellulose_id),
+        ("Colorectal cancer", "CRC", cellulose_id),
+        ("HIV infection", "HIV", cellulose_id),
+    ):
+        row = by_eco.get((condition, eco_labels[key]), {})
+        shown = "Ecological Composite" if key == composite else table1_display(key, labels[key])
+        lead_specs.append((condition, key, f"{short} · {shown} {lead_arrow(row)}"))
     # The sizes its slide quotes (#704)
     PLATE_COUNTS.update(
         {
@@ -3054,7 +3127,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 
     for idx_l, (cond_raw, tr_raw, _disp_lbl) in enumerate(lead_specs):
         yp = y_l[idx_l]
-        er = by_eco.get((cond_raw, tr_raw), {})
+        er = by_eco.get((cond_raw, eco_labels[tr_raw]), {})
         wr = by_wilc.get((cond_raw, tr_raw), {})
         fr = by_fish.get((cond_raw, tr_raw), {})
         if not er:
@@ -3131,7 +3204,9 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         fontsize=8.5,
         fontweight="bold",
     )
-    n_lead_rows = sum(1 for cond_raw, tr_raw, _ in lead_specs if by_eco.get((cond_raw, tr_raw)))
+    n_lead_rows = sum(
+        1 for cond_raw, tr_raw, _ in lead_specs if by_eco.get((cond_raw, eco_labels[tr_raw]))
+    )
     n_wilc_tests = sum(has_value(r.get("p_value")) for r in wilc_tests)
     ax_lead.set_title(
         "B. Lead Fecal Disease \N{MULTIPLICATION SIGN} Trait Contrasts (PD, CRC, HIV, "
