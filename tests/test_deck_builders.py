@@ -1422,6 +1422,8 @@ def test_table1_labels_read_either_policy_label() -> None:
             for tid, label, *_ in plates.TABLE1_TRAITS
             if tid != "METPO:1000683"
         ],
+        # no label column (#2447)
+        [{"trait_id": tid} for tid, *_ in plates.TABLE1_TRAITS],
     ],
 )
 def test_table1_labels_stop_on_a_missing_or_unknown_trait(rows: list[dict[str, str]]) -> None:
@@ -1443,9 +1445,14 @@ def test_plate_one_stops_on_tables_of_two_policies(table: str) -> None:
     }
     with pytest.raises(ValueError, match="label Table 1 traits differently"):
         plates.plate1_summary(pooled, feces, sign, merged["contrasts"], merged["wilcoxon"])
-    missing = [r for r in contrasts if r["trait_id"] != FACULTATIVE]
-    with pytest.raises(ValueError, match="The contrast table labels Table 1 trait"):
-        plates.plate1_summary(pooled, feces, sign, missing, wilcoxon)
+    source = "The contrast table" if table == "contrasts" else "The fecal Wilcoxon table"
+    missing = {
+        "contrasts": contrasts,
+        "wilcoxon": wilcoxon,
+        table: [r for r in merged[table] if r["trait_id"] != FACULTATIVE],
+    }
+    with pytest.raises(ValueError, match=f"{source} labels Table 1 trait"):
+        plates.plate1_summary(pooled, feces, sign, missing["contrasts"], missing["wilcoxon"])
 
 
 def test_plate_one_reads_the_merged_facultative_trait_by_id() -> None:

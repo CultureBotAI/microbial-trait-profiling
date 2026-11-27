@@ -1763,7 +1763,7 @@ def table1_labels(
     """
     labels = {}
     for tid, raw_label in TABLE1_RAW_LABELS.items():
-        found = {r[label_column] for r in rows if r.get("trait_id") == tid}
+        found = {r.get(label_column) or "" for r in rows if r.get("trait_id") == tid}
         allowed = {
             expected_trait_display_label(tid, raw_label, trait_key_policy=policy)
             for policy in TRAIT_KEY_POLICIES
