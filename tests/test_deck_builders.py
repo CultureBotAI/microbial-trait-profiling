@@ -5134,7 +5134,9 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
     finally:
         real_close(p2_fig)
 
-    # Plate 4 (10 of 11 lead rows; 1 drawn Panel A Wilcoxon row untested -> 82 cells, 395 tests):
+    # Plate 4 (10 of 11 lead rows; 1 drawn Panel A Wilcoxon row untested -> 82 cells, 391 tests).
+    # Since the #2397 regeneration 4 of the 396 Wilcoxon rows have p_value NA (every paired
+    # study's contrast is zero), so 392 are tested before the patch below (all 396 before it).
     def _p4_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
         rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
         if path.name == "pd_ecological_reporter_combined_condition_trait_summary.tsv":
@@ -5177,7 +5179,7 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
         assert "*nominal p≤0.05 (82 Wilcoxon tests) / CI≠0" in p4_text
         assert (
             "COVID-19; 10 shown)\nStudy win/loss, Profile Fisher FDR (★), "
-            "Study Wilcoxon nominal p/BH q (395 tests)"
+            "Study Wilcoxon nominal p/BH q (391 tests)"
         ) in p4_text
         assert "Wilc nominal p=0.020" in p4_text
         assert "Wilc p=" not in p4_text
