@@ -1721,8 +1721,9 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
 # PLATE 1: Multi-Scale Inference & Attenuation Architecture (Visual Funnel + Slopegraph)
 # ==============================================================================
 # The six Table 1 traits Plate I follows: column id, raw label, display name and the
-# direction the Table 1 study test found. The raw label is also the trait's key in
-# table1_traits_direction_shift.tsv. The other tables label METPO:1000608 by the
+# direction the Table 1 study test found. table1_traits_direction_shift.tsv keys traits by
+# fixed slugs (facultatively_aerobic), which build_plate1 reads as the raw label with
+# spaces for underscores. The other tables label METPO:1000608 by the
 # trait-key policy they were drawn under, so the plates find each trait by its id and
 # read its label from the table (#2436).
 TABLE1_TRAITS = (
@@ -1776,6 +1777,21 @@ def table1_labels(
     return labels
 
 
+def same_policy(wilcoxon: Mapping[str, str], contrast: Mapping[str, str]) -> None:
+    """Stop when the Wilcoxon and contrast tables label a Table 1 trait differently.
+
+    Each table may be drawn under either trait-key policy, but tables drawn under
+    different policies hold different METPO:1000608 traits, so one plate cannot mix them.
+    """
+    differ = {
+        tid: (wilcoxon[tid], contrast[tid]) for tid in wilcoxon if wilcoxon[tid] != contrast[tid]
+    }
+    if differ:
+        raise ValueError(
+            f"The Wilcoxon and contrast tables label Table 1 traits differently: {differ}"
+        )
+
+
 def table1_short(tid: str, label: str) -> str:
     """A trait's short name on the plates: the label the table gives it, if it is merged."""
     if tid not in TRAIT_SHORT:
@@ -1816,7 +1832,7 @@ def plate1_summary(
         r for r in cells if r.get("passes_support") == "True" and has_value(r.get("fisher_q_value"))
     ]
     labels = table1_labels(wilcoxon, "trait", "The fecal Wilcoxon table")
-    table1_labels(cells, "trait_label", "The condition x body-site contrast table")
+    same_policy(labels, table1_labels(cells, "trait_label", "The contrast table"))
     survivors = [0] * 6
     points: dict[str, list[float]] = {}
     selected: dict[int, list[str]] = {4: [], 5: []}
@@ -2910,7 +2926,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     individual = [
         r for r in fisher_rows if r.get("view_key") == "individual_conditions_direction_contrast"
     ]
-    table1_labels(individual, "trait_label", "The condition x body-site contrast table")
+    same_policy(labels, table1_labels(individual, "trait_label", "The contrast table"))
     missing = sorted(set(labels.values()) - {r["trait"] for r in eco_summary})
     if missing:
         raise ValueError(f"The ecological-reporter table has no rows for {missing}")

@@ -1069,7 +1069,7 @@ def _plate_one_tables(halophily_selected: bool) -> tuple[Any, ...]:
             "selected_after_bh": "False",
         },
     ]
-    # The plate stops on a contrast table without every Table 1 trait (#2436)
+    # Every Table 1 trait in the contrast table, which the plate requires (#2436)
     contrasts += [
         {
             **cell,
@@ -1416,11 +1416,36 @@ def test_table1_labels_read_either_policy_label() -> None:
         # two labels for one id
         [{"trait_id": tid, "trait": label} for tid, label, *_ in plates.TABLE1_TRAITS]
         + [{"trait_id": FACULTATIVE, "trait": MERGED_FACULTATIVE}],
+        # another trait is missing
+        [
+            {"trait_id": tid, "trait": label}
+            for tid, label, *_ in plates.TABLE1_TRAITS
+            if tid != "METPO:1000683"
+        ],
     ],
 )
 def test_table1_labels_stop_on_a_missing_or_unknown_trait(rows: list[dict[str, str]]) -> None:
-    with pytest.raises(ValueError, match="t labels Table 1 trait METPO:1000608"):
+    with pytest.raises(ValueError, match="t labels Table 1 trait METPO:10006"):
         plates.table1_labels(rows, "trait", "t")
+
+
+@pytest.mark.parametrize("table", ["contrasts", "wilcoxon"])
+def test_plate_one_stops_on_tables_of_two_policies(table: str) -> None:
+    """A table missing a trait, or merged when the other is not, stops Plate 1 (#2436)."""
+    pooled, feces, sign, contrasts, wilcoxon = _plate_one_tables(halophily_selected=True)
+    column = "trait_label" if table == "contrasts" else "trait"
+    merged = {
+        "contrasts": contrasts,
+        "wilcoxon": wilcoxon,
+        table: _label_facultative(
+            contrasts if table == "contrasts" else wilcoxon, column, MERGED_FACULTATIVE
+        ),
+    }
+    with pytest.raises(ValueError, match="label Table 1 traits differently"):
+        plates.plate1_summary(pooled, feces, sign, merged["contrasts"], merged["wilcoxon"])
+    missing = [r for r in contrasts if r["trait_id"] != FACULTATIVE]
+    with pytest.raises(ValueError, match="The contrast table labels Table 1 trait"):
+        plates.plate1_summary(pooled, feces, sign, missing, wilcoxon)
 
 
 def test_plate_one_reads_the_merged_facultative_trait_by_id() -> None:
@@ -1454,7 +1479,12 @@ def test_plate_one_reads_the_merged_facultative_trait_by_id() -> None:
 
 
 def _plate_four(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, label: str, *, drop_reporter: bool = False
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    label: str,
+    *,
+    drop_reporter: bool = False,
+    contrast_label: str | None = None,
 ) -> Any:
     """Draw Plate 4 from the committed tables with METPO:1000608 labelled ``label``."""
     closed: list[Any] = []
@@ -1477,11 +1507,11 @@ def _plate_four(
                 for r in rows
                 if not (drop_reporter and r["trait"] in facultative)
             ]
-        column = {
-            "pd_condition_taxon_trait_network_condition_trait_tests.tsv": "trait",
-            "six_shared_trait_condition_body_site_direction_contrasts.tsv": "trait_label",
-        }.get(path.name)
-        return rows if column is None else _label_facultative(rows, column, label)
+        if path.name == "six_shared_trait_condition_body_site_direction_contrasts.tsv":
+            return _label_facultative(rows, "trait_label", contrast_label or label)
+        if path.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv":
+            return _label_facultative(rows, "trait", label)
+        return rows
 
     monkeypatch.setattr(plates, "read_tsv", relabelled)
     try:
@@ -1526,6 +1556,13 @@ def test_plate_four_stops_without_the_reporter_rows(
 ) -> None:
     with pytest.raises(ValueError, match="ecological-reporter table has no rows"):
         _plate_four(tmp_path, monkeypatch, MERGED_FACULTATIVE, drop_reporter=True)
+
+
+def test_plate_four_stops_on_tables_of_two_policies(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with pytest.raises(ValueError, match="label Table 1 traits differently"):
+        _plate_four(tmp_path, monkeypatch, MERGED_FACULTATIVE, contrast_label=RAW_FACULTATIVE)
 
 
 # ------------------------------------------------------------------------ Table 1 text (#579)
