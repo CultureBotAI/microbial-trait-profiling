@@ -66,6 +66,8 @@ repos:
             stratified_stats_provenance\.json
             |trait-visualization/trait-profile-investigation/
             taxa-coverage/provenance\.json
+            |trait-visualization/trait-profile-investigation/
+            taxa-coverage-tier1-2-subject-controls/provenance\.json
           )$
         # Matching findings are baselined; hook acceptance does not establish audit.
         args: [--baseline, .secrets.baseline]
