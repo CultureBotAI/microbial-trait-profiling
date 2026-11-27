@@ -4,6 +4,7 @@ import csv
 import gzip
 import hashlib
 import json
+import os
 import random
 from pathlib import Path
 
@@ -11,7 +12,13 @@ import pytest
 from scipy.stats import false_discovery_control
 
 from bsdbng.table1_trait_maps import compute_direction_shifts
-from bsdbng.trait_guilds import TABLE1_TRAITS, Profile, load_profiles, retained_trait_columns
+from bsdbng.trait_guilds import (
+    DEFAULT_EXPERIMENTS_PATH,
+    TABLE1_TRAITS,
+    Profile,
+    load_profiles,
+    retained_trait_columns,
+)
 from bsdbng.trait_screen import (
     ALL_TIED,
     NO_ELIGIBLE_STUDIES,
@@ -527,6 +534,27 @@ def test_the_cli_writes_every_candidate_with_an_explicit_state(tmp_path: Path) -
     )
 
 
+# The off strain rollup scope table these figures are pinned to (#749): the full-off run's
+# human-only profile table (P-358485d/off-derived) and its experiments table. The local
+# data/derived table is built under the phenotype scope since the #2397 regeneration, so
+# the test reads these files from the paths below and skips when they are absent.
+OFF_PROFILES_ENV = "MTP_TRAIT_SCREEN_OFF_PROFILES"
+OFF_EXPERIMENTS_ENV = "MTP_TRAIT_SCREEN_OFF_EXPERIMENTS"
+OFF_PROFILES_SHA256 = "6fdafa21dd8fedacaa757fdf030a6a2d3af0536ba37dbd8aac014b1af7f51977"
+OFF_EXPERIMENTS_SHA256 = "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06"
+
+
+def _pinned_off_input(env: str, default: Path | None, sha256: str) -> Path:
+    """The pinned input named by ``env``; skip when it is absent, fail when it differs."""
+    value = os.environ.get(env)
+    path = Path(value) if value else default
+    if path is None or not path.is_file():
+        pytest.skip(f"set {env} to the off-scope input with sha256 {sha256[:8]} (#749)")
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    assert digest == sha256, f"{path} has sha256 {digest}, not the pinned {sha256} (#749)"
+    return path
+
+
 @pytest.mark.integration
 def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quoted_dependence() -> (
     None
@@ -536,51 +564,56 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     Li & Ji 60.0, Galwey 48.9, Cheverud/Nyholt 198.9, PC1 60.4%, median rho
     +0.611 over 50,086 pairs, 63.5% above +0.5. They were computed independently
     of this module, so reproducing them checks the correlation and spectrum code
-    rather than restating it. The values below are repinned to the 16S and shotgun
-    corpus of #742 (5,629 profiles), where Li & Ji is 61.0 and Galwey 48.8.
+    rather than restating it. The values below were repinned to the 16S and shotgun
+    corpus of #742 (5,629 profiles), and then to the full-off run's off-scope table of
+    316 traits (#749), where Li & Ji is 61.0 and Galwey 48.7.
     """
-    columns = screen_candidates()
+    profile_path = _pinned_off_input(OFF_PROFILES_ENV, None, OFF_PROFILES_SHA256)
+    experiments_path = _pinned_off_input(
+        OFF_EXPERIMENTS_ENV, DEFAULT_EXPERIMENTS_PATH, OFF_EXPERIMENTS_SHA256
+    )
+    columns = screen_candidates(profile_path)
     slots = candidate_slots(columns)
-    paired, stats = load_profiles(guilds=slots)
-    unpaired, _ = load_profiles(guilds=slots, paired_only=False)
+    paired, stats = load_profiles(profile_path, experiments_path, guilds=slots)
+    unpaired, _ = load_profiles(profile_path, experiments_path, guilds=slots, paired_only=False)
     # The family is every retained trait column of the table, so its size is read from the
-    # data: 317 under the off strain rollup scope, 344 under phenotype (#788, #847).
+    # data: 316 under the off strain rollup scope, more under phenotype (#788, #847, #749).
     assert stats.trait_columns_used == len(columns)
     result = run_screen(paired, columns, dependence_profiles=unpaired)
     assert result.family_size == len(columns)
-    # Every figure below was computed on the committed table, built under the off scope.
-    assert len(columns) == 317, (
+    # Every figure below was computed on the off-scope table of the full-off run (#749).
+    assert len(columns) == 316, (
         f"{len(columns)} retained traits: the figures below are pinned to the off-scope "
-        "table of 317 and must be repinned for a table built under another scope (#847)"
+        "table of 316 and must be repinned for a table built under another scope (#847)"
     )
     contrast = result.contrast_dependence
     assert contrast is not None
     assert contrast.li_ji == pytest.approx(112.0, abs=0.05)
-    assert contrast.galwey == pytest.approx(109.1, abs=0.05)
-    assert contrast.cheverud_nyholt == pytest.approx(294.3, abs=0.05)
+    assert contrast.galwey == pytest.approx(108.7, abs=0.05)
+    assert contrast.cheverud_nyholt == pytest.approx(293.3, abs=0.05)
     # Li & Ji is 111.99999999999996 here, so a floor instead of a round would
-    # silently correct at 111; the 57 count below is unchanged from 110 to 113 (#416).
+    # silently correct at 111 (#416).
     assert result.effective_family_size_used == 112
     # The contrast-basis figures the methods note and report lead with (#326).
-    assert contrast.median_rho == pytest.approx(0.088, abs=0.001)
+    assert contrast.median_rho == pytest.approx(0.087, abs=0.001)
     assert contrast.pc1_share == pytest.approx(0.206, abs=0.001)
-    assert contrast.share_rho_above_half == pytest.approx(0.076, abs=0.001)
+    assert contrast.share_rho_above_half == pytest.approx(0.077, abs=0.001)
     assert (
-        sum(row.by_q_nominal is not None and row.by_q_nominal <= 0.05 for row in result.rows) == 38
+        sum(row.by_q_nominal is not None and row.by_q_nominal <= 0.05 for row in result.rows) == 37
     )
     assert (
         sum(row.by_q_effective is not None and row.by_q_effective <= 0.05 for row in result.rows)
-        == 57
+        == 56
     )
-    # Tallies and BY q at m = 317 for the six Table 1 traits, published in #276 and
-    # repinned to the 16S and shotgun corpus (#742).
+    # Tallies and BY q at m = 316 for the six Table 1 traits, published in #276 and
+    # repinned to the 16S and shotgun corpus (#742), then to the full-off table (#749).
     expected = {
-        "facultatively_aerobic": (521, 377, 24, 0.00269326),
-        "moderately_halophilic": (476, 353, 93, 0.00628741),
-        "cellulose_catabolic_process": (330, 433, 159, 0.0407693),
-        "arsenate_reduction": (341, 265, 316, 0.0957324),
-        "sphere_shaped": (463, 370, 89, 0.0679272),
-        "coccus_shaped": (488, 408, 26, 0.237474),
+        "facultatively_aerobic": (520, 378, 24, 0.00268342),
+        "moderately_halophilic": (476, 353, 93, 0.00626445),
+        "cellulose_catabolic_process": (330, 433, 159, 0.0446825),
+        "arsenate_reduction": (341, 265, 316, 0.0974123),
+        "sphere_shaped": (463, 370, 89, 0.0693299),
+        "coccus_shaped": (488, 408, 26, 0.243566),
     }
     table1 = {row.table1_slug: row for row in result.rows if row.table1_slug}
     assert set(table1) == set(expected)
@@ -592,13 +625,13 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert profiles is not None
     assert profiles.units == 5629
     assert profiles.li_ji == pytest.approx(61.0, abs=0.05)
-    assert profiles.galwey == pytest.approx(48.8, abs=0.05)
+    assert profiles.galwey == pytest.approx(48.7, abs=0.05)
     # Tolerances tight enough that the 5,829-profile values fail (#760)
-    assert profiles.cheverud_nyholt == pytest.approx(198.854, abs=0.005)
+    assert profiles.cheverud_nyholt == pytest.approx(198.409, abs=0.005)
     assert profiles.pc1_share == pytest.approx(0.604, abs=0.001)
-    assert profiles.pairs == 50086
-    assert profiles.median_rho == pytest.approx(0.6105, abs=0.0002)
-    assert profiles.share_rho_above_half == pytest.approx(0.6344, abs=0.0002)
+    assert profiles.pairs == 49770
+    assert profiles.median_rho == pytest.approx(0.6097, abs=0.0002)
+    assert profiles.share_rho_above_half == pytest.approx(0.6336, abs=0.0002)
 
 
 def _dependence_record(*, li_ji: float, galwey: float, cheverud_nyholt: float) -> Dependence:
