@@ -51,7 +51,7 @@ These are exact-ID reporting counts in all non-PD fecal profiles, using the same
 
 ## Relation to the Cellulose Profile Plot
 
-The plot counts profiles whose normalized cellulose trait z-score is above zero. That is a different filter from taxon occurrence. There are 34/126 (27.0%) positive-z increased PD fecal profiles, supported by 22 studies, and 69/116 (59.5%) positive-z decreased PD fecal profiles, supported by 34 studies. Do not use 34 and 69 as denominators for the taxon-occurrence table: its numerators were counted across all 126 and 116 profiles.
+The plot counts profiles whose normalized cellulose trait z-score is above zero. That is a different filter from taxon occurrence. There are 33/126 (26.2%) positive-z increased PD fecal profiles, supported by 22 studies, and 68/116 (58.6%) positive-z decreased PD fecal profiles, supported by 34 studies. Do not use 33 and 68 as denominators for the taxon-occurrence table: its numerators were counted across all 126 and 116 profiles.
 
 ## Interpretation
 
@@ -80,7 +80,7 @@ The plot counts profiles whose normalized cellulose trait z-score is above zero.
 
 - [Original PD cellulose taxon counts](pd_cellulose_taxon_drivers.tsv). All eight PD profile and study counts were recomputed from the raw occurrence table and matched this source.
 - [PD and other-feces summary](pd_cellulose_vs_other_feces_summary.tsv). The four PD/background direction-specific denominators were recomputed from metadata and matched this source.
-- [Cellulose profile support](pd_cellulose_display_edge_summary.tsv). Source of the 34/69 positive-z profile counts and 22/34 supporting-study counts.
+- [Cellulose profile support](pd_cellulose_display_edge_summary.tsv). Source of the 33/68 positive-z profile counts and 22/34 supporting-study counts.
 - [Profile metadata](../../study_trait_profile_study_metadata.tsv). Source of condition/body-site restrictions and deduplicated cohort study totals.
 - [Taxon occurrence records](../../../data/derived/taxa.tsv). Joined to profile metadata by study, experiment, and direction; deduplicated by taxon ID and profile.
 - [Taxa-trait counting implementation](../../../src/mtp/taxa_trait_matrix.py). See compute_trait_counts for annotation inheritance.

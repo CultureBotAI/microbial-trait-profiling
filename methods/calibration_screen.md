@@ -2,7 +2,7 @@
 
 This describes `just calibration-screen`. It runs the full-trait directional
 screen of `just trait-direction-screen` (#255, #265), over 317 traits in the
-`off`-scope run below and 344 under `phenotype`, on copies of the corpus in
+`off`-scope run below and 342 under `phenotype`, on copies of the corpus in
 which no trait differs between the increased and decreased signatures, and
 counts how many traits each correction calls. It is the directional arm's share
 of the calibration battery in #263, stacked on PR #240 (the calibration harness

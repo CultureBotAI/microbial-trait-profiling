@@ -13,11 +13,11 @@ total is zero on either side, and this table's own tests now do (#294). `Profile
 returns 0.0 for a zero total, so such a pair would otherwise enter the contrast
 as a measured share of nothing, produce a contrast of exactly zero, and be
 counted by the sign test as a tie - merging zero-annotation studies into the
-all-tied count, which is the collapse the basis forbids. On the corpus of these
-outputs (the `off` table identified under "What is in it now") this removes **55 of
-2,257 experiments** and takes the study count from **932 to 922**; on the
+all-tied count, which is the collapse the basis forbids. On the historical
+`off` corpus (`519a095b…`) this removed **55 of
+2,257 experiments** and took the study count from **932 to 922**; on the
 `phenotype` table now committed it removes 43 and leaves 923
-(`zero_total_experiments` and `studies_after` in `data/derived/integrated_evidence/integrated_evidence_provenance.json`). It changes the tie counts rather
+(`zero_total_experiments` and `studies_after` in `data/derived/integrated_evidence/integrated_evidence_provenance.json`). The historical exclusion changed the tie counts rather
 than the directions: facultatively aerobic 32 to 24, arsenate reduction 324 to
 316, moderately halophilic 101 to 93. All six fraction traits remain significant
 at BH q <= 0.05 within `mt-supp-table1-direction`, the six requested fraction
@@ -114,34 +114,32 @@ read as a negative result.
 On the committed corpus, **4,200 rows: 40 method results and 4,160 figure
 cells**. That is the run that wrote `data/derived/integrated_evidence/`. Its
 profiles are sha256
-`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c` (the `off`
-profile table these outputs were built from, the committed
-`study_trait_profiles_wide.tsv.gz` until the final rerun at 511c891 replaced it with
-the `phenotype` table, `43b2e230…`), its experiments
+`dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2` (the
+`phenotype` profile table under the facultative-union trait-key policy), its experiments
 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, and its
 BugSigDB export `2026-04-24_00:41_UTC` (full dump
 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The
-provenance record carries every other input's hash. Main's code at 35ece98
-(#808) writes every number in these files. #810 regenerated them on main's code
-at 68d4e27 with its own change, which reworded one sentence of the view, added
+provenance record carries every other input's hash. The current run records code
+commit `34fe02c3`. Main's code at 35ece98 (#808) wrote the earlier files; #810 regenerated
+them at 68d4e27 with its own change, which reworded one sentence of the view, added
 the provenance fields #813 introduced and changed no number. The record's
 `code_commit` names the branch commit the run was made from, which a squash
 merge does not keep on main (#643).
 
-The final rerun at 511c891 did not regenerate these files, so they still describe
-the `off`-scope profiles above, with 317 retained traits rather than the 344 of the
-primary `phenotype` scope. The rerun rebuilt one of their inputs, the composition arm's
-pooled table (now `46dfce6b…`, `phenotype`), but these files still read the one they
-were built from (`3f89fca8…`). The status files, the enrichment arm's exports and the
-full screen were not regenerated. Regenerating these files with every input is #1003.
+The final rerun at 511c891 did not regenerate these files. They have now been
+regenerated from 342 retained traits under the primary `phenotype` scope.
+The composition arm's pooled input is now `60615ca6…`, replacing the earlier
+`3f89fca8…` input. The provenance records the current status files, enrichment
+exports and full screen alongside the native input hashes. This replaces the
+unregenerated outputs previously described here under #1003.
 
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
 | --- | --- | --- | --- | --- | --- |
 | directional consistency, fraction sign test | 6 | BH over six traits | 6 | 6 | **3** |
 | directional consistency, log-ratio sign test | 15 | BY over 15 pairs | 15 | 3 | **0** |
 | oxygen guild McNemar | 1 | single uncorrected test | 1 | no q | no q |
-| composition arm, native transformed contrast | 6 | the arm's BH over 313 support/variance-eligible traits | 6 | 6 | **4** |
-| enrichment arm, profile hypergeometric | 6 | global BH over 1,430,938 profile tests | 0 (6 profile summaries) | no trait-level q | no trait-level q |
+| composition arm, native transformed contrast | 6 | the arm's BH over 338 support/variance-eligible traits | 6 | 6 | **4** |
+| enrichment arm, profile hypergeometric | 6 | global BH over 1,543,788 profile tests | 0 (6 profile summaries) | no trait-level q | no trait-level q |
 | aggregated profile support | 6 | - | 0 | not a test | not a test |
 | oxygen guild cell support | 4,160 | - | 0 | not a test | not a test |
 
@@ -156,8 +154,8 @@ The focal fraction and ratio rows use `mt-supp-table1-direction` (BH) and
 `mt-core-jed-log-ratio-sign` (BY), respectively, with the historical sizes shown
 above. No correction combines those families or the two displayed thresholds.
 
-The guild McNemar is a single nominal, uncorrected test. It carries nominal p = 3.6e-06 over 922
-studies and leaves q blank, so it has no threshold decision in either column: a
+The guild McNemar is a single nominal, uncorrected test. In the historical run described here it
+carried nominal p = 3.6e-06 over 922 studies (current values below); it leaves q blank, so it has no threshold decision in either column: a
 decision in this table is a decision on a corrected value and there is no
 corrected value here. Since #783 the figure's own McNemar is the same test on the
 same population: 410 and 287 discordant studies, nominal p = 3.6e-06. Before, the figure
@@ -165,10 +163,10 @@ kept zero-total pairs and reported nominal p = 2.0e-06 over 932 studies.
 An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
 
-These McNemar numbers, and the cell counts below, predate #1237. They were measured
-with an aerobe guild that included METPO:1000608 and have not been regenerated, nor
-have the committed outputs in `data/derived/integrated_evidence/`, whose guild rows
-still list METPO:1000608 as an aerobe-guild column.
+These historical McNemar numbers predate #1237 and used an aerobe guild that
+included METPO:1000608. The regenerated guild rows use METPO:1000602 and
+METPO:1000604 only; their McNemar nominal p is 0.000661553 over 923 studies
+and 2,214 pairs. The cell counts below remain unchanged.
 
 The cell rows are the oxygen guild figure's own inventory, one per cell of its
 condition-by-body-site grid: 52 condition rows (51 conditions and the pooled
@@ -177,7 +175,7 @@ guild-by-direction columns wide, of which
 **340 are drawn, 10 drawn as sampled-without-signal, 302 masked for too little
 support and 3,508 never sampled**. The figure's own builder,
 `guild_maps.build_figure_matrix`, makes them at the figure's parameters and over
-its population. Since #783 that population is the tests' shared basis, so the 55
+its population. Since #783 that population is the tests' shared basis, so the 43
 zero-total pairs are left out of the cells as they are of the tests. With those
 pairs kept, the grid was a different one: it had rows for Hypertension and
 Non-alcoholic fatty liver disease where it now has Attention deficit-hyperactivity
@@ -199,14 +197,14 @@ at each, and each threshold names its source: q <= 0.05 is chosen by this
 integration for display, matching the overlay of PR #173, while q <= 0.001 is the
 manuscript's rule as the enrichment arm's committed run applies it. The
 composition arm publishes q with no cutoff at all, so neither is that arm's own
-rule. At the stricter threshold coccus shaped (q = 0.0083), sphere shaped
-(0.0021) and arsenate reduction (0.0027) drop out of the fraction family, and the
+rule. At the stricter threshold coccus shaped (q = 0.0111), sphere shaped
+(0.00101) and arsenate reduction (0.00274) drop out of the fraction family, and the
 whole ratio family does.
 
 The composition and enrichment arms are read from their own exports (#551).
 `--arm1-pooled-stats` takes the composition arm's native study-level t-tests,
 which keep their own BH family over the arm's support/variance-eligible traits
-(313 here). This table exports six of them (`source_subset`), and the pair-level
+(338 here). This table exports six of them (`source_subset`), and the pair-level
 tests stay secondary fields. `--arm2-enrichment-results` and
 `--arm2-depletion-results` take the enrichment arm's complete profile-level
 exports, summarized per trait (`tested_profiles_summarized`). They come from a
@@ -217,11 +215,11 @@ export is not supplied still gets `source_not_supplied` rows. An earlier
 version of this note said none of the three could be supplied.
 
 These rows cover the six Table 1 traits only. That is their declared scope, not
-an inventory of what each arm reports: the composition arm's family covers 313
+an inventory of what each arm reports: the composition arm's family covers 338
 traits, and the enrichment arm covers every retained trait in the matrix. The
 corpus-wide directional screen (#255, PR #276) is attached to the six
-fraction rows only, as their `full_screen_*` columns from its own 317-trait
-family (the `off` scope of these files; 344 traits under `phenotype`), with BY as
+fraction rows only, as their `full_screen_*` columns from its own 342-trait
+family (the primary `phenotype` scope of these files), with BY as
 its primary correction.
 
 At q <= 0.05, six of the six fraction results and three of the fifteen ratio
@@ -236,7 +234,7 @@ that a reader cannot silently add them up.
 Every row carries the same caveats as fields rather than as prose. The statuses
 below are those of the committed rows (`integrated_evidence_method_results.tsv`
 and `integrated_evidence_assessments.tsv`), written by the run named under "What is
-in it now" on profiles `519a095b…`, experiments `16271237…` and BugSigDB export
+in it now" on profiles `dd20b920…`, experiments `16271237…` and BugSigDB export
 `2026-04-24_00:41_UTC`. Each status reports one assessment's state for the row's own
 procedure. None of them is a verdict on a trait, and none makes a selected result
 confirmatory ([`biological_interpretation.md`](biological_interpretation.md)). An
@@ -247,7 +245,7 @@ one before that stated the assessments' branch findings as established (#294).
   arm, which every row records in `selection_note` regardless of any assessment.
   These results are exploratory on that ground alone.
 - **Calibration (#182).** The status file is `calibration-v3` at code commit
-  8b280a3, sha256 `3007e1f1…`, bound to this table's corpus (`matched`).
+  83c90ae5, sha256 `537d6b40…`, bound to this table's corpus (`matched`).
   - It reads `pass #182` on 22 rows: the six fraction sign tests, the 15 log-ratio
     sign tests and the McNemar test. The criteria are the per-test level (a sanity
     check), the family error and, except for the McNemar, the reported power. The
@@ -264,8 +262,8 @@ one before that stated the assessments' branch findings as established (#294).
   - A status file that gives one verdict string per procedure is refused as
     unreadable. That was the contract under which a five-replicate run with a failed
     family criterion reached this table as a pass (#240 review, 2026-10-03).
-- **Sensitivity (#183).** The status file, sha256 `043a0e95…`, declares no input
-  hashes, so its binding reads `inputs_not_declared` and is accepted pending #816.
+- **Sensitivity (#183).** The status file, sha256 `40693a64…`, declares profile and
+  experiment input hashes, so its binding reads `matched`.
   - It gives a verdict string for the log-ratio sign test only: `scenarios reported,
     no verdict #183`, on the 15 ratio rows. The other 25 rows read `pending #183`.
   - The side-car keeps one record per correction family, with its scenario, size
@@ -276,8 +274,8 @@ one before that stated the assessments' branch findings as established (#294).
     Three of the 15 ratios do on complete cases (S2) and four on common support (S4).
   - What it does not settle: it reports counts per scenario and reaches no verdict,
     so no row is assessed as robust or fragile to these population choices.
-- **Orientation (#188).** The status file is `contrast-orientation-v5` at code commit
-  8b280a3, sha256 `12de1b52…`, bound to this table's corpus (`matched`).
+- **Orientation (#188).** The status file is `contrast-orientation-v6` at code commit
+  83c90ae5, sha256 `ed12168d…`, bound to this table's corpus (`matched`).
   - All 40 rows read `contrast population described, hand_review_agreed, no verdict
     #188`: the 60 hand-reviewed experiments all agree with the classifier.
   - The side-car keeps the contrast classes with their orientation and counts. For

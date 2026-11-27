@@ -67,7 +67,7 @@ was made are recorded in its `amendments` array rather than edited in quietly.
 other two arms would need to be measured on the same null (#263).
 [`calibration_screen.md`](calibration_screen.md) documents
 `just calibration-screen`: the full-trait directional screen (317 traits under `off`
-in the run it documents; 344 under `phenotype`) run under that same
+in the run it documents; 342 under `phenotype`) run under that same
 study-flip null, counting the traits each correction calls when nothing is there.
 
 [`calibration_composition.md`](calibration_composition.md) documents

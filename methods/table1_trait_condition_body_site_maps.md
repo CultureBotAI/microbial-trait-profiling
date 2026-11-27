@@ -48,7 +48,7 @@ trait space before any total was computed. Of 5,629 profile rows read under the
 `count_input_16s_wms_v1` profile policy, from 1,047 studies, none was dropped as
 non-human, because the matrix holds human profiles only (#656), and 1,115
 experiments were dropped as unpaired; 2,290 trait columns were MediaDive,
-leaving 317 traits (the `off` scope; 344 under `phenotype`), 2,257 experiments,
+leaving 317 traits (the `off` scope; 342 under `phenotype`), 2,257 experiments,
 4,514 profiles, and 932 studies — the
 same corpus as the composition arm's 2,257 pairs.
 

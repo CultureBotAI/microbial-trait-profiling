@@ -35,8 +35,8 @@ were regenerated with those labels:
 
 ## PD trait-taxa outputs (#584)
 
-`just pd-trait-taxa` traces all six lollipop traits whatever their sign, over the 247 PD fecal
-profiles (128 increased and 119 decreased). Each trait's observed direction, the sign of
+`just pd-trait-taxa` traces all six lollipop traits whatever their sign, over the 242 PD fecal
+profiles (126 increased and 116 decreased). Each trait's observed direction, the sign of
 `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`, travels with it as
 the `trait_direction` column and as up and down arrows in the figures. Moderately halophilic,
 arsenate reduction and facultatively aerobic are higher in increased profiles; coccus shaped,
@@ -70,8 +70,8 @@ After a `data/derived` change, run these steps in order:
 
 The contributor tables come from the Table 1 contribution ledger (#190) on the pinned KG in
 `data/kg-microbe` (check it with `just verify-pinned-kg`, and refetch a changed file with
-`just download-kg-force`, since `just download-kg` compares sizes only): 198 PD fecal profiles
+`just download-kg-force`, since `just download-kg` compares sizes only): 194 PD fecal profiles
 from human experiments with both directions. The same
 generator reproduces the contributor counts, shares and selected taxa that were committed before
-it existed; only the PD-versus-other-feces specificity columns change, to 247 PD and 3,357
+it existed; only the PD-versus-other-feces specificity columns change, to 242 PD and 3,251
 other fecal profiles.

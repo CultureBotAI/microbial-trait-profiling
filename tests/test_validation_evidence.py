@@ -910,7 +910,7 @@ def test_validation_feasibility_docs_and_docstrings_distinguish_human_and_discov
         "all 1,080 human-host studies in `full_dump.csv` (**Human studies** / "
         "**Human studies mentioning**, spanning every sequencing modality in the "
         "export — including ITS, PCR, 18S or untyped rows — as well as unpaired "
-        "studies) and the 959 discovery-eligible paired human 16S/WMS studies "
+        "studies) and the 932 discovery-eligible paired human 16S/WMS studies "
         "(**Discovery studies** / **Discovery studies mentioning**, flagged by "
         "`in_discovery_corpus` from `data/derived/study_trait_profiles_wide.tsv`, "
         "#742). Keeping the whole-export human denominator alongside the "
