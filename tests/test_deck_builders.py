@@ -4917,7 +4917,9 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
             ]
         )
         assert "† nominal p ≤ 0.05 (26 rows shown)" in p2_text
-        assert "/341 traits study BH q ≤ 0.05)" in p2_text
+        # 338 pooled traits since the #2397 regeneration (340 before: facultative_union_v1
+        # merges METPO:1000605 and METPO:1000612 into METPO:1000608) plus 1 padded row.
+        assert "/339 traits study BH q ≤ 0.05)" in p2_text
     finally:
         real_close(p2_fig)
 
