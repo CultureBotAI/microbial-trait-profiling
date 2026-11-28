@@ -68,11 +68,20 @@ FIXTURE_DOCS = {
     "tests/fixtures/cellulose_tufte_historical_sources/README.md",
     "tests/fixtures/cellulose_tufte_historical_sources/integrated_evidence_a3c32cf.md",
     "tests/fixtures/cellulose_tufte_historical_sources/methods_integrated_evidence_a3c32cf.md",
+    "tests/fixtures/cellulose_tufte_historical_sources/ora_provenance_refresh_781e92e4.md",
+    "tests/fixtures/cellulose_tufte_historical_sources/table1_log_ratio_validation_1e0d0eef.md",
     "tests/fixtures/comparison_specs/README.md",
+    "tests/fixtures/ncasm_tufte_plates/run_tier12_off_511c891/README.md",
     "tests/fixtures/ora_figure_1505/README.md",
     "tests/fixtures/trait_key_policy/README.md",
     "tests/fixtures/trait_key_policy/historical_raw_core/README.md",
     "tests/fixtures/workflow/README.md",
+}
+NCASM_RUN_FIXTURE = "tests/fixtures/ncasm_tufte_plates/run_tier12_off_511c891/"
+NCASM_RUN_TABLES = {
+    f"{NCASM_RUN_FIXTURE}arms/noel/trait_direction_screen/trait_direction_screen.tsv",
+    f"{NCASM_RUN_FIXTURE}comparison/arm1_pooled_stats/"
+    "trait_profile_paired_contrast_trait_stats_pooled.tsv",
 }
 PHYSICAL_TABLES = {
     "core/steps/count_profiles/derived/study_trait_profiles_wide.tsv",
@@ -95,6 +104,8 @@ CONFIG_FILES = {
     ".github/dependabot.yml",
     ".github/workflows/ci.yaml",
     ".github/workflows/codeql.yaml",
+    ".github/workflows/pr-branch-name.yaml",
+    ".github/workflows/pr-issue-ref.yaml",
     ".github/workflows/release.yaml",
     ".pre-commit-config.yaml",
     ".yamllint.yaml",
@@ -138,6 +149,7 @@ CUSTOM_JSON = {
         "src/mtp/cellulose_decr/selection_scan.py"
     ),
     "methods/study_split_selection_protocol.json": "src/mtp/cellulose_decr/study_split.py",
+    "methods/study_split_selection_protocol_v1.json": "src/mtp/cellulose_decr/study_split.py",
     "methods/table1-native-results/contribution_manifest.json": (
         "src/mtp/native_influence_publication.py"
     ),
@@ -165,6 +177,9 @@ CUSTOM_JSON = {
     ),
     "tests/fixtures/contrast_orientation_provenance_3d9d5cd.json": (
         "tests/test_integrated_evidence.py:1827"
+    ),
+    "tests/fixtures/ncasm_tufte_plates/stored_plate_text_2026-10-22.json": (
+        "tests/test_ncasm_tufte_plates.py:42"
     ),
     "tests/fixtures/sensitivity_status_c9fb6f1.json": "tests/test_integrated_evidence.py:1783",
 }
@@ -261,6 +276,16 @@ def classification(name: str) -> dict[str, Any]:
             "reader": "tests/test_ora_figure_single_read.py:17",
             "reason": "Plotly data/layout, not a workflow or core product record",
         }
+    if name == f"{NCASM_RUN_FIXTURE}comparison/comparison_run.json":
+        return {
+            "kind": "noninstance",
+            "format": "ComparisonRun excerpt",
+            "reader": "src/mtp/ncasm_tufte_plates/run_tables.py:35",
+            "reason": (
+                "Seven-field excerpt of a ComparisonRun manifest for run identity; "
+                "omits required ComparisonRun slots, so it is not a ComparisonRun record"
+            ),
+        }
     if name in VISUAL_JSON:
         return {
             "kind": "noninstance",
@@ -323,6 +348,16 @@ def classification(name: str) -> dict[str, Any]:
                     "Dynamic wide counts or physical feature metadata; not direct logical "
                     "CountProfileRow, ORAProfileRow or TaxonTraitMatrixRow. "
                     "No missing units, feature hashes or nested counts fabricated"
+                ),
+            }
+        if name in NCASM_RUN_TABLES:
+            return {
+                "kind": "noninstance",
+                "format": "comparison run-table TSV",
+                "reader": "src/mtp/ncasm_tufte_plates/run_tables.py:36",
+                "reason": (
+                    "Trait screen and pooled paired-contrast statistics copied from a "
+                    "comparison run; no owned schema declares these row formats"
                 ),
             }
         if name in NATIVE_TABLES:
