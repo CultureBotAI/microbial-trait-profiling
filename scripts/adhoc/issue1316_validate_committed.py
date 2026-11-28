@@ -79,9 +79,13 @@ FIXTURE_DOCS = {
 }
 NCASM_RUN_FIXTURE = "tests/fixtures/ncasm_tufte_plates/run_tier12_off_511c891/"
 NCASM_RUN_TABLES = {
-    f"{NCASM_RUN_FIXTURE}arms/noel/trait_direction_screen/trait_direction_screen.tsv",
-    f"{NCASM_RUN_FIXTURE}comparison/arm1_pooled_stats/"
-    "trait_profile_paired_contrast_trait_stats_pooled.tsv",
+    f"{NCASM_RUN_FIXTURE}arms/noel/trait_direction_screen/trait_direction_screen.tsv": (
+        "src/mtp/ncasm_tufte_plates/run_tables.py:236"
+    ),
+    (
+        f"{NCASM_RUN_FIXTURE}comparison/arm1_pooled_stats/"
+        "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    ): "src/mtp/ncasm_tufte_plates/run_tables.py:235",
 }
 PHYSICAL_TABLES = {
     "core/steps/count_profiles/derived/study_trait_profiles_wide.tsv",
@@ -179,7 +183,7 @@ CUSTOM_JSON = {
         "tests/test_integrated_evidence.py:1827"
     ),
     "tests/fixtures/ncasm_tufte_plates/stored_plate_text_2026-10-22.json": (
-        "tests/test_ncasm_tufte_plates.py:42"
+        "tests/test_ncasm_tufte_plates.py:422"
     ),
     "tests/fixtures/sensitivity_status_c9fb6f1.json": "tests/test_integrated_evidence.py:1783",
 }
@@ -354,7 +358,7 @@ def classification(name: str) -> dict[str, Any]:
             return {
                 "kind": "noninstance",
                 "format": "comparison run-table TSV",
-                "reader": "src/mtp/ncasm_tufte_plates/run_tables.py:36",
+                "reader": NCASM_RUN_TABLES[name],
                 "reason": (
                     "Trait screen and pooled paired-contrast statistics copied from a "
                     "comparison run; no owned schema declares these row formats"

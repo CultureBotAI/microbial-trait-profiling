@@ -96,6 +96,30 @@ def test_issue2451_paths_have_reviewed_noninstance_mappings(
     assert mapping["format"] == format_
 
 
+@pytest.mark.parametrize(
+    ("path", "reader"),
+    [
+        (
+            f"{NCASM_RUN}arms/noel/trait_direction_screen/trait_direction_screen.tsv",
+            "src/mtp/ncasm_tufte_plates/run_tables.py:236",
+        ),
+        (
+            f"{NCASM_RUN}comparison/arm1_pooled_stats/"
+            "trait_profile_paired_contrast_trait_stats_pooled.tsv",
+            "src/mtp/ncasm_tufte_plates/run_tables.py:235",
+        ),
+        (
+            "tests/fixtures/ncasm_tufte_plates/stored_plate_text_2026-10-22.json",
+            "tests/test_ncasm_tufte_plates.py:422",
+        ),
+    ],
+)
+def test_ncasm_fixture_readers_cite_the_read_call(
+    helper: ModuleType, path: str, reader: str
+) -> None:
+    assert helper.classification(path)["reader"] == reader
+
+
 def test_ncasm_neighbour_paths_stay_unknown(helper: ModuleType) -> None:
     assert helper.classification(f"{NCASM_RUN}comparison/new_table.tsv")["kind"] == "unknown"
     assert helper.classification(f"{NCASM_RUN}comparison/new_run.json")["kind"] == "unknown"
