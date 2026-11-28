@@ -60,6 +60,18 @@ counts still enter every profile's denominator, as every retained trait column
 does, so this figure and the Table 1 figures no longer share a numerator term but
 still share profile denominators, and are not independent of each other.
 
+> **Current-run note (2026-11-27, #2397).** The corpus counts, cell census,
+> clustering and statistics from here on describe the earlier guild-maps run. Only
+> the following have a current source, the regenerated
+> `data/derived/integrated_evidence/` outputs (profile table sha256 `dd20b920…`):
+> the zero-total exclusion (#783) now removes 43 experiment pairs rather than 55,
+> leaving 2,214 pairs, 4,428 profiles and 923 studies (from 2,257 pairs and 932
+> studies). On that population the McNemar row gives 716 discordant studies, a
+> paired odds ratio of 1.295 and nominal p = 6.6e-04, a single uncorrected test.
+> The cell census, the row clustering and the rank correlations wait for the
+> regenerated guild-maps outputs (Phase 6a of #2397), and this section will be
+> rewritten from them.
+
 Three input filters were applied once, upstream, so that the figure operates on a
 single corpus definition. Non-human samples were excluded on the per-experiment
 host_species field, leaving Homo sapiens only. Experiments were restricted to
