@@ -54,6 +54,77 @@ def test_unknown_fixture_is_not_silently_excluded(helper: ModuleType) -> None:
     assert helper.classification("tests/fixtures/unreviewed.xyz")["kind"] == "unknown"
 
 
+NCASM_RUN = "tests/fixtures/ncasm_tufte_plates/run_tier12_off_511c891/"
+
+
+@pytest.mark.parametrize(
+    ("path", "format_"),
+    [
+        (".github/workflows/pr-branch-name.yaml", "tool configuration"),
+        (".github/workflows/pr-issue-ref.yaml", "tool configuration"),
+        ("methods/study_split_selection_protocol_v1.json", "producer-specific JSON"),
+        (
+            "tests/fixtures/cellulose_tufte_historical_sources/ora_provenance_refresh_781e92e4.md",
+            "Markdown documentation",
+        ),
+        (
+            "tests/fixtures/cellulose_tufte_historical_sources/table1_log_ratio_validation_1e0d0eef.md",
+            "Markdown documentation",
+        ),
+        (f"{NCASM_RUN}README.md", "Markdown documentation"),
+        (
+            f"{NCASM_RUN}arms/noel/trait_direction_screen/trait_direction_screen.tsv",
+            "comparison run-table TSV",
+        ),
+        (
+            f"{NCASM_RUN}comparison/arm1_pooled_stats/"
+            "trait_profile_paired_contrast_trait_stats_pooled.tsv",
+            "comparison run-table TSV",
+        ),
+        (f"{NCASM_RUN}comparison/comparison_run.json", "ComparisonRun excerpt"),
+        (
+            "tests/fixtures/ncasm_tufte_plates/stored_plate_text_2026-10-22.json",
+            "producer-specific JSON",
+        ),
+    ],
+)
+def test_issue2451_paths_have_reviewed_noninstance_mappings(
+    helper: ModuleType, path: str, format_: str
+) -> None:
+    mapping = helper.classification(path)
+    assert mapping["kind"] == "noninstance"
+    assert mapping["format"] == format_
+
+
+@pytest.mark.parametrize(
+    ("path", "reader"),
+    [
+        (
+            f"{NCASM_RUN}arms/noel/trait_direction_screen/trait_direction_screen.tsv",
+            "src/mtp/ncasm_tufte_plates/run_tables.py:236",
+        ),
+        (
+            f"{NCASM_RUN}comparison/arm1_pooled_stats/"
+            "trait_profile_paired_contrast_trait_stats_pooled.tsv",
+            "src/mtp/ncasm_tufte_plates/run_tables.py:235",
+        ),
+        (
+            "tests/fixtures/ncasm_tufte_plates/stored_plate_text_2026-10-22.json",
+            "tests/test_ncasm_tufte_plates.py:422",
+        ),
+    ],
+)
+def test_ncasm_fixture_readers_cite_the_read_call(
+    helper: ModuleType, path: str, reader: str
+) -> None:
+    assert helper.classification(path)["reader"] == reader
+
+
+def test_ncasm_neighbour_paths_stay_unknown(helper: ModuleType) -> None:
+    assert helper.classification(f"{NCASM_RUN}comparison/new_table.tsv")["kind"] == "unknown"
+    assert helper.classification(f"{NCASM_RUN}comparison/new_run.json")["kind"] == "unknown"
+
+
 def test_archive_root_generation_projects_one_producer_inventory(helper: ModuleType) -> None:
     name = "tests/fixtures/trait_key_policy/historical_union_core.tar.gz!generation.json"
     mapping = helper.classification(name)
