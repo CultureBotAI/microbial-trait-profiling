@@ -60,17 +60,13 @@ counts still enter every profile's denominator, as every retained trait column
 does, so this figure and the Table 1 figures no longer share a numerator term but
 still share profile denominators, and are not independent of each other.
 
-> **Current-run note (2026-11-27, #2397).** The corpus counts, cell census,
-> clustering and statistics from here on describe the earlier guild-maps run. Only
-> the following have a current source, the regenerated
-> `data/derived/integrated_evidence/` outputs (profile table sha256 `dd20b920…`):
-> the zero-total exclusion (#783) now removes 43 experiment pairs rather than 55,
-> leaving 2,214 pairs, 4,428 profiles and 923 studies (from 2,257 pairs and 932
-> studies). On that population the McNemar row gives 716 discordant studies, a
-> paired odds ratio of 1.295 and nominal p = 6.6e-04, a single uncorrected test.
-> The cell census, the row clustering and the rank correlations wait for the
-> regenerated guild-maps outputs (Phase 6a of #2397), and this section will be
-> rewritten from them.
+> **Current run (rewritten 2026-11-28, #2397 Phase 6a).** The counts below are
+> from `just guild-maps` on the final rerun, at code commit `3815ec0e` (tag
+> `regen-v5-C`, which pins data commit `4c488fa7`, tag `regen-v5-D`). They
+> replace the earlier run's counts. That run, at main's 35ece98 with
+> METPO:1000608 still in the aerobe guild, read the `off`-scope table and gave
+> 922 studies after the exclusion, 410 against 287 discordant studies, a paired
+> odds ratio of 1.429 and nominal p = 3.6e-06.
 
 Three input filters were applied once, upstream, so that the figure operates on a
 single corpus definition. Non-human samples were excluded on the per-experiment
@@ -82,14 +78,15 @@ trait space before any total was computed. Of 5,629 profile rows read under the
 `count_input_16s_wms_v1` profile policy, from 1,047 studies, none was dropped as
 non-human, because the matrix holds human profiles only (#656), and 1,115
 experiments were dropped as unpaired; 2,290 trait columns were MediaDive,
-leaving 317 traits (the `off` scope; 344 under `phenotype`), 2,257 experiments,
+leaving 342 traits (the `phenotype` scope), 2,257 experiments,
 4,514 profiles, and 932 studies. Every
 experiment in the profile matrix resolved against the experiment metadata
 table, so no rows were lost to a failed join.
 
 The figure, its cell-status table and its McNemar then leave out every
 experiment pair whose retained-annotation total is zero on a side (#783). That
-leaves 55 fewer pairs: 2,202 experiments, 4,404 profiles and 922 studies. This is
+leaves 43 fewer pairs: 2,214 experiments, 4,428 profiles and 923 studies (9
+studies lose every pair). This is
 the shared comparison basis of [`three_arm_statistics.md`](three_arm_statistics.md),
 which the integrated evidence table's tests and the calibration already used.
 The repository owner chose it for the figure on 2026-10-22. Such a pair's guild
@@ -107,10 +104,10 @@ filter dropped 1,482 rows (#222).
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
-`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c`, the `off`-scope
-`study_trait_profiles_wide.tsv.gz` committed until the final rerun at 511c891 replaced
-it with the `phenotype` table (`43b2e230…`: 2,637 header columns, 344 retained),
-decompressed: 2,610 header columns (3 identifier, 2,290 MediaDive, 317 retained) over 5,629 profile rows, joined
+`dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2`, the
+`phenotype`-scope table that the committed `study_trait_profiles_wide.tsv.gz`
+decompresses to (regenerated in #2397, 0bbac143): 2,635 header columns (3
+identifier, 2,290 MediaDive, 342 retained) over 5,629 profile rows, joined
 from BugSigDB `2026-04-24_00:41_UTC` and KG-Microbe release 20260120 (nodes md5
 `dd76b4656f9341db25a7c4afa96cd58e`), as the download sidecar
 `data/kg-microbe/provenance.json` declares it rather than as measured when the
@@ -120,16 +117,13 @@ dump sha256 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`.
 Naming the dump does not identify the matrix, so the run writes this record to
 `corpus_identity.json` beside its outputs (#222).
 
-The counts in this note were measured on those inputs with the code main
-carries as commit 35ece98 (#808): the corpus cascade, the zero-total exclusion,
-the multi-experiment share, the pooled labels, the row cuts and clusters, the
-cell census, the McNemar and the rank correlations. The figure's numbers from
-before #783, given for comparison, are from main's code at 65850b0 on the same
-inputs. Both commits placed METPO:1000608 in the aerobe guild. The numbers that
-depend on the guild numerators (the row clusters, the cell census, the McNemar
-and the rank correlations) were measured with that definition and have not been
-regenerated since #1237 removed it. The corpus cascade, the zero-total exclusion
-and the pooled labels do not depend on guild membership.
+The counts in this note were measured on those inputs with the code at commit
+3815ec0e (#2397): the corpus cascade, the zero-total exclusion, the
+multi-experiment share, the pooled labels, the row cuts and clusters, the cell
+census, the McNemar and the rank correlations. That code uses the #1237 guilds,
+so METPO:1000608 is in neither guild. The numbers given for comparison from
+before #783 are from main's code at 65850b0 on the earlier `off`-scope table
+(sha256 `519a095b…`), with METPO:1000608 in the aerobe guild.
 
 
 ## Cell values and axes
@@ -137,7 +131,7 @@ and the pooled labels do not depend on guild membership.
 Each cell of the figure is a mean guild trait fraction. Within a profile, the
 guild's summed trait count was divided by that profile's total count across the
 retained traits — a share of taxonomically rolled-up trait assertions, not of
-taxa. Because 511 of the 922 studies (55.4 per cent) contribute more than one
+taxa. Because 512 of the 923 studies (55.5 per cent) contribute more than one
 experiment, profile fractions were averaged within a study before being averaged
 across the studies in a cell, and the companion count matrix reports the number
 of contributing studies rather than experiments.
@@ -146,7 +140,7 @@ Conditions and body sites were reduced to the most frequent 60 and 20 labels
 respectively, with the remainder pooled into an Other bucket. That bucket is
 large and its size is reported on every run rather than left implicit: the corpus
 holds 429 distinct condition labels and 147 distinct body-site labels, so keeping
-the top 60 conditions still pools 369 labels and 40.4 per cent of profiles, and
+the top 60 conditions still pools 369 labels and 40.5 per cent of profiles, and
 keeping the top 20 body sites pools 127 labels and 13.4 per cent. The condition
 tail is long and shallow, with several hundred labels attached to two profiles
 each, so no practical cut makes Other small; the figure should be read with that
@@ -186,7 +180,8 @@ fractions themselves. Average linkage was tried first and rejected: it chained,
 leaving one dominant group and a few near-singletons. On the run described here
 the cut groups the oral and salivary conditions together (Periodontitis,
 Rheumatoid arthritis, Oral squamous cell carcinoma and Smoking behavior form one
-cluster with Cesarean section). It puts the two cervicovaginal conditions (Human
+cluster with Cesarean section, Glaucoma, Aging and Dry eye syndrome, the last
+three sampled at sites pooled into Other). It puts the two cervicovaginal conditions (Human
 papilloma virus infection and Cervical glandular intraepithelial neoplasia) in a
 cluster of their own, so the grouping is driven by
 sampling site as much as by guild fraction — which is the intended behaviour,
@@ -207,8 +202,8 @@ selected sources and mappings. Previously such a cell was drawn as a fraction
 of zero and was indistinguishable from a genuinely small fraction. This state
 does not establish biological absence. Since #783 every profile behind a dark-grey cell carries
 some retained annotation. Before, a profile with none at all scored share 0 and
-shaded cells too: 8 of this corpus's 20 dark-grey cells were backed only by
-such profiles. A cell is left blank when the site was sampled by fewer
+shaded cells too: on the earlier `off`-scope corpus, 8 of the 20 dark-grey
+cells were backed only by such profiles. A cell is left blank when the site was sampled by fewer
 studies than the threshold, and blank when the site was never sampled for that
 condition at all. On the run described here the grid is 52 condition rows (51
 conditions and the pooled Other) by 80 columns, which are 20 body-site blocks: 19
@@ -221,17 +216,18 @@ were never sampled.
 
 The association between guild and direction was tested on studies scored once
 per guild by the sign of the mean increased fraction minus the mean decreased
-fraction. Over 922 studies, the aerobe guild's annotation share was higher in
-the increased signatures than in the decreased ones in 520 studies and lower in
-392, while the anaerobe share was higher in 402 and lower in 519. Because the
+fraction. Over 923 studies, the aerobe guild's annotation share was higher in
+the increased signatures than in the decreased ones in 490 studies and lower in
+419, while the anaerobe share was higher in 403 and lower in 518. Because the
 **same studies provide both signs**, the two guilds form matched pairs, not
 independent samples, so the test is an **exact McNemar** — a two-sided binomial
-on the discordant studies. Of the 912 studies with both signs (697 discordant),
-410 have the higher aerobe share and the lower anaerobe share in the increased
-signatures and 287 the reverse, giving a paired odds ratio of 1.429 with
-nominal p = 3.6e-06. That is the same test on the same population as the
-integrated evidence table's McNemar row. Before the zero-total exclusion (#783)
-this figure reported 410 and 284, nominal p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
+on the discordant studies. Of the 909 studies with both signs (716 discordant),
+404 have the higher aerobe share and the lower anaerobe share in the increased
+signatures and 312 the reverse, giving a paired odds ratio of 1.295 with
+nominal p = 6.6e-04. That is the same test on the same population as the
+integrated evidence table's McNemar row. Before the zero-total exclusion (#783),
+on the earlier `off`-scope corpus with METPO:1000608 in the aerobe guild, this
+figure reported 410 and 284, nominal p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
 marginal two-by-two; that assumes independent rows, and on this data it was
 anticonservative by roughly three orders of magnitude and inflated the odds
 ratio by a fifth.) Counting studies with any non-zero guild signal instead of
@@ -242,8 +238,8 @@ The paired odds ratio mitigates study-level dependence, but it does **not**
 escape compositionality: both signs derive from shares of the same profile
 denominator. An increase in one guild's counts can lower the other guild's share
 without a change in the latter's counts. This does not force every pair of
-components to correlate negatively. On this corpus 76 per cent of the scored
-studies (697 of 912) carry opposite signs for the two guilds; that observation
+components to correlate negatively. On this corpus 79 per cent of the scored
+studies (716 of 909) carry opposite signs for the two guilds; that observation
 alone does not quantify the structural contribution. The odds ratio reads as
 "discordant studies more often pair a higher aerobe share with a lower anaerobe
 share in the increased signatures than the reverse", not as independent
@@ -262,11 +258,11 @@ here by the per-study template the matched-corpus Table 1-trait analog figure al
 that carries no oxygen annotation on either side has a missing share, not a
 measured one, so it is excluded from the rank correlations (#289). The McNemar
 drops such a study as a tie, so both statistics describe the same population.
-On this corpus the five such studies were all zero-total pairs, which the
-exclusion above already removes, so all 922 studies are ranked. Over those 922
+On this corpus no study is left without oxygen annotation once the zero-total
+pairs are excluded, so all 923 studies are ranked. Over those 923
 studies, aerobe and anaerobe fractions correlate negatively within the same
-direction, rho = -0.719 on the increased side and -0.740 on the decreased side,
-and the two guilds' per-study contrasts correlate at rho = -0.737. Shared
+direction, rho = -0.723 on the increased side and -0.794 on the decreased side,
+and the two guilds' per-study contrasts correlate at rho = -0.716. Shared
 denominators can contribute to these correlations; the coefficients do not
 quantify how much is structural or establish a biological mechanism.
 Studies are still not fully independent where
@@ -299,7 +295,9 @@ system Chrome, which would otherwise be whatever version the machine carries
 (plotly's `plotly_get_chrome` is equivalent). Without any Chrome the recipe
 fails only at the figure-writing step, with every backing table already written
 to disk; the corpus-cascade report prints to stdout either way. None of the
-statistics depend on Chrome.
+statistics depend on Chrome. The current-run figure was drawn with the system
+Google Chrome 158.0.8127.37, because `just get-chrome` failed on that machine
+with an SSL certificate error (#2457).
 
 The pipeline code and this description were drafted with the assistance of a
 coding agent (Claude Code) and reviewed by the author.
