@@ -10,7 +10,7 @@ unbound numeric claims. The historical notes describe changes; they no longer
 quote old-run values that this committed bundle cannot establish.
 
 <!-- numbers: producer -->
-The main analysis tables record code commit `511c891` and classifier `contrast-orientation-v6`. The provenance pins 10 input files.
+The main analysis tables record code commit `a01466d` and classifier `contrast-orientation-v6`. The provenance pins 10 input files.
 <!-- /numbers -->
 
 The analysis runs through `just cellulose-decr`
@@ -254,13 +254,13 @@ an equally weighted sign of its mean paired difference.
 <!-- numbers: direction_table -->
 | Condition | Contrasts | Experiments down : up : tied | Sign test p | Studies down : up : tied | Sign test p | Study Wilcoxon p |
 | --- | --- | --- | --- | --- | --- | --- |
-| PD | all | 57 : 24 : 16 | 3.2e-4 | 26 : 14 : 3 | 0.081 | 0.013 |
+| PD | all | 57 : 24 : 16 | 3.2e-4 | 26 : 14 : 3 | 0.081 | 0.012 |
 | PD | disease vs healthy | 46 : 15 : 11 | 8.8e-5 | 23 : 10 : 3 | 0.035 | 0.019 |
 | HIV | all | 18 : 7 : 3 | 0.043 | 11 : 5 : 2 | 0.21 | 0.32 |
 | HIV | disease vs healthy | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 | 0.18 |
 | CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 2.0e-4 |
 | CRC | disease vs healthy | 22 : 5 : 8 | 0.0015 | 16 : 2 : 7 | 0.0013 | 0.0010 |
-| Pooled | all | 107 : 37 : 30 | 4.4e-9 | 56 : 21 : 12 | 8.2e-5 | 5.6e-5 |
+| Pooled | all | 107 : 37 : 30 | 4.4e-9 | 56 : 21 : 12 | 8.2e-5 | 5.5e-5 |
 | Pooled | disease vs healthy | 81 : 23 : 22 | 9.3e-9 | 49 : 14 : 12 | 1.1e-5 | 8.8e-5 |
 <!-- /numbers -->
 
@@ -416,7 +416,7 @@ Restricting to genera and species leaves a similar mean distance.
 ## 7. Trait benchmark
 
 <!-- numbers: benchmark_summary -->
-The benchmark contains 186 traits, 146 excluding growth media. Cellulose ranks 2 among those traits and 23 overall. The non-media median mean d_J is 0.681. The smallest per-condition set size among all benchmarked traits is 10.
+The benchmark contains 184 traits, 144 excluding growth media. Cellulose ranks 2 among those traits and 23 overall. The non-media median mean d_J is 0.679. The smallest per-condition set size among all benchmarked traits is 10.
 <!-- /numbers -->
 
 <!-- numbers: benchmark_table -->

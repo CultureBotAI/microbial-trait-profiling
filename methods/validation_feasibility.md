@@ -26,7 +26,7 @@ matched clinical measurements - a separately scoped project.
 
 Searching the export's curated text - condition, both group names, the Group 1
 definition, description, matching and confounder fields, title and keywords - over
-1,080 human studies, 959 of them in the discovery corpus. Every figure below is
+1,080 human studies, 932 of them in the discovery corpus. Every figure below is
 read back from the artifacts by
 `just validation-evidence -- --report`; none is maintained by hand.
 
@@ -34,7 +34,7 @@ The inventory reports two nested human study universes side by side (#744):
 all 1,080 human-host studies in `full_dump.csv` (**Human studies** /
 **Human studies mentioning**, spanning every sequencing modality in the
 export — including ITS, PCR, 18S or untyped rows — as well as unpaired
-studies) and the 959 discovery-eligible paired human 16S/WMS studies
+studies) and the 932 discovery-eligible paired human 16S/WMS studies
 (**Discovery studies** / **Discovery studies mentioning**, flagged by
 `in_discovery_corpus` from `data/derived/study_trait_profiles_wide.tsv`,
 #742). Keeping the whole-export human denominator alongside the
@@ -45,15 +45,15 @@ would be a separate scientific decision.
 
 | Evidence | Discovery studies mentioning | Human studies mentioning | Most frequent words |
 | --- | --- | --- | --- |
-| Clinical covariates (age, sex, BMI, smoking, medication) | 481 | 542 | age (418), sex (276), body mass index (163) |
+| Clinical covariates (age, sex, BMI, smoking, medication) | 468 | 542 | age (408), sex (271), body mass index (159) |
 | Whole-metagenome sequencing | 147 | 167 | - |
-| Diet, fibre or salt | 79 | 87 | diet (62), dietary (26), fiber (15) |
-| SCFA named as a metabolite | 47 | 56 | short-chain fatty acids (22), butyrate (14) |
-| Untargeted metabolomics | 45 | 48 | metabolome (21), metabolomics (20) |
-| Disease activity or severity | 41 | 45 | severity (29), disease activity (5), UPDRS (4) |
-| Actual antibiotic exposure | 33 | 34 | antibiotic exposure (21), antibiotic treatment (5) |
-| Inflammation markers | 28 | 32 | cytokines (9), cytokine (6), calprotectin (4) |
-| Expression, proteome or flux | 16 | 17 | gene expression (5), metatranscriptome (3) |
+| Diet, fibre or salt | 76 | 87 | diet (59), dietary (25), fiber (15) |
+| SCFA named as a metabolite | 45 | 56 | short-chain fatty acids (21), butyrate (13) |
+| Untargeted metabolomics | 44 | 48 | metabolome (20), metabolomics (20) |
+| Disease activity or severity | 40 | 45 | severity (28), disease activity (5), UPDRS (4) |
+| Actual antibiotic exposure | 32 | 34 | antibiotic exposure (20), antibiotic treatment (5) |
+| Inflammation markers | 26 | 32 | cytokines (9), cytokine (6), calprotectin (3) |
+| Expression, proteome or flux | 14 | 17 | gene expression (5), metatranscriptome (3) |
 | Transit or stool consistency | 11 | 11 | transit (6), Bristol stool (4) |
 | Nitrate, oxygen or redox | 6 | 7 | oxidative stress (3), oxygen (3) |
 | SCFA named inside a gene or enzyme name | 1 | 1 | BCoAT, Butyryl-CoA:acetate |
@@ -65,7 +65,7 @@ dictionaries. Each row records which fields were searched for that study, so an
 absent mention can be read against the text that existed to search.
 
 **Three things that look like one row and are not.** An SCFA named as a metabolite
-(47 discovery studies), untargeted metabolomics (45) and an SCFA inside an enzyme
+(45 discovery studies), untargeted metabolomics (44) and an SCFA inside an enzyme
 name (1) are counted separately, because they are different evidence. A single
 lumped pattern previously reported 94 discovery studies, of which 44 matched only
 `metabolom*` - a metabolome survey is not an SCFA panel. A further three studies
@@ -80,8 +80,8 @@ Two further fields are often mistaken for exposure and are reported separately:
 `Antibiotics exclusion` is an eligibility rule, not a record of who took
 antibiotics, and a disease label is not an inflammation measurement.
 
-147 of the 959 discovery studies used whole-metagenome sequencing, so gene or
-pathway content could in principle be measured from their raw reads; 16 mention
+147 of the 932 discovery studies used whole-metagenome sequencing, so gene or
+pathway content could in principle be measured from their raw reads; 14 mention
 transcriptomics, proteomics or flux, which is the expression and flux inventory
 #191 AC2 asks for. Both are pointers to source papers, not datasets, and both need
 the raw data. Neither is a metabolite concentration.

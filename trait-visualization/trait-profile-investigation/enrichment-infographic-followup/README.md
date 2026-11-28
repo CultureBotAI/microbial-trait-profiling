@@ -30,8 +30,8 @@ The target conditions for this run are selected from the infographic top three c
 
 | condition | infographic avg enrichment depth | local profiles | studies | experiments | local mean nonzero traits/profile | local percentile | local outlier? |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Sleep Disorder | 216.00 | 7 | 2 | 5 | 107.0 | 47.7% | no |
-| Head and neck squamous cell carcinoma | 210.33 | 20 | 4 | 10 | 75.0 | 28.2% | no |
+| Sleep Disorder | 216.00 | 7 | 2 | 5 | 111.3 | 49.4% | no |
+| Head and neck squamous cell carcinoma | 210.33 | 20 | 4 | 10 | 77.4 | 28.5% | no |
 
 Target conditions with fewer than 2 profiles in this corpus are not summarized or queried: Thalassemia (0 profiles).
 
@@ -72,16 +72,16 @@ Profile similarity uses cosine similarity over log1p-transformed full non-MediaD
 
 | query condition | rank | neighbor condition | similarity | study title | experiment |
 | --- | ---: | --- | ---: | --- | --- |
-| Sleep Disorder | 1 | Schizophrenia | 0.935 | Alterations in fecal bacteriome virome interplay and microbiota-derived dysfunction in patients with schizophrenia | Experiment 1: Healthy control group (HC) vs Schizophrenia group (SCZ) |
-| Sleep Disorder | 2 | Pancreatic carcinoma | 0.925 | Fecal microbiome signatures of pancreatic cancer patients | Experiment 4: Healthy control vs NBO PC |
-| Sleep Disorder | 3 | Endometriosis | 0.924 | Associations Between Endometriosis and Gut Microbiota | Experiment 1: Healthy controls taken from a larger cohort study vs Endometriosis patients |
-| Sleep Disorder | 4 | Obesity | 0.922 | Metatranscriptomic analysis to define the Secrebiome, and 16S rRNA profiling of the gut microbiome in obesity and metabolic syndrome of Mexican children | Experiment 2: Normal weight (NW) vs Obesity with metabolic syndrome (OMS) |
-| Sleep Disorder | 5 | Endometriosis | 0.922 | Associations Between Endometriosis and Gut Microbiota | Experiment 2: Healthy controls taken from a larger cohort study vs Endometriosis patients |
+| Sleep Disorder | 1 | Schizophrenia | 0.934 | Alterations in fecal bacteriome virome interplay and microbiota-derived dysfunction in patients with schizophrenia | Experiment 1: Healthy control group (HC) vs Schizophrenia group (SCZ) |
+| Sleep Disorder | 2 | Pancreatic carcinoma | 0.926 | Fecal microbiome signatures of pancreatic cancer patients | Experiment 4: Healthy control vs NBO PC |
+| Sleep Disorder | 3 | Endometriosis | 0.925 | Associations Between Endometriosis and Gut Microbiota | Experiment 1: Healthy controls taken from a larger cohort study vs Endometriosis patients |
+| Sleep Disorder | 4 | Population | 0.924 | Gut microbiomes of agropastoral children from the Adadle region of Ethiopia reflect their unique dietary habits | Experiment 16: Industrial Lifestyle vs Traditional Lifestyle |
+| Sleep Disorder | 5 | Population | 0.924 | Gut microbiomes of agropastoral children from the Adadle region of Ethiopia reflect their unique dietary habits | Experiment 25: Industrial Lifestyle vs Traditional Lifestyle |
 | Head and neck squamous cell carcinoma | 1 | Multiple myeloma | 0.936 | Alterations of gut microbiome accelerate multiple myeloma progression by increasing the relative abundances of nitrogen-recycling bacteria | Experiment 1: healthy control vs multiple myeloma patients |
-| Head and neck squamous cell carcinoma | 2 | Gingivitis | 0.935 | Quantitative analysis of the effects of essential oil mouthrinses on clinical plaque microbiome: a parallel-group, randomized trial | Experiment 1: Healthy subjects vs Gingivitis subjects |
-| Head and neck squamous cell carcinoma | 3 | Psoriasis | 0.934 | Multiomic Analysis of the Gut Microbiome in Psoriasis Reveals Distinct Host‒Microbe Associations | Experiment 1: Healthy controls vs Psoriasis patients (PSO) |
-| Head and neck squamous cell carcinoma | 4 | Depressive disorder | 0.933 | Gut Microbiota Alterations and Their Functional Differences in Depression According to Enterotypes in Asian Individuals | Experiment 2: Healthy group vs Depressive group |
-| Head and neck squamous cell carcinoma | 5 | Chlamydia trachomatis | 0.932 | Cervicovaginal microbiome and natural history of Chlamydia trachomatis in adolescents and young women | Experiment 1: Chlamydia trichomonas Controls (t0) vs Chlamydia trichomonas Cases (t0) |
+| Head and neck squamous cell carcinoma | 2 | Adverse effect | 0.936 | Intestinal microbiota influences clinical outcome and side effects of early breast cancer treatment | Experiment 17: Without neurotoxicity (Post-Chemo) vs With neurotoxicity (Post-Chemo) |
+| Head and neck squamous cell carcinoma | 3 | Depressive disorder | 0.936 | Gut Microbiota Alterations and Their Functional Differences in Depression According to Enterotypes in Asian Individuals | Experiment 2: Healthy group vs Depressive group |
+| Head and neck squamous cell carcinoma | 4 | Chlamydia trachomatis | 0.934 | Cervicovaginal microbiome and natural history of Chlamydia trachomatis in adolescents and young women | Experiment 1: Chlamydia trichomonas Controls (t0) vs Chlamydia trichomonas Cases (t0) |
+| Head and neck squamous cell carcinoma | 5 | Gingivitis | 0.934 | Quantitative analysis of the effects of essential oil mouthrinses on clinical plaque microbiome: a parallel-group, randomized trial | Experiment 1: Healthy subjects vs Gingivitis subjects |
 
 ### Cross-Target Check
 
@@ -94,16 +94,16 @@ Top five condition-centroid neighbors are also written to `target_condition_cent
 
 | query condition | rank | centroid neighbor | similarity | other target? |
 | --- | ---: | --- | ---: | --- |
-| Sleep Disorder | 1 | Type I diabetes mellitus | 0.959 | no |
-| Sleep Disorder | 2 | HIV-1 infection | 0.957 | no |
-| Sleep Disorder | 3 | Response to antiviral drug | 0.956 | no |
-| Sleep Disorder | 4 | Milk allergic reaction | 0.947 | no |
-| Sleep Disorder | 5 | Relapsing-remitting multiple sclerosis | 0.946 | no |
+| Sleep Disorder | 1 | Type I diabetes mellitus | 0.962 | no |
+| Sleep Disorder | 2 | HIV-1 infection | 0.960 | no |
+| Sleep Disorder | 3 | Response to antiviral drug | 0.959 | no |
+| Sleep Disorder | 4 | Milk allergic reaction | 0.950 | no |
+| Sleep Disorder | 5 | Relapsing-remitting multiple sclerosis | 0.949 | no |
 | Head and neck squamous cell carcinoma | 1 | Response to diet | 0.980 | no |
-| Head and neck squamous cell carcinoma | 2 | Lifestyle measurement | 0.974 | no |
-| Head and neck squamous cell carcinoma | 3 | Crohn's disease | 0.972 | no |
-| Head and neck squamous cell carcinoma | 4 | Waist circumference | 0.971 | no |
-| Head and neck squamous cell carcinoma | 5 | Squamous cell carcinoma | 0.969 | no |
+| Head and neck squamous cell carcinoma | 2 | Lifestyle measurement | 0.976 | no |
+| Head and neck squamous cell carcinoma | 3 | Crohn's disease | 0.974 | no |
+| Head and neck squamous cell carcinoma | 4 | Waist circumference | 0.972 | no |
+| Head and neck squamous cell carcinoma | 5 | Squamous cell carcinoma | 0.971 | no |
 
 ## How Trait Sets Connect To Profiles
 
@@ -111,10 +111,10 @@ A profile is one BugSigDB study/experiment/direction row. Its trait vector count
 
 | trait set | condition | profiles | mean trait-set signal | mean relative trait-set signal |
 | --- | --- | ---: | ---: | ---: |
-| aerobe_v2 | Head and neck squamous cell carcinoma | 20 | 226.700 | 0.02595 |
-| aerobe_v2 | Sleep Disorder | 7 | 564.571 | 0.01147 |
-| anaerobe_v2_depletion | Head and neck squamous cell carcinoma | 20 | 57.050 | 0.03774 |
-| anaerobe_v2_depletion | Sleep Disorder | 7 | 230.714 | 0.04637 |
+| aerobe_v2 | Head and neck squamous cell carcinoma | 20 | 395.975 | 0.02145 |
+| aerobe_v2 | Sleep Disorder | 7 | 1028.143 | 0.01549 |
+| anaerobe_v2_depletion | Head and neck squamous cell carcinoma | 20 | 68.900 | 0.04020 |
+| anaerobe_v2_depletion | Sleep Disorder | 7 | 260.571 | 0.04470 |
 
 ## Companion Traits Vs Organisms Heatmap
 

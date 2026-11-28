@@ -1985,7 +1985,14 @@ def test_matched_historical_calibration_does_not_certify_different_guild_eligibi
     assert ("procedure", "guild_mcnemar", "overall", "fail") in status.detail
 
 
-def test_cli_binds_imported_assessments_to_its_actual_inputs(tmp_path: Path) -> None:
+def test_cli_binds_imported_assessments_to_its_actual_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The sensitivity status is not supplied; point its default at an absent tmp file so a
+    # local data/derived status cannot join the bound sources (#2434).
+    monkeypatch.setattr(
+        "mtp.integrated_evidence.DEFAULT_SENSITIVITY_STATUS", tmp_path / "sensitivity_status.json"
+    )
     profiles, experiments = _corpus(tmp_path)
     dump = tmp_path / "dump.csv"
     dump.write_text("unversioned test dump\n", encoding="utf-8")

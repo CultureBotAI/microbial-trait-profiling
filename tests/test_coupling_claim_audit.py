@@ -116,8 +116,8 @@ def test_g16_reports_saved_count_profile_values_with_source_and_scope() -> None:
         r"maximum \|Delta effect\| of ([0-9.]+)",
         r"up to ([0-9.]+) under LCO",
         r"Minimum adjacent row distance:\s+([0-9.]+)",
-        r"Delta effect\(coccus\):\s+([+0-9.]+)",
-        r"Delta effect\(sphere\):\s+([+0-9.]+)",
+        r"Delta effect\(coccus\):\s+([-+0-9.]+)",
+        r"Delta effect\(sphere\):\s+([-+0-9.]+)",
         r"maximum \|Delta share_up\| is ([0-9.]+)",
         r"maximum \|Delta mean_fold\| is ([0-9.]+)",
     )
@@ -130,7 +130,7 @@ def test_g16_reports_saved_count_profile_values_with_source_and_scope() -> None:
     assert "historical binarized-profile" in g16
     assert "not current raw-count results" in g16
     assert "exceed" in g16
-    assert "Three LOTO" in g16
+    assert "Two LOTO" in g16
     assert "one LCO" in g16
 
 

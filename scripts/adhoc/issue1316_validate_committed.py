@@ -61,8 +61,11 @@ VISUAL_JSON = {
     "trait-visualization/trait-profile-investigation/PD-cellulose/pd_trait_contributors_manifest.json",
     "trait-visualization/trait-profile-investigation/six-shared-traits/oral/oral_six_trait_provenance.json",
     "trait-visualization/trait-profile-investigation/six-shared-traits/six_shared_traits_profile_graph_data.json",
-    "trait-visualization/trait-profile-investigation/stratified_stats_provenance.json",
     "trait-visualization/trait-profile-investigation/taxa-coverage/provenance.json",
+    (
+        "trait-visualization/trait-profile-investigation/"
+        "taxa-coverage-tier1-2-subject-controls/provenance.json"
+    ),
 }
 FIXTURE_DOCS = {
     "tests/fixtures/cellulose_tufte_historical_sources/README.md",

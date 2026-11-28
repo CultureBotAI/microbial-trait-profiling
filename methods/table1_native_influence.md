@@ -9,8 +9,8 @@ The committed bundle is a measured matched-corpus Table 1-trait analog sensitivi
 not a reproduction of the published Table 1 baseline (tracked in #210).
 The source ledger is unchanged. The
 [native protocol](table1_native_influence_protocol.json) applies the same rule-declared
-exclusions as the shared-fraction rerun, with four exact scopes, 317 retained columns (the `off` strain-rollup scope)
-and 4,670 human paired profiles from 959 studies. Nothing is selected by the new effects,
+exclusions as the shared-fraction rerun, with four exact scopes, 342 retained columns (the `phenotype` strain-rollup scope)
+and 4,514 human paired profiles from 932 studies. Nothing is selected by the new effects,
 directions or p-values. See the generated
 [native summary and review tables](table1-native-results/README.md) for results.
 
@@ -33,9 +33,9 @@ records or inconsistent totals stop the run. No replacement KG is downloaded.
 
 A newly generated `native_manifest.json` records the source manifest hash, protocol,
 runtime versions, code commit, tracked/untracked dirty state and source-file hashes,
-removal-ledger input hashes and result hashes. The committed snapshot predates the
-dirty-state field, so its commit field alone is not evidence that its checkout was clean;
-the current publisher treats that missing state as unrecorded and will not republish it.
+removal-ledger input hashes and result hashes. The committed snapshot records
+`code_dirty: false` at commit `559ab0b8`, identifying its checkout as recorded clean.
+The current publisher treats a missing state as unrecorded and will not republish it.
 It starts with `completed: false`; a failed/interrupted run must not be integrated.
 The historical contribution manifest's `not_rerun` statements describe that earlier
 stage, not the native extension. Only a completed native manifest establishes that
@@ -51,8 +51,8 @@ The publication handoff also recognizes `190-native-v1` as finite-test history,
 using `native_before_family_tests` and the distinct basis
 `historical_v1_finite_tests`, without changing its recorded protocol. This does
 not widen the assessment reader: `influence_assessment` accepts v2 and v3 only.
-The committed snapshot records v1 despite its README's v2 label, and also lacks
-`code_dirty`; assessment support for that historical snapshot remains a separate
+The committed snapshot records v2 consistently with its README and records
+`code_dirty: false`; assessment support for the earlier v1 snapshot remains a separate
 follow-up (#2317), not evidence of a verified clean historical run.
 
 `just table1-native-summary <audit-output-directory>` verifies all native input and
@@ -105,7 +105,7 @@ The compact `native_table1_stats.tsv.gz` retains both counters from those full
 native families. In the generated summary, "Native p" means nominal native
 p and "Native q" means BH q from this family, including the
 baseline-versus-exclusion table. The committed bundle's values belong to its
-historical v1 manifest; this protocol update does not represent a new rerun.
+historical v2 manifest; this protocol update does not represent a new rerun.
 
 Native mean intervals target experiment-weighted effects; exact binomial intervals
 describe the positive share of experiment contrasts after applying the same `1e-12`
@@ -180,7 +180,7 @@ the native transformed test.
 
 | File | Contents |
 | --- | --- |
-| `native_composition.tsv.gz` | All 317 `off`-scope traits, native selection, effects, t-test p/q, intervals, directional support and native family sizes for every scope/scenario. |
+| `native_composition.tsv.gz` | All 342 `phenotype`-scope traits, native selection, effects, t-test p/q, intervals, directional support and native family sizes for every scope/scenario. |
 | `native_composition_comparison.tsv` | All six traits; native before/after fields prefixed `native_`; separate study-weighted comparisons and two reference policies. |
 | `<scenario>/native_ora_profiles.tsv.gz` | All six traits and both directions; observed/expected counts, folds, both tails' p/q/status/membership and null count intervals, separately by scope/background. Join baseline and scenario rows by study/experiment/direction/trait/scope/background. |
 | `native_ora_families.tsv` | Complete native family sizes, active profile counts and population totals. |
@@ -194,7 +194,7 @@ units, weights, missingness and correction families. Opposite and untestable
 results belong in the integration, not just the five originally upward traits.
 For #179, retain annotation-level interpretation, unresolved higher-rank source
 allocation, taxonomy coverage and corpus restrictions. In the historical
-`190-native-v1` committed snapshot (`methods/table1-native-results/`), contrast
+`190-native-v1` committed snapshot (`methods/table1-native-results/`) at [commit c64ab7fa](https://github.com/CultureBotAI/microbial-trait-profiling/tree/c64ab7fa118fa9c1d75cbcce32150a4c5db82fba/methods/table1-native-results/), contrast
 orientation (#188) and feature semantics (#189) were unreviewed at execution time
 prior to their subsequent tracker closures (#188 Closed 2026-10-11 UTC; #189 Closed
 2026-10-08 UTC; see the status checkpoint in

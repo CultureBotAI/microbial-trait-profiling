@@ -727,12 +727,12 @@ both refreshed pooled aliases. Existing historical statistics tables outside the
 emitted output set, the condition and body-site summaries, and the infographic PNG
 are listed with hashes under `not_regenerated` in the JSON. Schema version 1.2
 distinguishes `existing_stratum_table_not_refreshed` from
-`not_produced_by_site_stats_mode` (the summaries and figure). The committed
-`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`
-written by the final rerun (#1004) is schema version 1.1, with all eight of its
-`not_regenerated` entries using the single legacy reason
-`"not refreshed by pooled/site statistics mode"`; the next
-`just trait-profile-site-stats` run rewrites it compatibly under schema version 1.2,
+`not_produced_by_site_stats_mode` (the summaries and figure). No record is
+committed: a full render (`just trait-profile-investigation`) deletes
+`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`,
+because it rewrites the tables the record lists, so the schema 1.1 record from the
+final rerun (#1004) was retired in the #2397 regeneration (#2432); each
+`just trait-profile-site-stats` run writes a fresh record under schema version 1.2,
 and nothing reads it. These files are not
 covered by this record; their freshness depends on their own producing execution.
 In particular, running full mode immediately before this step can produce fresh

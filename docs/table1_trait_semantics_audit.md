@@ -54,6 +54,14 @@ The machine-readable table captures all required audit attributes across the 6 f
 | `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 0 | 51 | 61 (1.0%) | 1,739 (30.9%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
 | `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426) | 4 | 426 | 351 (6.0%) | 3,364 (59.8%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
 
+> **Current-run note (2026-11-27, #2397).** The `METPO:1000608` row above is the
+> pre-union single term. Under `facultative_union_v1`, which merges
+> `METPO:1000605` and `METPO:1000612` into `METPO:1000608`, the current
+> `six_shared_trait_summary.tsv` gives a profile support of 4,528 of 5,629
+> profiles (80.4%), against 4,412 (78.4%) above. The profile supports of the other
+> five traits (2,922, 4,386, 3,490, 1,739 and 3,364) match the current summary. No
+> other column of this table was recounted.
+
 **Source columns ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774), [#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)).**
 - Edges are counted by `primary_knowledge_source` in the pinned edge file.
 - **NCBITaxon edges.** The matrix builder (`src/mtp/taxa_trait_matrix.py`) reads them in every strain rollup scope. Each subject carries one edge per trait here, so this column equals *Direct KG Taxa*.

@@ -304,12 +304,13 @@ def test_full_coupling_audit_on_production_data(tmp_path: Path) -> None:
     # 4 remaining traits * 3 arms = 12 rows
     assert len(lco_df) == 12
 
-    # Verify decision rule result matches empirical finding
+    # Verify decision rule result matches empirical finding: values from the profiles
+    # regenerated in #2397 (previously 0.003904 and 0.000014, #2433).
     rule = res["rule_result"]
     assert rule.target_trait_id == COCCUS_ID
     assert rule.dropped_trait_id == SPHERE_ID
-    assert pytest.approx(rule.min_adjacent_distance, abs=1e-5) == 0.003904
-    assert pytest.approx(rule.delta_effect, abs=1e-5) == 0.000014
+    assert pytest.approx(rule.min_adjacent_distance, abs=1e-5) == 0.005054
+    assert pytest.approx(rule.delta_effect, abs=1e-5) == -0.0000042
     assert rule.passes_stability_criterion is True
 
 

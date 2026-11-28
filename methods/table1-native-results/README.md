@@ -4,35 +4,35 @@
 > **Matched-Corpus Table 1-Trait Analog (Issue #210)**
 > The native composition and ORA reruns / taxon contribution audits reported here are a matched-corpus Table 1-trait analog sensitivity analysis, not influence on the published manuscript Table 1. They use the pinned human paired KG-Microbe profile corpus and are not a reproduction of the published Table 1 baseline (they do not reproduce published Table 1 baseline values such as facultatively aerobic $q = 2.8 \times 10^{-10}$).
 
-These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. The 24 rule-declared exclusion scenarios, four scopes, raw trait keys and human paired corpus are unchanged. This is matched-corpus sensitivity analysis, not a reproduction of published results with other filters. See run_manifest.json for hashes, the implementation revision, model policies and result files. This historical manifest predates the explicit dirty-tree field: its commit identifies the revision but does not prove the checkout was clean. The current publisher requires a recorded clean state.
+These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. The 25 rule-declared exclusion scenarios, four scopes, raw trait keys and human paired corpus are unchanged. This is matched-corpus sensitivity analysis, not a reproduction of published results with other filters. See run_manifest.json for hashes, the implementation revision, model policies and result files.
 
 ## Composition
 
 Native effects are experiment-weighted increased-minus-decreased z-score contrasts. Native p-values test the mean; native BH families contain finite p-values among selected supported variable traits, not just Table 1. Selected untestable traits receive q = 1.0 outside the correction vector. Zero-total profiles remain as zero fractions. Study-weighted comparisons, sign tests and conditional intervals are separately labeled in native_composition_comparison.tsv.gz. Refitted scales and fixed baseline SD comparisons must not be conflated.
 
 | Trait | Pooled native effect | Native p | Native q | Largest matched change, fixed baseline SD | Exclusion |
-| --- | --- | --- | --- | --- | --- | --- |
-| facultatively_aerobic | 0.18631 | 5.35241e-12 | 1.68601e-09 | -0.0544385 | exclude_family_NCBITaxon:543 |
-| cellulose_catabolic_process | -0.164876 | 2.10484e-09 | 3.31512e-07 | 0.00949518 | exclude_family_NCBITaxon:543 |
-| coccus_shaped | 0.156906 | 2.35116e-08 | 2.46872e-06 | -0.0657366 | exclude_family_NCBITaxon:1300 |
-| sphere_shaped | 0.139652 | 5.18261e-07 | 3.33761e-05 | -0.0305592 | exclude_family_NCBITaxon:1300 |
-| arsenate_reduction | 0.147797 | 5.2978e-07 | 3.33761e-05 | -0.197758 | exclude_family_NCBITaxon:543 |
-| moderately_halophilic | 0.131709 | 1.7926e-06 | 9.41115e-05 | -0.0530599 | exclude_family_NCBITaxon:81852 |
+| --- | --- | --- | --- | --- | --- |
+| facultatively_aerobic | 0.201152 | 5.37744e-13 | 1.81757e-10 | -0.0343541 | exclude_family_NCBITaxon:543 |
+| cellulose_catabolic_process | -0.163088 | 6.959e-09 | 1.17607e-06 | -0.0115341 | exclude_family_NCBITaxon:31979 |
+| coccus_shaped | 0.160342 | 2.68484e-08 | 3.02492e-06 | -0.0540449 | exclude_family_NCBITaxon:1300 |
+| sphere_shaped | 0.146733 | 2.80024e-07 | 2.36621e-05 | -0.0236589 | exclude_family_NCBITaxon:1300 |
+| arsenate_reduction | 0.149326 | 7.40527e-07 | 4.51358e-05 | -0.174593 | exclude_genus_NCBITaxon:561 |
+| moderately_halophilic | 0.140286 | 8.01228e-07 | 4.51358e-05 | -0.0481342 | exclude_family_NCBITaxon:81852 |
 
 The displayed maximum is descriptive selection within the rule-declared panel, not an explanation or causal attribution. The TSV retains all opposite, null and untestable results, eligibility components, intervals and family membership.
 
 ## Baseline-versus-exclusion native q-values
 
-This table directly checks whether any predeclared genus/family exclusion causes a Table 1-named trait that is significant at pooled baseline to lose native q<=0.05 membership. These baseline q-values are calculated on the matched-corpus Table 1-trait analog (e.g. facultatively aerobic native $q = 1.69 \times 10^{-9}$), not a reproduction of the published Table 1 baseline (where facultatively aerobic $q = 2.8 \times 10^{-10}$). Q-values come from the complete supported-trait family, not a six-trait recalculation. `NA` means the exclusion result was not tested or not selected.
+This table directly checks whether any predeclared genus/family exclusion causes a Table 1-named trait that is significant at pooled baseline to lose native q<=0.05 membership. These baseline q-values are calculated on the matched-corpus Table 1-trait analog, not a reproduction of the published Table 1 baseline. Q-values come from the complete supported-trait family, not a six-trait recalculation. `NA` means the exclusion result was not tested or not selected.
 
 | Trait | Baseline q | Highest exclusion q | Highest-q exclusion | Exclusions losing q<=0.05 | Losing exclusions |
 | --- | ---: | ---: | --- | ---: | --- |
-| facultatively_aerobic | 1.68601e-09 | 3.43643e-05 | exclude_family_NCBITaxon:543 | 0 | none |
-| cellulose_catabolic_process | 3.31512e-07 | 3.39141e-06 | exclude_family_NCBITaxon:1300 | 0 | none |
-| coccus_shaped | 2.46872e-06 | 0.0185388 | exclude_family_NCBITaxon:1300 | 0 | none |
-| sphere_shaped | 3.33761e-05 | 0.0164878 | exclude_family_NCBITaxon:1300 | 0 | none |
-| arsenate_reduction | 3.33761e-05 | 0.673778 | exclude_genus_NCBITaxon:561 | 2 | exclude_family_NCBITaxon:543<br>exclude_genus_NCBITaxon:561 |
-| moderately_halophilic | 9.41115e-05 | 0.0234308 | exclude_family_NCBITaxon:81852 | 0 | none |
+| facultatively_aerobic | 1.81757e-10 | 4.16632e-06 | exclude_family_NCBITaxon:543 | 0 | none |
+| cellulose_catabolic_process | 1.17607e-06 | 5.76818e-06 | exclude_family_NCBITaxon:1300 | 0 | none |
+| coccus_shaped | 3.02492e-06 | 0.0250569 | exclude_family_NCBITaxon:1300 | 0 | none |
+| sphere_shaped | 2.36621e-05 | 0.0154112 | exclude_family_NCBITaxon:1300 | 0 | none |
+| arsenate_reduction | 4.51358e-05 | 0.806779 | exclude_genus_NCBITaxon:561 | 2 | exclude_family_NCBITaxon:543<br>exclude_genus_NCBITaxon:561 |
+| moderately_halophilic | 4.51358e-05 | 0.0171181 | exclude_family_NCBITaxon:81852 | 0 | none |
 
 ## ORA
 
@@ -42,18 +42,18 @@ The profile table includes exact 95% central hypergeometric null count intervals
 
 | Trait | Background | Largest absolute matched fold change | Exclusion | Lost pairs |
 | --- | --- | --- | --- | --- |
-| facultatively_aerobic | fixed_baseline | -0.0693003 | exclude_family_NCBITaxon:543 | 38 |
-| facultatively_aerobic | recomputed_remaining | -0.0329404 | exclude_genus_NCBITaxon:561 | 4 |
-| cellulose_catabolic_process | fixed_baseline | -0.102376 | exclude_family_NCBITaxon:31979 | 20 |
-| cellulose_catabolic_process | recomputed_remaining | -0.147721 | exclude_family_NCBITaxon:31979 | 20 |
-| coccus_shaped | fixed_baseline | -0.100947 | exclude_family_NCBITaxon:1300 | 26 |
-| coccus_shaped | recomputed_remaining | 0.0930277 | exclude_genus_NCBITaxon:1279 | 22 |
-| sphere_shaped | fixed_baseline | 0.0836635 | exclude_family_NCBITaxon:33958 | 48 |
-| sphere_shaped | recomputed_remaining | 0.0821474 | exclude_family_NCBITaxon:33958 | 48 |
-| arsenate_reduction | fixed_baseline | -0.268529 | exclude_genus_NCBITaxon:561 | 4 |
-| arsenate_reduction | recomputed_remaining | -0.297373 | exclude_genus_NCBITaxon:561 | 4 |
-| moderately_halophilic | fixed_baseline | -0.0511097 | exclude_family_NCBITaxon:81852 | 8 |
-| moderately_halophilic | recomputed_remaining | -0.0474935 | exclude_family_NCBITaxon:81852 | 8 |
+| facultatively_aerobic | fixed_baseline | -0.0665669 | exclude_family_NCBITaxon:1300 | 24 |
+| facultatively_aerobic | recomputed_remaining | -0.0332522 | exclude_family_NCBITaxon:1300 | 24 |
+| cellulose_catabolic_process | fixed_baseline | -0.103828 | exclude_family_NCBITaxon:31979 | 20 |
+| cellulose_catabolic_process | recomputed_remaining | -0.146493 | exclude_family_NCBITaxon:31979 | 20 |
+| coccus_shaped | fixed_baseline | -0.0977837 | exclude_family_NCBITaxon:1300 | 24 |
+| coccus_shaped | recomputed_remaining | 0.0787379 | exclude_family_NCBITaxon:90964 | 18 |
+| sphere_shaped | fixed_baseline | 0.0823701 | exclude_family_NCBITaxon:33958 | 47 |
+| sphere_shaped | recomputed_remaining | 0.0803242 | exclude_family_NCBITaxon:33958 | 47 |
+| arsenate_reduction | fixed_baseline | -0.279762 | exclude_genus_NCBITaxon:561 | 6 |
+| arsenate_reduction | recomputed_remaining | -0.303311 | exclude_genus_NCBITaxon:561 | 6 |
+| moderately_halophilic | fixed_baseline | -0.0554214 | exclude_family_NCBITaxon:81852 | 7 |
+| moderately_halophilic | recomputed_remaining | -0.0513827 | exclude_family_NCBITaxon:81852 | 7 |
 
 ## Integration Limits
 
@@ -67,13 +67,13 @@ The study-weighted raw-fraction mean and the native transformed analysis are dif
 
 | Trait | Study-weighted raw-fraction finding | Native transformed finding | Interpretation |
 | --- | --- | --- | --- |
-| Arsenate reduction | Excluding Escherichia changes the matched mean by -0.0065 pp [-0.0092, -0.0037]; the remaining mean is -0.0007 pp [-0.0019, 0.0005]. Escherichia supplies 58.7% of increased-arm counts. | q changes from 3.33761e-05 to 0.673778 after the genus exclusion. | Lineage-sensitive on this corpus; do not describe a lineage-independent mechanism or treat removal as causal attribution. |
-| Sphere shaped | Baseline mean 0.0213 pp [-0.0174, 0.0601] crosses zero; the separate directional sign-test q is 0.00287925. | Baseline native q is 3.33761e-05. | Cross-scale non-reproduction of the mean interval, not a refutation or independent replication of the native result. |
+| Arsenate reduction | Excluding Escherichia changes the matched mean by -0.0061 pp [-0.0088, -0.0034]; the remaining mean is -0.0005 pp [-0.0016, 0.0006]. Escherichia supplies 58.7% of increased-arm counts. | q changes from 4.51358e-05 to 0.806779 after the genus exclusion. | Lineage-sensitive on this corpus; do not describe a lineage-independent mechanism or treat removal as causal attribution. |
+| Sphere shaped | Baseline mean 0.0191 pp [-0.0137, 0.0519] crosses zero; the separate directional sign-test q is 0.00101414. | Baseline native q is 2.36621e-05. | Cross-scale non-reproduction of the mean interval, not a refutation or independent replication of the native result. |
 
 ## Review Bundle
 
 The `.tsv.gz` comparison files contain all six traits, scenarios and scopes, including null and untestable results. `native_table1_stats.tsv.gz` is the six-trait subset of the native composition table; its q-values were computed over the FULL native families, whose sizes remain attached. The separate ORA family table includes both backgrounds and both tail-family sizes. `interpretation_handoff.tsv` carries the two measured #213 flags without collapsing their scales or tests. `scenarios.tsv` supplies lineage names, support and selection status for the full genus/family inventory, including lineages outside the rule-declared panel.
 
-The full 317-trait composition table, profile-level ORA results and source ledger are generated under `data/derived/table1_taxon_influence/`, following the repository's untracked generated-data convention. Regenerate the default input chain with `just table1-taxon-influence`, or use `just table1-taxon-influence-from <pinned-KG-directory>` for already materialized inputs. The recipe writes a candidate review bundle under the untracked run directory; this committed directory is an explicitly reviewed snapshot. This compact review bundle does not discard any six-trait influence comparison. `run_manifest.json` records hashes for the full data; `publication_manifest.json` identifies these review copies. All full-run file hashes were checked before publication.
+The full 342-trait composition table, profile-level ORA results and source ledger are generated under `data/derived/table1_taxon_influence/`, following the repository's untracked generated-data convention. Regenerate the default input chain with `just table1-taxon-influence`, or use `just table1-taxon-influence-from <pinned-KG-directory>` for already materialized inputs. The recipe writes a candidate review bundle under the untracked run directory; this committed directory is an explicitly reviewed snapshot. This compact review bundle does not discard any six-trait influence comparison. `run_manifest.json` records hashes for the full data; `publication_manifest.json` identifies these review copies. All full-run file hashes were checked before publication.
 
 Publication also re-sums the complete source-contribution ledger through the profile/reported-taxon links and requires exact equality with every exported profile/trait count. The publication manifest records those file hashes and row counts.

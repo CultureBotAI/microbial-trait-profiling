@@ -123,7 +123,7 @@ signals.
 
 For the increased-profile aerobe v2 diagram, positive mean trait-set
 z-scores support the idea that increased-signature taxa are relatively enriched
-for aerobic, facultative, or microaerophilic traits. Negative values mean the
+for aerobic or microaerophilic traits. Negative values mean the
 increased-signature taxa in that condition or body site are not especially
 aerobe-like relative to the broader dataset.
 

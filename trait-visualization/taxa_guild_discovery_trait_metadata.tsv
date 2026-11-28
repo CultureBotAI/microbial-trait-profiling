@@ -25,16 +25,14 @@ METPO:1000607	METPO:1000607	23	4246	"obligately anaerobic
 METPO:1000607"	obligately anaerobic METPO:1000607	obligately anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	192.14126699720524
 METPO:1000604	METPO:1000604	19	4433	"microaerophilic
 METPO:1000604"	microaerophilic METPO:1000604	microaerophilic	biolink:PhenotypicQuality	PhenotypicQuality	159.54409041334887
-METPO:1000608	METPO:1000608	17	4412	"facultatively aerobic
-METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	142.6692701575823
+METPO:1000608	METPO:1000608	18	4528	"facultatively aerobic
+METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	151.52861598401185
 METPO:1002005	METPO:1002005	15	4486	"Fermentation
 METPO:1002005"	Fermentation METPO:1002005	Fermentation	biolink:OntologyClass	OntologyClass	126.13409408963976
 METPO:1000602	METPO:1000602	13	4357	"aerobic
 METPO:1000602"	aerobic METPO:1000602	aerobic	biolink:PhenotypicQuality	PhenotypicQuality	108.93699070155935
 METPO:1000624	METPO:1000624	13	4127	"non halophilic
 METPO:1000624"	non halophilic METPO:1000624	non halophilic	biolink:PhenotypicQuality	PhenotypicQuality	108.23212799309817
-METPO:1000605	METPO:1000605	13	4076	"facultatively anaerobic
-METPO:1000605"	facultatively anaerobic METPO:1000605	facultatively anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	108.07051713665028
 METPO:1000702	METPO:1000702	12	4516	"motile
 METPO:1000702"	motile METPO:1000702	motile	biolink:PhenotypicQuality	PhenotypicQuality	100.98724002785525
 METPO:1000431	METPO:1000431	10	3801	"GC mid2

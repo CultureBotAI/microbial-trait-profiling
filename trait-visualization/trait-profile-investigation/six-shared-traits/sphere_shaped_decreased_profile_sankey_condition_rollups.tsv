@@ -1,20 +1,20 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_condition	condition	condition_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	271	57	130	108
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	93	75
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	83	54
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	COVID-19	Infectious disease	infectious-disease condition group	123	31	62	65
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	271	57	130	106
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	93	76
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	83	53
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	COVID-19	Infectious disease	infectious-disease condition group	123	31	62	64
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	98	16	48	48
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Population	Population / social covariates	population/social-covariate condition group	96	4	44	31
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Population	Population / social covariates	population/social-covariate condition group	96	4	44	30
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	HIV infection	Infectious disease	infectious-disease condition group	94	30	47	40
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	40	30
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	93	20	50	43
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	40	29
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	93	20	50	42
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Chronic constipation	GI / digestive disease	gi/digestive condition group	89	15	41	36
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Human papilloma virus infection	Infectious disease	infectious-disease condition group	81	22	36	36
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	67	13	33	34
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	67	12	32	32
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Human papilloma virus infection	Infectious disease	infectious-disease condition group	81	22	36	34
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	67	13	33	33
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	67	12	32	31
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	60	21	29	28
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Age	Age / development / sex	age/development/sex condition group	60	16	23	30
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	54	13	25	23
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	54	13	25	22
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Asthma	Respiratory / airway disease	respiratory/airway condition group	54	12	26	25
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Metabolic toxicity	Metabolic / endocrine	metabolic/endocrine condition group	53	1	27	43
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	20	20
@@ -23,11 +23,11 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Aging	Age / development / sex	age/development/sex condition group	48	5	21	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Diet measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	47	6	30	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Crohn's disease	Inflammatory bowel disease	ibd condition group	45	13	24	10
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	43	13	21	25
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	43	13	21	26
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Ulcerative colitis	Inflammatory bowel disease	ibd condition group	43	13	22	12
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	43	12	15	24
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	43	12	15	23
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Stroke	Stroke	stroke condition group	43	5	15	26
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	43	3	17	21
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	43	3	17	22
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Atopic eczema	Skin / hair disease	skin/hair condition group	40	9	17	19
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Ethnic group	Population / social covariates	population/social-covariate condition group	39	8	19	21
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Lifestyle measurement	Activity / lifestyle score	activity/lifestyle-score condition group	36	6	13	7
@@ -40,7 +40,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Breast cancer	Cancer / neoplasia	cancer/neoplasia condition group	31	8	15	14
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Atopic asthma	Respiratory / airway disease	respiratory/airway condition group	30	2	14	19
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Cesarean section	Pregnancy / neonatal	pregnancy/neonatal condition group	29	8	15	15
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	28	6	14	8
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	28	6	14	7
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Response to diet	Medication / clinical treatment	medication/clinical-treatment condition group	28	6	14	9
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Socioeconomic status	Population / social covariates	population/social-covariate condition group	27	11	13	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Lung cancer	Respiratory / airway disease	respiratory/airway condition group	27	8	11	17
@@ -53,12 +53,12 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Psoriasis vulgaris	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	25	1	11	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Food allergy	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	24	8	12	8
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Human immunodeficiency virus	Infectious disease	infectious-disease condition group	24	4	13	15
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Diarrhea	GI / digestive disease	gi/digestive condition group	24	3	12	14
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Diarrhea	GI / digestive disease	gi/digestive condition group	24	3	12	13
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Constipation	GI / digestive disease	gi/digestive condition group	23	7	12	10
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Periodontitis	Oral / periodontal disease	oral/periodontal condition group	23	7	10	11
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Oral squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	23	6	12	13
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Glaucoma	Ocular / eye disease	ocular/eye condition group	23	5	10	16
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Smoking status measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	23	5	10	12
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Smoking status measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	23	5	10	11
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Cervical cancer	Cancer / neoplasia	cancer/neoplasia condition group	22	7	11	11
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Health study participation	Population / social covariates	population/social-covariate condition group	22	6	9	6
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Non-alcoholic fatty liver disease	GI / digestive disease	gi/digestive condition group	22	6	11	9
@@ -69,7 +69,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Delivery method	Pregnancy / neonatal	pregnancy/neonatal condition group	20	5	11	6
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Response to allogeneic hematopoietic stem cell transplant	Blood / immune deficiency	blood/immune-deficiency condition group	20	5	11	17
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	5	11	11
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	4	10	7
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	4	10	6
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Health-related quality of life measurement	Disease activity / severity	disease-activity/severity condition group	20	4	10	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Treatment	Medication / clinical treatment	medication/clinical-treatment condition group	20	4	10	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Acute lymphoblastic leukemia	Cancer / neoplasia	cancer/neoplasia condition group	19	5	6	7
@@ -86,7 +86,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Epilepsy	Neurologic / cognitive disease	neurologic/cognitive condition group	16	5	6	12
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Breastfeeding duration	Pregnancy / neonatal	pregnancy/neonatal condition group	16	2	8	8
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Body mass index	Body composition / growth	body-composition/growth condition group	15	9	8	3
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	15	6	7	3
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	15	6	7	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Chronic fatigue syndrome	Psychiatric / behavioral health	psychiatric/behavioral condition group	15	4	8	3
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Cognitive impairment	Neurologic / cognitive disease	neurologic/cognitive condition group	15	4	7	8
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	HIV mother to child transmission	Infectious disease	infectious-disease condition group	15	1	8	7
@@ -95,19 +95,19 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Graft versus host disease	Transplant / graft response	transplant/graft condition group	14	5	7	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Autism	Neurologic / cognitive disease	neurologic/cognitive condition group	14	4	6	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Milk allergic reaction	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	14	4	6	5
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gastric adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	14	3	6	5
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Gastric adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	14	3	6	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Pregnancy	Pregnancy / neonatal	pregnancy/neonatal condition group	13	5	6	7
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Chronic obstructive pulmonary disease	Respiratory / airway disease	respiratory/airway condition group	13	4	6	10
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Microbiome	Microbiome phenotype	microbiome-phenotype condition group	13	4	5	8
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Urinary tract infection	Infectious disease	infectious-disease condition group	13	4	6	4
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Alcohol drinking	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	13	3	7	8
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Alcohol drinking	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	13	3	7	7
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Colorectal carcinoma	Colorectal neoplasia	colorectal neoplasia condition group	13	3	7	7
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Unipolar depression	Psychiatric / behavioral health	psychiatric/behavioral condition group	13	3	6	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Chlamydia trachomatis	Infectious disease	infectious-disease condition group	13	2	6	9
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Response to ketogenic diet	Medication / clinical treatment	medication/clinical-treatment condition group	13	2	8	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Respiratory Syncytial Virus Infection	Infectious disease	infectious-disease condition group	13	1	6	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Clinical treatment	Medication / clinical treatment	medication/clinical-treatment condition group	12	4	6	5
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Chronic hepatitis B virus infection	Infectious disease	infectious-disease condition group	12	3	6	4
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Chronic hepatitis B virus infection	Infectious disease	infectious-disease condition group	12	3	6	3
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	12	3	6	7
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Ischemic stroke	Stroke	stroke condition group	12	3	4	6
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Acute respiratory failure	Respiratory / airway disease	respiratory/airway condition group	12	1	6	4
@@ -130,7 +130,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	COPRO-seq	Other specific clinical labels	other-specific-clinical-label condition group	10	1	5	6
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Helicobacter pylori	Infectious disease	infectious-disease condition group	10	1	5	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Air pollution	Environmental / chemical exposure	environmental/chemical condition group	9	3	5	6
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Iron deficiency anemia	Blood / immune deficiency	blood/immune-deficiency condition group	9	3	5	8
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Iron deficiency anemia	Blood / immune deficiency	blood/immune-deficiency condition group	9	3	5	7
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Response to antibiotic	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	9	3	4	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Birth measurement	Age / development / sex	age/development/sex condition group	9	2	5	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Multiple myeloma	Cancer / neoplasia	cancer/neoplasia condition group	9	2	4	4
@@ -140,7 +140,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Contraception	Reproductive / hormonal health	reproductive/hormonal condition group	9	1	4	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Hypertrophy	Body composition / growth	body-composition/growth condition group	9	1	1	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Lewy body dementia	Neurologic / cognitive disease	neurologic/cognitive condition group	9	1	3	0
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Allergic rhinitis	Respiratory / airway disease	respiratory/airway condition group	8	4	4	4
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Allergic rhinitis	Respiratory / airway disease	respiratory/airway condition group	8	4	4	3
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Disease progression measurement	Disease activity / severity	disease-activity/severity condition group	8	3	3	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Risk factor	Disease activity / severity	disease-activity/severity condition group	8	3	4	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Autoimmune disease	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	8	2	4	5
@@ -206,7 +206,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Meibomian cyst	Ocular / eye disease	ocular/eye condition group	6	1	3	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Nutraceutical	Diet / nutrition / supplements	diet/nutrition/supplement condition group	6	1	3	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Relapsing-remitting multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	6	1	2	3
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Response to radiation	Medication / clinical treatment	medication/clinical-treatment condition group	6	1	3	3
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Response to radiation	Medication / clinical treatment	medication/clinical-treatment condition group	6	1	3	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sensory perception of bitter taste	ENT / oral mucosal disease	ent/oral-mucosal condition group	6	1	3	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Small intestine enteropathy	GI / digestive disease	gi/digestive condition group	6	1	2	5
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Specimen	Other specific clinical labels	other-specific-clinical-label condition group	6	1	3	4
@@ -216,7 +216,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Low density lipoprotein cholesterol measurement	Metabolic / endocrine	metabolic/endocrine condition group	5	3	2	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Viral load	Infectious disease	infectious-disease condition group	5	3	2	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Anemia	Blood / immune deficiency	blood/immune-deficiency condition group	5	2	2	1
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Exercise	Activity / lifestyle score	activity/lifestyle-score condition group	5	2	3	2
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Exercise	Activity / lifestyle score	activity/lifestyle-score condition group	5	2	3	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Nephrolithiasis	Renal / urinary disease	renal/urinary condition group	5	2	3	3
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Response to combination chemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	5	2	3	3
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Vulvovaginitis	Reproductive / hormonal health	reproductive/hormonal condition group	5	2	2	3
@@ -229,7 +229,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Mood disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	5	1	2	4
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Mucositis	ENT / oral mucosal disease	ent/oral-mucosal condition group	5	1	2	3
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Nasopharyngeal squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	5	1	2	2
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Non-small cell lung carcinoma,Renal cell carcinoma,Disease progression measurement	Respiratory / airway disease	respiratory/airway condition group	5	1	3	3
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Non-small cell lung carcinoma,Renal cell carcinoma,Disease progression measurement	Respiratory / airway disease	respiratory/airway condition group	5	1	3	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Oxidative Stress	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	5	1	2	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sleep duration	Neurologic / cognitive disease	neurologic/cognitive condition group	5	1	3	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Treatment refractory schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	5	1	2	0
@@ -324,7 +324,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Serum alanine aminotransferase measurement	Liver / biliary biomarker	liver/biliary-biomarker condition group	3	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Serum gamma-glutamyl transferase measurement	Other specific clinical labels	other-specific-clinical-label condition group	3	1	2	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sexually transmitted disease	Other specific clinical labels	other-specific-clinical-label condition group	3	1	0	0
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Spinal cord injury	Neurologic / cognitive disease	neurologic/cognitive condition group	3	1	2	3
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Spinal cord injury	Neurologic / cognitive disease	neurologic/cognitive condition group	3	1	2	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Stroke outcome severity measurement	Stroke	stroke condition group	3	1	2	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Therapeutic Procedure	Other specific clinical labels	other-specific-clinical-label condition group	3	1	1	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Vitamin D measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	3	1	2	0
@@ -354,7 +354,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Breast cancer stage	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	C-peptide measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	CD4-positive T-lymphocyte count	Blood / immune deficiency	blood/immune-deficiency condition group	2	1	1	0
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Carotid artery intima media thickness	Cardiovascular disease	cardiovascular condition group	2	1	1	2
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Carotid artery intima media thickness	Cardiovascular disease	cardiovascular condition group	2	1	1	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Cerebral infarction	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	2
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Cervical carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Cervical glandular intraepithelial neoplasia,Cervical cancer	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
@@ -450,7 +450,7 @@ sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decrea
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sex design	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sex hormone-binding globulin measurement	Reproductive / hormonal health	reproductive/hormonal condition group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sigmoid neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
-sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sjogren syndrome	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	2
+sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Sjogren syndrome	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	1
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Social anxiety disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Social interaction measurement	Psychiatric / behavioral health	psychiatric/behavioral condition group	2	1	1	0
 sphere_shaped_decreased	METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	decreased	Survival time	Disease activity / severity	disease-activity/severity condition group	2	1	1	2

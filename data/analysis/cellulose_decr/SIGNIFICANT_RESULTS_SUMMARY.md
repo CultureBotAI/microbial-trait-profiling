@@ -14,7 +14,7 @@ annotations. None of them measures cellulose degradation or any other physiology
 The trait and conditions were picked as exploratory leads from this corpus, so
 no result here is confirmatory. The p-values are nominal; the TSV adds
 Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`). The numbers
-are those of the tables regenerated in the final rerun at code commit 511c891
+are those of the tables regenerated in the final rerun at code commit a01466d
 (#799).
 
 ## What holds up
@@ -43,7 +43,7 @@ are those of the tables regenerated in the final rerun at code commit 511c891
    - **disease vs healthy:** 23 of 33 studies (p = 0.035, q = 0.054). The table has
      given q = 0.054 since #767; this note quoted 0.037 from the tables before it.
    - **all contrasts:** the sign test gives 26 of 40 (p = 0.081, q = 0.10). The
-     study-level Wilcoxon test gives p = 0.013, and a majority vote of experiment
+     study-level Wilcoxon test gives p = 0.012, and a majority vote of experiment
      signs gives 27 of 39 (p = 0.024).
 
 ## What is fragile
@@ -107,7 +107,7 @@ are those of the tables regenerated in the final rerun at code commit 511c891
    - The CRC contrasts there are mostly not patient-versus-control, and the
      disease-vs-healthy comparison has 7 untied GI studies (fragile #2).
 4. **The trait ranking is descriptive.** Cellulose catabolic process ranks second
-   of 146 non-MediaDive traits by cross-condition distance, after Acetogenesis
+   of 144 non-MediaDive traits by cross-condition distance, after Acetogenesis
    (`METPO:1000845`). The ranking is not a test, and traits share taxa.
 
 ## Table A. Direction in feces
@@ -119,13 +119,13 @@ of the TSV) are for the study sign test.
 
 | Condition | Contrasts | Experiments | p | Studies | p | q | Study Wilcoxon p |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PD | all | 57 : 24 : 16 | 3.2e-4 | 26 : 14 : 3 | 0.081 | 0.10 | 0.013 |
+| PD | all | 57 : 24 : 16 | 3.2e-4 | 26 : 14 : 3 | 0.081 | 0.10 | 0.012 |
 | PD | disease vs healthy | 46 : 15 : 11 | 8.8e-5 | 23 : 10 : 3 | 0.035 | 0.054 | 0.019 |
 | HIV | all | 18 : 7 : 3 | 0.043 | 11 : 5 : 2 | 0.21 | 0.23 | 0.32 |
 | HIV | disease vs healthy | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 | 0.056 | 0.18 |
 | CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 8.0e-4 | 2.0e-4 |
 | CRC | disease vs healthy | 22 : 5 : 8 | 0.0015 | 16 : 2 : 7 | 0.0013 | 0.0035 | 0.0010 |
-| All three | all | 107 : 37 : 30 | 4.4e-9 | 56 : 21 : 12 | 8.2e-5 | 4.3e-4 | 5.6e-5 |
+| All three | all | 107 : 37 : 30 | 4.4e-9 | 56 : 21 : 12 | 8.2e-5 | 4.3e-4 | 5.5e-5 |
 | All three | disease vs healthy | 81 : 23 : 22 | 9.3e-9 | 49 : 14 : 12 | 1.1e-5 | 1.1e-4 | 8.8e-5 |
 
 Experiment-level p-values treat experiments from one study as independent, so

@@ -1,2 +1,2 @@
-trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:1000668	coccus shaped	coccus_shaped	#009e73	6.398190118294285e-06	6.13245059261433e-08	0.1572607242027672	trait enriched in increased profiles
+trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction	paired_p_value_type	displayed_nominal_test_count	bh_family_size	bh_unfiltered_trait_count	paired_q_value_family
+METPO:1000668	coccus shaped	coccus_shaped	#009e73	3.024921714798497e-06	2.684841758696891e-08	0.1603418319869473	trait enriched in increased profiles	nominal	1	338	342	pooled pair-level BH over 338 support/variance-selected traits (of 342 retained; select_stratum_traits support, positive-variance, and MediaDive-exclusion filter)

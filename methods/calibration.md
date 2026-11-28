@@ -85,11 +85,11 @@ assignments be handed to another arm (see **The shared null** below).
 
 Power is measured by raising one trait's counts (coccus shaped) on the increased side
 of half the studies by a declared multiplier. The added counts come **from the
-complement**: a profile's total sums all retained trait columns (317 under `off`, 344
+complement**: a profile's total sums all retained trait columns (317 under `off`, 342
 under `phenotype`). The eight groups the procedures read - the six single-column
 Table 1 traits and the two two-column oxygen guilds, ten columns in all - are
 disjoint subsets of them, and the raise moves annotations in from the other 307
-(334 under `phenotype`), which no procedure reads. The total is held fixed, so every other tracked trait's
+(332 under `phenotype`), which no procedure reads. The total is held fixed, so every other tracked trait's
 share is unchanged *exactly* - which is the only thing that makes the "untouched"
 truth labels, and therefore the false-discovery proportion, mean anything. An earlier
 version added the injected counts to the total, which lowered every other trait's
@@ -112,8 +112,8 @@ them as independent Bernoulli trials understates the uncertainty, so
 the pooled per-test rate is a ratio estimator over replicate clusters, which reduces
 to the binomial variance when a replicate contributes one test and inflates it by the
 measured design effect when it contributes several correlated ones. The measured
-design effects are 1.00 for the single McNemar, 1.16 for the six-trait family, 1.21
-for the screened three and 1.62 for the 15 overlapping ratios - the ratios are the
+design effects are 1.00 for the single McNemar, 1.14 for the six-trait family, 1.20
+for the screened three and 1.56 for the 15 overlapping ratios - the ratios are the
 most correlated, as expected.
 
 Per-label rates keep their exact two-sided binomial interval, which is valid because
@@ -156,8 +156,8 @@ smallest, at 0.953. The change is recorded as an amendment in the protocol.
 
 A true 0.06 lies **inside** the declared tolerance, so where it is measured precisely
 it passes by declaration, not by weakness - at the 16,800 trials the six-trait family
-contributes, a true 0.06 passes 78% of the time with that family's measured design
-effect of about 1.18 (85% if its six tests were independent). Treating 0.06 as
+contributes, a true 0.06 passes 80% of the time with that family's measured design
+effect of about 1.14 (85% if its six tests were independent). Treating 0.06 as
 material inflation would mean declaring a tolerance of 0.055 and a budget several
 times larger. That budget was not taken. The criterion is sized to separate rates at
 or below 0.065 from rates at or above 0.07,

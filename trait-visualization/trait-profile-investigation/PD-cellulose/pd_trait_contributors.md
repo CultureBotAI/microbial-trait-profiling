@@ -8,9 +8,9 @@ Each trait carries its observed direction in the PD six-trait lollipop, the sign
 
 The background row replaces the separate unresolved-share bars. Within each trait, paired red/blue circle area compares the increased/decreased propagated count; the grey outer area is the portion unresolved or ambiguous at the displayed rank. Contributor circle area uses the full cell denominator, so unresolved mass already reduces the colored contributor share rather than being discarded.
 
-The heatmap retains `11` of `53` candidate taxa. A row must have at least one absolute increased-versus-decreased full-cell contributor share difference of `5%`. This removes rows containing only small directional changes.
+The heatmap retains `12` of `53` candidate taxa. A row must have at least one absolute increased-versus-decreased full-cell contributor share difference of `5%`. This removes rows containing only small directional changes.
 
-The direction-difference table retains 149 of 318 taxon-trait pairs whose full-cell contributor share changes between directions. Equal pairs, including pairs absent in both directions, are omitted.
+The direction-difference table retains 153 of 318 taxon-trait pairs whose full-cell contributor share changes between directions. Equal pairs, including pairs absent in both directions, are omitted.
 
 The right strip colors taxa by the profile-pool-normalized prevalence difference (`PD prevalence - other-feces prevalence`) in percentage points. This finite difference is used instead of a count ratio, so a small or zero other-feces count cannot create an infinite ratio. Raw count displays with a zero denominator, such as `1/0`, are rendered as `---`. The metric remains descriptive and does not account for study clustering.
 
@@ -22,9 +22,9 @@ Only 3 of 15 trait pairs have different selected-taxon co-carriage counts betwee
 
 | trait pair | increased | decreased | inc - dec | increased-only taxa | decreased-only taxa |
 | --- | ---: | ---: | ---: | --- | --- |
-| coccus shaped + moderately halophilic | 19 | 18 | +1 | Bifidobacteriaceae (31953) | none |
-| facultatively aerobic + coccus shaped | 28 | 27 | +1 | Bifidobacteriaceae (31953) | none |
-| facultatively aerobic + moderately halophilic | 28 | 27 | +1 | Bifidobacteriaceae (31953) | none |
+| coccus shaped + moderately halophilic | 21 | 20 | +1 | Bifidobacteriaceae (31953) | none |
+| facultative (aerobe or anaerobe) + coccus shaped | 31 | 30 | +1 | Bifidobacteriaceae (31953) | none |
+| facultative (aerobe or anaerobe) + moderately halophilic | 29 | 28 | +1 | Bifidobacteriaceae (31953) | none |
 
 ## Aggregate direction patterns
 
@@ -32,9 +32,8 @@ The contributor counts are not valid independent observations for a significance
 
 | trait | lollipop direction | mean increased - decreased z | 95% interval | pattern |
 | --- | --- | ---: | ---: | --- |
-| moderately halophilic | increased | 0.465 | [0.207, 0.723] | inc |
-| arsenate reduction | increased | 0.427 | [0.001, 0.852] | inc |
-| cellulose catabolic process | decreased | -0.693 | [-1.186, -0.199] | dec |
+| moderately halophilic | increased | 0.463 | [0.206, 0.719] | inc |
+| cellulose catabolic process | decreased | -0.683 | [-1.175, -0.192] | dec |
 
 These intervals are aggregate directional context, not contributor-level tests, and the table does not add a new multiple-testing correction.
 
@@ -42,11 +41,11 @@ These intervals are aggregate directional context, not contributor-level tests, 
 
 | rank | trait | direction | unresolved share |
 | --- | --- | --- | ---: |
-| species | sphere shaped | inc | 80.3% |
+| species | sphere shaped | inc | 80.4% |
 | species | sphere shaped | dec | 70.6% |
 | species | arsenate reduction | dec | 65.7% |
-| species | moderately halophilic | inc | 64.0% |
-| species | moderately halophilic | dec | 58.1% |
+| species | moderately halophilic | inc | 64.3% |
+| species | moderately halophilic | dec | 58.8% |
 | species | cellulose catabolic process | inc | 45.2% |
 
 High unresolved shares limit rank-specific attribution. They do not create extra colored contributor mass because every contributor share is divided by the full trait-direction count.

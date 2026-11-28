@@ -23,7 +23,7 @@ rate for a set defined as significant under any method.
 | `effect_value / effect_units` | the estimate and what it measures; units differ by method |
 | `study_effect_mean / study_effect_median / study_effect_units` | the distribution of per-study values the test ran over, which describes the input rather than the tested estimate, so it survives on an untested row |
 | `interval_low / interval_high / interval_type` | the interval and what it is an interval for; 'unavailable' where none was computed |
-| `p_value / q_value / correction_method / family_id / family_size` | the test and the family it was corrected in; families are not comparable |
+| `p_value / q_value / correction_method / family_id / family_size` | p_value is nominal; q_value is corrected within its declared family; families are not comparable |
 | `q_threshold / effect_threshold / support_threshold` | the thresholds this row used: two for the decision, and the minimum studies a figure cell needs to be drawn. The support threshold is a display rule and is set only on a cell row, which is what identifies the cell inventory |
 | `stratum_kind / stratum / condition / body_site / direction` | what the row is about within the corpus, as one label and as separate identifiers; blank on a pooled row |
 | `test_status` | tested, untested, insufficient_support, insufficient_variance, all_tied, no_eligible_pairs, zero_annotation_signal, not_sampled, source_not_supplied or tested_profiles_summarized. These distinguish absent signal, absent sampling, absent source and a descriptive summary of profile tests. Insufficient variance means the native t-test was unavailable for a constant nonzero or nearly constant contrast; it is not a tested negative. Native all_tied requires exactly zero study contrasts |
@@ -34,7 +34,8 @@ rate for a set defined as significant under any method.
 | `calibration_status / sensitivity_status / coverage_status / orientation_status / taxon_influence_status` | the state of #182, #183, #184, #188 and #190 for this row's own procedure. 'pending' means no applicable assessment was supplied or mapped; it does not establish that execution has not occurred. 'not_calibrated_here' means it ran and excluded this procedure; native influence completion reports execution, never a scientific pass. A report with no procedure verdict says so. Per-scenario and per-contrast-class detail is in integrated_evidence_assessments.tsv |
 | `source` | the input the row was computed from |
 | `family_scope / family_source` | complete internal family, source_subset, or profile_test_summary; external families retain their full source checksum |
-| `statistical_test / native_pair_p_value / native_pair_q_value` | actual native test; composition pair-level values are secondary to study-level inference and use a separate BH family of the same size |
+| `statistical_test / native_pair_p_value / native_pair_q_value` | actual native test; native_pair_p_value is nominal; native_pair_q_value is corrected within its declared family; composition pair-level values are secondary to study-level inference and use a separate BH family of the same size |
+| `nominal_p_columns (provenance)` | the provenance declares both p columns independently for each TSV export; finite values are nominal and no_finite_value means no finite value is exported in that column, not why it is unavailable. Row-level test_status remains a separate field. These exported-value counts are not correction family sizes or counts of tests |
 | `n_nonzero_experiments / n_zero_total_experiments / n_zero_total_excluded` | native composition eligibility counts; historical inclusion is explicit, not silently equated to S1 exclusion |
 | `full_screen_bh_q / full_screen_by_q / full_screen_family_size / full_screen_source` | compatible full-trait directional screen values with matching input hashes, study counts and contrast; BY is its primary correction |
 | `n_tests / n_significant_inc / n_significant_dec / inc_dec_ratio` | profile-level enrichment tests and discoveries by signature direction; descriptive, not aggregate significance; ratio blank when decreased-hit count is zero |
@@ -78,36 +79,38 @@ trait or cell test. The corresponding descriptive support rows remain untested.
 
 ## Records
 
-| Method | Feature | Level | Effect | Units | p | q (family) | Decision | Test state |
+Finite nominal tests shown in the Records table: 28. This displayed-row count is not a correction family size.
+
+| Method | Feature | Level | Effect | Units | nominal p | q (family) | Decision | Test state |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| directional_consistency_fraction_sign_test | facultatively_aerobic | corpus | 0.5802 | share of non-tied studies shifting toward the increased side | 1.74e-06 | 1.04e-05 (table1_six_fractions) | significant | tested |
-| directional_consistency_fraction_sign_test | cellulose_catabolic_process | corpus | 0.4325 | share of non-tied studies shifting toward the increased side | 0.000217 | 0.000435 (table1_six_fractions) | significant | tested |
-| directional_consistency_fraction_sign_test | coccus_shaped | corpus | 0.5446 | share of non-tied studies shifting toward the increased side | 0.00827 | 0.00827 (table1_six_fractions) | significant | tested |
-| directional_consistency_fraction_sign_test | sphere_shaped | corpus | 0.5558 | share of non-tied studies shifting toward the increased side | 0.00142 | 0.00213 (table1_six_fractions) | significant | tested |
+| directional_consistency_fraction_sign_test | facultatively_aerobic | corpus | 0.5831 | share of non-tied studies shifting toward the increased side | 6.16e-07 | 3.7e-06 (table1_six_fractions) | significant | tested |
+| directional_consistency_fraction_sign_test | cellulose_catabolic_process | corpus | 0.4338 | share of non-tied studies shifting toward the increased side | 0.000289 | 0.000578 (table1_six_fractions) | significant | tested |
+| directional_consistency_fraction_sign_test | coccus_shaped | corpus | 0.5429 | share of non-tied studies shifting toward the increased side | 0.0111 | 0.0111 (table1_six_fractions) | significant | tested |
+| directional_consistency_fraction_sign_test | sphere_shaped | corpus | 0.5594 | share of non-tied studies shifting toward the increased side | 0.000676 | 0.00101 (table1_six_fractions) | significant | tested |
 | directional_consistency_fraction_sign_test | arsenate_reduction | corpus | 0.5627 | share of non-tied studies shifting toward the increased side | 0.00229 | 0.00274 (table1_six_fractions) | significant | tested |
-| directional_consistency_fraction_sign_test | moderately_halophilic | corpus | 0.5742 | share of non-tied studies shifting toward the increased side | 2.19e-05 | 6.57e-05 (table1_six_fractions) | significant | tested |
-| directional_consistency_log_ratio_sign_test | facultatively_aerobic/cellulose_catabolic_process | corpus | 0.5974 | share of non-tied eligible studies with a higher log2 ratio | 3.28e-05 | 0.00138 (table1_fifteen_ratios) | significant | tested |
-| directional_consistency_log_ratio_sign_test | facultatively_aerobic/coccus_shaped | corpus | 0.5045 | share of non-tied eligible studies with a higher log2 ratio | 0.846 | 1 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | facultatively_aerobic/sphere_shaped | corpus | 0.5499 | share of non-tied eligible studies with a higher log2 ratio | 0.019 | 0.189 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | facultatively_aerobic/arsenate_reduction | corpus | 0.5339 | share of non-tied eligible studies with a higher log2 ratio | 0.313 | 1 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | facultatively_aerobic/moderately_halophilic | corpus | 0.5271 | share of non-tied eligible studies with a higher log2 ratio | 0.209 | 1 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | cellulose_catabolic_process/coccus_shaped | corpus | 0.46 | share of non-tied eligible studies with a higher log2 ratio | 0.0942 | 0.586 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_fraction_sign_test | moderately_halophilic | corpus | 0.5706 | share of non-tied studies shifting toward the increased side | 5.46e-05 | 0.000164 (table1_six_fractions) | significant | tested |
+| directional_consistency_log_ratio_sign_test | facultatively_aerobic/cellulose_catabolic_process | corpus | 0.5927 | share of non-tied eligible studies with a higher log2 ratio | 7.61e-05 | 0.00189 (table1_fifteen_ratios) | significant | tested |
+| directional_consistency_log_ratio_sign_test | facultatively_aerobic/coccus_shaped | corpus | 0.5088 | share of non-tied eligible studies with a higher log2 ratio | 0.673 | 1 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | facultatively_aerobic/sphere_shaped | corpus | 0.5466 | share of non-tied eligible studies with a higher log2 ratio | 0.0277 | 0.275 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | facultatively_aerobic/arsenate_reduction | corpus | 0.5238 | share of non-tied eligible studies with a higher log2 ratio | 0.488 | 1 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | facultatively_aerobic/moderately_halophilic | corpus | 0.5288 | share of non-tied eligible studies with a higher log2 ratio | 0.181 | 1 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | cellulose_catabolic_process/coccus_shaped | corpus | 0.4604 | share of non-tied eligible studies with a higher log2 ratio | 0.0956 | 0.595 (table1_fifteen_ratios) | not_significant | tested |
 | directional_consistency_log_ratio_sign_test | cellulose_catabolic_process/sphere_shaped | corpus | 0.409 | share of non-tied eligible studies with a higher log2 ratio | 0.000212 | 0.00351 (table1_fifteen_ratios) | significant | tested |
-| directional_consistency_log_ratio_sign_test | cellulose_catabolic_process/arsenate_reduction | corpus | 0.3682 | share of non-tied eligible studies with a higher log2 ratio | 5.53e-05 | 0.00138 (table1_fifteen_ratios) | significant | tested |
-| directional_consistency_log_ratio_sign_test | cellulose_catabolic_process/moderately_halophilic | corpus | 0.4394 | share of non-tied eligible studies with a higher log2 ratio | 0.0181 | 0.189 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | coccus_shaped/sphere_shaped | corpus | 0.5376 | share of non-tied eligible studies with a higher log2 ratio | 0.0721 | 0.513 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | cellulose_catabolic_process/arsenate_reduction | corpus | 0.3682 | share of non-tied eligible studies with a higher log2 ratio | 5.53e-05 | 0.00189 (table1_fifteen_ratios) | significant | tested |
+| directional_consistency_log_ratio_sign_test | cellulose_catabolic_process/moderately_halophilic | corpus | 0.4394 | share of non-tied eligible studies with a higher log2 ratio | 0.0181 | 0.225 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | coccus_shaped/sphere_shaped | corpus | 0.54 | share of non-tied eligible studies with a higher log2 ratio | 0.0549 | 0.391 (table1_fifteen_ratios) | not_significant | tested |
 | directional_consistency_log_ratio_sign_test | coccus_shaped/arsenate_reduction | corpus | 0.4741 | share of non-tied eligible studies with a higher log2 ratio | 0.449 | 1 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | coccus_shaped/moderately_halophilic | corpus | 0.5496 | share of non-tied eligible studies with a higher log2 ratio | 0.023 | 0.191 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | sphere_shaped/arsenate_reduction | corpus | 0.4818 | share of non-tied eligible studies with a higher log2 ratio | 0.611 | 1 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | sphere_shaped/moderately_halophilic | corpus | 0.5051 | share of non-tied eligible studies with a higher log2 ratio | 0.857 | 1 (table1_fifteen_ratios) | not_significant | tested |
-| directional_consistency_log_ratio_sign_test | arsenate_reduction/moderately_halophilic | corpus | 0.5 | share of non-tied eligible studies with a higher log2 ratio | 1 | 1 (table1_fifteen_ratios) | not_significant | tested |
-| oxygen_guild_mcnemar | aerobe/anaerobe | corpus | 1.429 | odds ratio of discordant study signs | 3.61e-06 | NA (guild_mcnemar) | undecided | tested |
-| composition_arm_native_transformed_contrast | facultatively_aerobic | study | 0.2048 | study mean of increased-minus-decreased transformed annotation contrast | 1.4e-08 | 4.37e-06 (native_composition_pooled_study) | significant | tested |
-| composition_arm_native_transformed_contrast | cellulose_catabolic_process | study | -0.1537 | study mean of increased-minus-decreased transformed annotation contrast | 5.29e-05 | 0.00207 (native_composition_pooled_study) | significant | tested |
-| composition_arm_native_transformed_contrast | coccus_shaped | study | 0.1629 | study mean of increased-minus-decreased transformed annotation contrast | 2.01e-05 | 0.000934 (native_composition_pooled_study) | significant | tested |
-| composition_arm_native_transformed_contrast | sphere_shaped | study | 0.1279 | study mean of increased-minus-decreased transformed annotation contrast | 0.000434 | 0.0097 (native_composition_pooled_study) | significant | tested |
-| composition_arm_native_transformed_contrast | arsenate_reduction | study | 0.1886 | study mean of increased-minus-decreased transformed annotation contrast | 2.42e-06 | 0.000379 (native_composition_pooled_study) | significant | tested |
-| composition_arm_native_transformed_contrast | moderately_halophilic | study | 0.1575 | study mean of increased-minus-decreased transformed annotation contrast | 5.46e-06 | 0.000569 (native_composition_pooled_study) | significant | tested |
+| directional_consistency_log_ratio_sign_test | coccus_shaped/moderately_halophilic | corpus | 0.5456 | share of non-tied eligible studies with a higher log2 ratio | 0.0362 | 0.301 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | sphere_shaped/arsenate_reduction | corpus | 0.4858 | share of non-tied eligible studies with a higher log2 ratio | 0.703 | 1 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | sphere_shaped/moderately_halophilic | corpus | 0.5092 | share of non-tied eligible studies with a higher log2 ratio | 0.718 | 1 (table1_fifteen_ratios) | not_significant | tested |
+| directional_consistency_log_ratio_sign_test | arsenate_reduction/moderately_halophilic | corpus | 0.496 | share of non-tied eligible studies with a higher log2 ratio | 0.95 | 1 (table1_fifteen_ratios) | not_significant | tested |
+| oxygen_guild_mcnemar | aerobe/anaerobe | corpus | 1.295 | odds ratio of discordant study signs | 0.000662 | NA (guild_mcnemar) | undecided | tested |
+| composition_arm_native_transformed_contrast | facultatively_aerobic | study | 0.2202 | study mean of increased-minus-decreased transformed annotation contrast | 1.03e-09 | 3.48e-07 (native_composition_pooled_study) | significant | tested |
+| composition_arm_native_transformed_contrast | cellulose_catabolic_process | study | -0.1519 | study mean of increased-minus-decreased transformed annotation contrast | 6.79e-05 | 0.00229 (native_composition_pooled_study) | significant | tested |
+| composition_arm_native_transformed_contrast | coccus_shaped | study | 0.1674 | study mean of increased-minus-decreased transformed annotation contrast | 1.04e-05 | 0.000876 (native_composition_pooled_study) | significant | tested |
+| composition_arm_native_transformed_contrast | sphere_shaped | study | 0.1311 | study mean of increased-minus-decreased transformed annotation contrast | 0.000321 | 0.00722 (native_composition_pooled_study) | significant | tested |
+| composition_arm_native_transformed_contrast | arsenate_reduction | study | 0.1896 | study mean of increased-minus-decreased transformed annotation contrast | 2.32e-06 | 0.000371 (native_composition_pooled_study) | significant | tested |
+| composition_arm_native_transformed_contrast | moderately_halophilic | study | 0.1621 | study mean of increased-minus-decreased transformed annotation contrast | 3.29e-06 | 0.000371 (native_composition_pooled_study) | significant | tested |
 | enrichment_arm_profile_hypergeometric | facultatively_aerobic | profile | NA | NA | NA | NA (native_profile_ORA_enrichment_global) | undecided | tested_profiles_summarized |
 | aggregated_profile_support | facultatively_aerobic | corpus | NA | NA | NA | NA (NA) | undecided | untested |
 | enrichment_arm_profile_hypergeometric | cellulose_catabolic_process | profile | NA | NA | NA | NA (native_profile_ORA_enrichment_global) | undecided | tested_profiles_summarized |
@@ -123,7 +126,7 @@ trait or cell test. The corresponding descriptive support rows remain untested.
 
 ## Native composition population
 
-The primary native result uses study-level t-tests, BH over 313 support/variance-eligible traits. It retains 2257 pairs (932 studies), including 55 zero-total pairs; 2202 pairs have positive totals on both sides. Pair-level p/q values are secondary fields. This historical population differs from S1.
+The primary native result uses study-level t-tests, BH over 338 support/variance-eligible traits. It retains 2257 pairs (932 studies), including 43 zero-total pairs; 2214 pairs have positive totals on both sides. Pair-level p/q values are secondary fields. This historical population differs from S1.
 
 ## Full-trait directional screen (same S1 population)
 
@@ -131,12 +134,12 @@ The screen's primary correction is BY; BH is also shown. Within-six q-values abo
 
 | Trait | Family | BH q | BY q |
 | --- | --- | --- | --- |
-| facultatively_aerobic | 317 | 0.000424958 | 0.00269326 |
-| cellulose_catabolic_process | 317 | 0.00643282 | 0.0407693 |
-| coccus_shaped | 317 | 0.0374701 | 0.237474 |
-| sphere_shaped | 317 | 0.010718 | 0.0679272 |
-| arsenate_reduction | 317 | 0.0151052 | 0.0957324 |
-| moderately_halophilic | 317 | 0.000992065 | 0.00628741 |
+| facultatively_aerobic | 342 | 0.000210677 | 0.00135117 |
+| cellulose_catabolic_process | 342 | 0.00677614 | 0.0434587 |
+| coccus_shaped | 342 | 0.0419434 | 0.269003 |
+| sphere_shaped | 342 | 0.00825804 | 0.0529628 |
+| arsenate_reduction | 342 | 0.0153379 | 0.0983693 |
+| moderately_halophilic | 342 | 0.00266704 | 0.017105 |
 
 ## Native profile ORA support
 
@@ -144,12 +147,12 @@ Enrichment: global BH q ≤ 0.001 and fold ≥ 1.5. Depletion: separate lower-ta
 
 | Trait | Tests | Enriched inc | Enriched dec | Inc/dec | Best hit q | Median hit q | Median hit fold | Depleted inc | Depleted dec |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| facultatively_aerobic | 4514 | 190 | 152 | 1.25 | 3.23552e-22 | 5.45221e-05 | 4.53528 | 0 | 0 |
-| cellulose_catabolic_process | 4514 | 178 | 183 | 0.972678 | 6.67711e-15 | 6.86411e-05 | 14.0188 | 0 | 0 |
-| coccus_shaped | 4514 | 243 | 198 | 1.22727 | 2.64726e-23 | 3.53893e-05 | 5.30552 | 0 | 0 |
-| sphere_shaped | 4514 | 235 | 179 | 1.31285 | 3.51633e-23 | 3.63897e-05 | 9.94043 | 0 | 0 |
-| arsenate_reduction | 4514 | 130 | 74 | 1.75676 | 6.34264e-15 | 4.61512e-05 | 34.4379 | 0 | 0 |
-| moderately_halophilic | 4514 | 222 | 178 | 1.24719 | 1.63289e-32 | 1.75365e-05 | 9.57934 | 0 | 0 |
+| facultatively_aerobic | 4514 | 182 | 133 | 1.36842 | 5.12363e-21 | 3.99814e-05 | 3.91813 | 0 | 0 |
+| cellulose_catabolic_process | 4514 | 178 | 182 | 0.978022 | 7.17182e-15 | 7.26657e-05 | 14.0188 | 0 | 0 |
+| coccus_shaped | 4514 | 235 | 180 | 1.30556 | 1.09898e-23 | 2.64264e-05 | 4.7681 | 0 | 0 |
+| sphere_shaped | 4514 | 230 | 175 | 1.31429 | 4.60322e-23 | 3.59098e-05 | 10.0868 | 0 | 0 |
+| arsenate_reduction | 4514 | 130 | 74 | 1.75676 | 6.80372e-15 | 4.88861e-05 | 34.4379 | 0 | 0 |
+| moderately_halophilic | 4514 | 222 | 178 | 1.24719 | 1.98323e-32 | 1.89308e-05 | 9.55205 | 0 | 0 |
 
 Reading rules: a blank q is not a negative result; `source_not_supplied` means the
 method's output was not given to this run; a decision holds only inside its own family;

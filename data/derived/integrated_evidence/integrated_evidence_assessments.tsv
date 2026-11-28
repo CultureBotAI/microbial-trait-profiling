@@ -21,8 +21,8 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #182	calibration_status	procedure	screened_fraction_sign_test	criterion:per_test_level	fail
 #182	calibration_status	procedure	screened_fraction_sign_test	criterion:family_error	fail
 #182	calibration_status	procedure	screened_fraction_sign_test	criterion:selection_inflation_measured	reported
-#182	calibration_status	note	not_calibrated_here	procedure	the enrichment arm's hypergeometric urn (#131)
-#182	calibration_status	note	not_calibrated_here	procedure	the composition arm's native transformed test
+#182	calibration_status	note	not_calibrated_here	procedure	the enrichment arm's hypergeometric procedures (production M = 5,829 all-host distinct-taxon urn in src/mtp/ora_calibration/ #551; historical #131 assertion-count urn in Table 1 native influence reruns; proposed harmonized-baseline paired-human assertion-weighted background #568)
+#182	calibration_status	note	not_calibrated_here	procedure	the composition arm's native transformed test (calibrated in src/mtp/composition_calibration/ #550)
 #182	calibration_status	note	not_calibrated_here	procedure	the aggregated profile-support rule (#177)
 #182	calibration_status	scenario	complete_null_experiment_flip	replicates_completed	1400
 #182	calibration_status	scenario	complete_null_study_flip	replicates_completed	1400
@@ -31,8 +31,8 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #182	calibration_status	scenario	injected_2x_study_flip	replicates_completed	400
 #182	calibration_status	scenario	injected_4x_study_flip	replicates_completed	400
 #182	calibration_status	note	calibration_status_rule	rule	per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every judged criterion passed; otherwise 'not_certified' (a criterion was insufficient_budget or not_evaluated). 'reported' rows and passing sanity checks are not judged; a failing sanity check is.
-#182	calibration_status	source	calibration_status	path	/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/calibration/calibration_status.json
-#182	calibration_status	source	calibration_status	sha256	3007e1f1d3b91189b945abf088e16209635515741ba30e9ecbb266a27b1159a3
+#182	calibration_status	source	calibration_status	path	calibration/calibration_status.json
+#182	calibration_status	source	calibration_status	sha256	537d6b40cebc7274baf065d1bccacebc6040259f226a42dbdac1627002e37751
 #182	calibration_status	source	calibration_status	corpus_binding	matched
 #184	coverage_status	procedure	aggregated_profile_support	status_applied	pending #184
 #184	coverage_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #184
@@ -66,9 +66,9 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #188	orientation_status	validation	hand_review	agreed	60
 #188	orientation_status	validation	hand_review	disagreed	0
 #188	orientation_status	validation	hand_review	validation_status	hand_review_agreed
-#188	orientation_status	note	classifier_version	version	contrast-orientation-v5
-#188	orientation_status	source	orientation_status	path	/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/contrast_orientation/contrast_orientation_provenance.json
-#188	orientation_status	source	orientation_status	sha256	12de1b522e2bf963aacb2a5467a1115957abd7a537d730d5acafa40ad43e9889
+#188	orientation_status	note	classifier_version	version	contrast-orientation-v6
+#188	orientation_status	source	orientation_status	path	contrast_orientation/contrast_orientation_provenance.json
+#188	orientation_status	source	orientation_status	sha256	ed12168d3e0ee0ec3a9595542ab5a03300e420c4f3e434131eb0c0d03cb7e2b3
 #188	orientation_status	source	orientation_status	corpus_binding	matched
 #183	sensitivity_status	procedure	aggregated_profile_support	status_applied	pending #183
 #183	sensitivity_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #183
@@ -123,7 +123,7 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #183	sensitivity_status	family	S5:sixty_triple_ratios	tested	60
 #183	sensitivity_status	family	S6:fifteen_ratios	correction	Benjamini-Yekutieli
 #183	sensitivity_status	family	S6:fifteen_ratios	family_size	15
-#183	sensitivity_status	family	S6:fifteen_ratios	q_at_or_below_0.05	4
+#183	sensitivity_status	family	S6:fifteen_ratios	q_at_or_below_0.05	3
 #183	sensitivity_status	family	S6:fifteen_ratios	scenario	S6_feces_only
 #183	sensitivity_status	family	S6:fifteen_ratios	tested	15
 #183	sensitivity_status	family	S7:fifteen_ratios	correction	Benjamini-Yekutieli
@@ -132,7 +132,7 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #183	sensitivity_status	family	S7:fifteen_ratios	tested	15
 #183	sensitivity_status	family	S9:fifteen_ratios	correction	Benjamini-Yekutieli
 #183	sensitivity_status	family	S9:fifteen_ratios	family_size	15
-#183	sensitivity_status	family	S9:fifteen_ratios	q_at_or_below_0.05	4
+#183	sensitivity_status	family	S9:fifteen_ratios	q_at_or_below_0.05	3
 #183	sensitivity_status	family	S9:fifteen_ratios	scenario	S9_feces_any_label
 #183	sensitivity_status	family	S9:fifteen_ratios	tested	15
 #190	taxon_influence_status	procedure	aggregated_profile_support	status_applied	pending #190: influence evidence not supplied

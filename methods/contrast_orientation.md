@@ -152,7 +152,7 @@ from the disease-versus-healthy population rather than into it.
    stratified along two orthogonal columns:
 
    - `contrast_type`:
-     - `case_vs_control_subject` (961 analysed experiments, 559 studies): subject-level
+     - `case_vs_control_subject` (961 analysed experiments, 558 studies): subject-level
        case versus control comparisons.
      - `comorbidity_within_disease` (29 analysed experiments, 17 studies): both groups
        share a background disease or clinical state and differ in a second condition
@@ -257,7 +257,7 @@ class alone counts these as patients against controls. To keep only comparisons 
 people with the condition against people without it:
 
 - filter the manifest on `contrast_type = case_vs_control_subject` (961 analysed
-  experiments, 559 studies). This drops the paired-tissue and comorbidity contrasts and
+  experiments, 558 studies). This drops the paired-tissue and comorbidity contrasts and
   keeps the Tier 3 hospital, symptomatic, precursor-lesion and treated-case contrasts; or
 - filter on `control_tier` in {`tier_1_healthy_normal`,
   `tier_2_condition_negative_screened`} (935 experiments, 548 studies), which drops all
@@ -479,8 +479,9 @@ classifier source it records tells them apart: `analysis_source_sha256` in the
 contrast-orientation provenance or `classifier.source_sha256` in a workflow contrast
 selection is `a0a7819ff0d202f05bd1282c75abbd0e9be129815f9fbdb7fc3861cfc1c769ff` under the
 v5 rules and `e7d5f4c9ecf37ce566f3ef763362d445d6a32e673d0ee2435d768739924df5d1` under the
-v6 rules. The tracked integrated-evidence outputs (`data/derived/integrated_evidence/`),
-labelled v5, were built from source `e7d5f4c9…`, the v6 rules. The tracked
+v6 rules. Earlier integrated-evidence outputs (`data/derived/integrated_evidence/`),
+labelled v5, were built from source `e7d5f4c9…`, the v6 rules. The current outputs
+record `contrast-orientation-v6` and classifier source `2847695b…`. The tracked
 cellulose_decr outputs (`data/analysis/cellulose_decr/`) were labelled v5 the same way
 until the final rerun at 511c891 regenerated them under `contrast-orientation-v6`,
 pinned to manifest `3532cb5d…`; the v5-labelled manifest they pinned before
@@ -541,8 +542,8 @@ all-contrast tables cite bsdb:38310301 in the HIV feces pair under either versio
 The same two analyses were run on all five populations in
 `disease_control_comparison.tsv`: the six fraction directions (studies scored by the
 sign of their mean increased-minus-decreased fraction, exact binomial test,
-Benjamini-Hochberg over six, zero-total profiles at fraction 0 as in the historical
-analysis) and the 15 paired log-ratios (positive-count complete cases,
+Benjamini-Hochberg over six, excluding whole pairs with a zero retained-annotation
+total on either side) and the 15 paired log-ratios (positive-count complete cases,
 Benjamini-Yekutieli over 15). In all four oriented populations "increased" means
 higher in the disease group.
 
@@ -555,29 +556,29 @@ The p-values shown alongside q-values are nominal.
 
 | Comparison | Historical (932 studies) | All `disease_vs_healthy` (574) | Tier 1 + 2 subject controls (548) | Tier 1 healthy/normal only (478) |
 | --- | --- | --- | --- | --- |
-| facultatively aerobic | 0.580 [0.547, 0.613], q 1.0e-05 | 0.580 [0.538, 0.622], q 5.6e-04 | 0.573 [0.529, 0.616], q 0.0020 | 0.567 [0.520, 0.613], q 0.0067 |
-| cellulose catabolic process | 0.433 [0.397, 0.469], q 4.3e-04 | 0.396 [0.351, 0.442], q 4.2e-05 | 0.407 [0.360, 0.454], q 5.4e-04 | 0.391 [0.342, 0.441], q 9.3e-05 |
-| coccus shaped | 0.545 [0.511, 0.578], q 0.0083 | 0.571 [0.529, 0.613], q 0.0014 | 0.563 [0.519, 0.606], q 0.0052 | 0.555 [0.508, 0.601], q 0.024 |
-| sphere shaped | 0.556 [0.521, 0.590], q 0.0021 | 0.548 [0.503, 0.592], q 0.036 | 0.551 [0.506, 0.596], q 0.027 | 0.558 [0.509, 0.606], q 0.021 |
-| arsenate reduction | 0.563 [0.522, 0.603], q 0.0027 | 0.581 [0.529, 0.633], q 0.0026 | 0.587 [0.533, 0.640], q 0.0020 | 0.590 [0.533, 0.646], q 0.0038 |
-| moderately halophilic | 0.574 [0.540, 0.608], q 6.6e-05 | 0.583 [0.538, 0.626], q 5.6e-04 | 0.581 [0.536, 0.626], q 0.0013 | 0.581 [0.532, 0.628], q 0.0038 |
-| facultatively aerobic / cellulose | 0.595 [0.548, 0.641], q 0.0012 | 0.629 [0.568, 0.688], q 0.0012 | 0.623 [0.560, 0.684], q 0.0044 | 0.624 [0.556, 0.688], q 0.011 |
-| cellulose / sphere shaped | 0.403 [0.357, 0.452], q 0.0016 | 0.391 [0.330, 0.454], q 0.014 | 0.398 [0.335, 0.464], q 0.032 | 0.402 [0.335, 0.471], q 0.079 (p 0.0063) |
-| cellulose / arsenate reduction | 0.363 [0.301, 0.428], q 0.0012 | 0.346 [0.271, 0.428], q 0.0052 | 0.338 [0.261, 0.422], q 0.0044 | 0.342 [0.260, 0.430], q 0.012 |
-| cellulose / moderately halophilic | 0.431 [0.382, 0.481], q 0.094 | 0.401 [0.337, 0.468], q 0.045 | 0.393 [0.328, 0.461], q 0.032 | 0.395 [0.326, 0.467], q 0.079 (p 0.0048) |
+| facultatively aerobic | 0.583 [0.550, 0.615], q 3.7e-06 | 0.587 [0.545, 0.628], q 0.000141 | 0.575 [0.532, 0.618], q 0.0012 | 0.571 [0.524, 0.616], q 0.00385 |
+| cellulose catabolic process | 0.434 [0.398, 0.470], q 0.000578 | 0.390 [0.346, 0.436], q 1.36e-05 | 0.399 [0.353, 0.446], q 0.000142 | 0.385 [0.337, 0.435], q 3.26e-05 |
+| coccus shaped | 0.543 [0.510, 0.576], q 0.0111 | 0.565 [0.523, 0.607], q 0.00359 | 0.559 [0.515, 0.602], q 0.00945 | 0.552 [0.505, 0.598], q 0.029 |
+| sphere shaped | 0.559 [0.525, 0.593], q 0.00101 | 0.553 [0.509, 0.597], q 0.0173 | 0.554 [0.509, 0.599], q 0.0184 | 0.561 [0.512, 0.608], q 0.0163 |
+| arsenate reduction | 0.563 [0.522, 0.603], q 0.00274 | 0.578 [0.526, 0.629], q 0.00359 | 0.585 [0.531, 0.637], q 0.00271 | 0.591 [0.534, 0.646], q 0.00302 |
+| moderately halophilic | 0.571 [0.536, 0.605], q 0.000164 | 0.586 [0.542, 0.629], q 0.000258 | 0.583 [0.538, 0.628], q 0.000907 | 0.582 [0.533, 0.629], q 0.00277 |
+| facultatively aerobic / cellulose | 0.593 [0.546, 0.638], q 0.00189 | 0.630 [0.570, 0.687], q 0.00102 | 0.624 [0.562, 0.683], q 0.00404 | 0.624 [0.558, 0.687], q 0.00999 |
+| cellulose / sphere shaped | 0.409 [0.362, 0.458], q 0.00351 | 0.397 [0.336, 0.460], q 0.0211 | 0.404 [0.342, 0.469], q 0.0574 | 0.408 [0.342, 0.478], q 0.126 (p 0.00906) |
+| cellulose / arsenate reduction | 0.368 [0.307, 0.433], q 0.00189 | 0.351 [0.276, 0.432], q 0.00651 | 0.343 [0.265, 0.427], q 0.00521 | 0.346 [0.265, 0.435], q 0.0142 |
+| cellulose / moderately halophilic | 0.439 [0.390, 0.490], q 0.225 | 0.410 [0.347, 0.476], q 0.0899 | 0.403 [0.337, 0.471], q 0.0574 | 0.406 [0.337, 0.478], q 0.126 (p 0.0101) |
 
 All 105 rows across the five populations, with study counts, are in
 `disease_control_comparison.tsv`. Every one of the six fraction directions keeps its
-direction and significance ($q \le 0.036$) across all five populations, including the
+direction and significance ($q \le 0.03$) across all five populations, including the
 strictest `tier_1_healthy_normal` subset (478 studies) and the combined subject-level
 control subset `tier_1_2_subject_controls` (548 studies). The four log-ratios above
-keep their direction in every population. All four have $q \le 0.05$ in both
-`disease_vs_healthy_oriented` (574 studies) and
+keep their direction in every population. Three have $q \le 0.05$ in
+`disease_vs_healthy_oriented` (574 studies), and two in
 `disease_vs_healthy_tier1_2_subject_controls` (548 studies). The two strongest ratios
 (`facultatively_aerobic / cellulose` and `cellulose / arsenate_reduction`) remain
 significant under Benjamini-Yekutieli even in the smaller `tier_1_healthy_normal`
-subset ($q = 0.011$ and $q = 0.012$, with the other two at nominal $p = 0.0063$ and
-$p = 0.0048$).
+subset ($q = 0.00999$ and $q = 0.0142$, with the other two at nominal $p = 0.00906$ and
+$p = 0.0101$).
 
 Two log-ratios crossed $q = 0.05$ between `contrast-orientation-v3` and `-v4`, both by
 small margins and both in populations the HIV experiments joined. All 10 joined

@@ -1,46 +1,46 @@
 {
-  "native_manifest_sha256": "7164d50ccafcfc0bc41c818fdf11ba133d17a6bb01784e6e4e678c6994f92560",
-  "publisher_sha256": "41d5506f38670e2d68f769728e01d938b70d04f6889ef8c9804d918bcb9c244f",
+  "native_manifest_sha256": "57254c5f2b90f847bae96478100a2a2240dba9b98d4b09e54c2996457f6b1e03",
+  "publisher_sha256": "3ae0c3c95bee287bc49f17193b8089fa3f1011153a804d45e26a3fd524722496",
   "source_reconciliation": {
-    "source_contribution_rows": 73758,
-    "profile_reported_taxon_rows": 42267,
-    "profile_count_rows": 28020,
+    "source_contribution_rows": 80802,
+    "profile_reported_taxon_rows": 40920,
+    "profile_count_rows": 27084,
     "mismatches": 0,
     "sha256": {
-      "source_contributions.tsv.gz": "8d9160230f732c6d0fb31df33538ff362010893ce6f7817cad05656cbc69d71d",
-      "profile_reported_taxa.tsv.gz": "592b250243a5eedb1a1cd98c83fcf65bc5a5d21412606616a519519a25806ae3",
-      "profile_counts.tsv.gz": "5469d883c752102a0ac1e55baf317d43b83e67c50ac4688a55dd310f660b0644"
+      "source_contributions.tsv.gz": "c29d56d2a4f4414276e048f9f94760ab45c9a134fe1f0b29d7241543cb97b607",
+      "profile_reported_taxa.tsv.gz": "9cc6776771889b1dd1681b49db1be9feba1d7f22488020c774ec125e8d0c1ba8",
+      "profile_counts.tsv.gz": "851a92e00742fd3e75122f2b4c9281449c27ba975e5fe5e3e6121b536b032e1b"
     }
   },
   "interpretation_source_sha256": {
-    "effects.tsv.gz": "eab91d9db5f65abf0a5b4ae86876f86907f93bfe3230e7d61a232b437e9e96c7",
-    "contributing_universe.tsv": "2c0e641aa9a8e9f0ea0e949f297a9b5b2bf88ba8721fb2e1a66de87f53152322",
-    "native_composition_comparison.tsv": "e1f5ef0f7cfb94b22dfd513f0e98151928b47e943e2253a59f618b098bf796a4"
+    "effects.tsv.gz": "8027f4b4eb6ebbdcb3626ff24d8cb817a9dea84c724f0f62bfbe661cd82d891a",
+    "contributing_universe.tsv": "8cfbfab4d957611d3438280553141eb50be5ba6a349a062690dfbfc8ccb7eb8f",
+    "native_composition_comparison.tsv": "deda80dfaf2446ef844cfec845d7c845333ea0ab0867a2e6cb9284943c73ec93"
   },
   "tables": {
     "native_table1_stats.tsv.gz": {
-      "rows": 552,
-      "sha256": "963483a4a7183347082de309ddc276e783912b59f1172b653c1d5c1052379908"
+      "rows": 624,
+      "sha256": "d0fdb25a869f6f6cbe385cb64c69cbe50d941a3a8aa2549f81a3894c489490f4"
     },
     "native_composition_comparison.tsv.gz": {
-      "rows": 1104,
-      "sha256": "823f19195b2581e30f995108c4d67aa05256b2d378c462ab1c2373e746d546fd"
+      "rows": 1248,
+      "sha256": "abde0168005aa3e6889c27bf1c4aeb7014f3ba3d232d74e40b6110d0e19bd778"
     },
     "native_ora_fold_comparison.tsv.gz": {
-      "rows": 1104,
-      "sha256": "0c305c9cdcfe95b7d479bdef296649b1d7667a25dcdda6fa64534ee8a7cb8bfd"
+      "rows": 1248,
+      "sha256": "88ba3a180ae6d4b81cc3d31720f15a162ee47317ff0db7cc2f97542f58967a9f"
     },
     "native_ora_families.tsv": {
-      "rows": 184,
-      "sha256": "652ed2d36c1e6a46b20487b56e654fd27246826d86f3cb6585146d10f014c87d"
+      "rows": 208,
+      "sha256": "dec761ff527c292ee9e273cf7468a472cbdc049f6aefb5d56469108fa9c9c52a"
     },
     "scenarios.tsv": {
-      "rows": 1233,
-      "sha256": "5334cec76071466c88ba1c8703318bc5eb1ed8d93f2f72a30616cc2a52144c54"
+      "rows": 1271,
+      "sha256": "f4107a223176880f5128a1e824f40604d9b2891fcb0ffe89d28c6fd963726ad7"
     },
     "interpretation_handoff.tsv": {
       "rows": 2,
-      "sha256": "1869a70ea449463237d6af871b88ed23eb7ec0544ac0a040acf462792ccc1246"
+      "sha256": "fe8c8ea3dbf493494535d0a590cfda6f31a19862b51045f93a4979625480ce00"
     }
   }
 }

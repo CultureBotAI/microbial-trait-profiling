@@ -1,2 +1,2 @@
-trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	5.418857681986591e-05	8.656322175697428e-07	0.1479625567875006	trait enriched in increased profiles
+trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction	paired_p_value_type	displayed_nominal_test_count	bh_family_size	bh_unfiltered_trait_count	paired_q_value_family
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	4.513584624619437e-05	7.405268463412411e-07	0.14932621105849758	trait enriched in increased profiles	nominal	1	338	342	pooled pair-level BH over 338 support/variance-selected traits (of 342 retained; select_stratum_traits support, positive-variance, and MediaDive-exclusion filter)

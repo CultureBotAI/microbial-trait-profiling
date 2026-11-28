@@ -1,2 +1,2 @@
-trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	3.499578457486859e-05	4.4723047380023754e-07	0.1439612948441141	trait enriched in increased profiles
+trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction	paired_p_value_type	displayed_nominal_test_count	bh_family_size	bh_unfiltered_trait_count	paired_q_value_family
+METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	2.3662052414873648e-05	2.8002428893341594e-07	0.14673264634021213	trait enriched in increased profiles	nominal	1	338	342	pooled pair-level BH over 338 support/variance-selected traits (of 342 retained; select_stratum_traits support, positive-variance, and MediaDive-exclusion filter)

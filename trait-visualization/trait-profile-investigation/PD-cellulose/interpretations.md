@@ -4,31 +4,31 @@
 
 This folder follows the cellulose catabolic process trait (`METPO:2000103|GO:0030245`) of the six-shared-traits analysis in Parkinson's disease (PD) fecal profiles. Each profile is one curated BugSigDB signature. Its trait values summarize KG-Microbe annotations of the reported taxa, including annotations rolled up from their descendants; they are not measurements of cellulose degradation, gene expression or metabolites.
 
-In PD fecal profiles the mean cellulose annotation z-score is lower in increased than in decreased profiles (increased minus decreased `-0.711`). A study-clustered model asks whether the decreased-minus-increased difference is larger in PD than in other fecal profiles: the extra PD effect in decreased profiles is `+0.498` cellulose z (95% CI `+0.022` to `+0.975`, `p=0.0404`, 664 study clusters), and the interval excludes zero. This is one nominal test, not corrected for the other conditions and traits examined; the corrected screen of every eligible fecal condition-trait contrast is described in `pd_condition_taxon_trait_network_methods.md`.
+In PD fecal profiles the mean cellulose annotation z-score is lower in increased than in decreased profiles (increased minus decreased `-0.706`). A study-clustered model asks whether the decreased-minus-increased difference is larger in PD than in other fecal profiles: the extra PD effect in decreased profiles is `+0.494` cellulose z (95% CI `+0.018` to `+0.970`, `nominal p=0.0419`, 664 study clusters), and the interval excludes zero. This is the interaction's nominal p, one of 3 non-intercept model terms tested in the figure (8 terms across 2 outcomes in `pd_cellulose_interaction_model.tsv`), not corrected for the other conditions and traits examined; the corrected screen of every eligible fecal condition-trait contrast is described in `pd_condition_taxon_trait_network_methods.md`.
 
 ## Cellulose Edges by Signature Direction
 
-In the individual-condition Cytoscape display edges, PD feces has `34` increased profiles with cellulose z > 0 from `22` studies, and `69` decreased profiles with cellulose z > 0 from `34` studies.
+In the individual-condition Cytoscape display edges, PD feces has `33` increased profiles with cellulose z > 0 from `22` studies, and `68` decreased profiles with cellulose z > 0 from `34` studies.
 
-The focus-minus-comparator z contrast is `1.587` for the decreased edge and `0.628` for the increased edge.
+The focus-minus-comparator z contrast is `1.597` for the decreased edge and `0.666` for the increased edge.
 
 See `pd_cellulose_direction_specificity.png` and `pd_cellulose_cytoscape_highlight.png`.
 
 ## PD Six-Trait Context
 
-Among the six traits in PD feces, cellulose has an increased-minus-decreased mean z difference of `-0.711`. Negative values indicate decreased-profile skew.
+Among the six traits in PD feces, cellulose has an increased-minus-decreased mean z difference of `-0.706`. Negative values indicate decreased-profile skew.
 
-In the companion lollipop plot the decreased-skewed traits, most negative first, are cellulose catabolic process, sphere shaped and coccus shaped; the increased-skewed traits, most positive first, are moderately halophilic, arsenate reduction and facultatively aerobic.
+In the companion lollipop plot the decreased-skewed traits, most negative first, are cellulose catabolic process, sphere shaped and coccus shaped; the increased-skewed traits, most positive first, are moderately halophilic, facultative (aerobe or anaerobe) and arsenate reduction.
 
 See `pd_six_trait_direction_lollipop.png`.
 
 ## PD vs Other Fecal Profiles
 
-Among decreased fecal profiles, cellulose z > 0 in `59.5%` of PD profiles and `46.3%` of other profiles; among increased fecal profiles, in `27.0%` and `37.1%`.
+Among decreased fecal profiles, cellulose z > 0 in `58.6%` of PD profiles and `46.1%` of other profiles; among increased fecal profiles, in `26.2%` and `37.0%`.
 
-The decreased-direction PD-vs-other Fisher test gives an odds ratio of `1.71` and `p=0.00681`. It treats the profiles of one study as independent, so the study-clustered model below is the better guide.
+The decreased-direction PD-vs-other Fisher test gives an odds ratio of `1.66` and `nominal p=0.00928` (two-sided Mann-Whitney `nominal p=0.00819`; uncorrected across 2 directions x 2 tests = 4 nominal tests in `pd_cellulose_vs_other_feces_summary.tsv`). It treats the profiles of one study as independent, so the study-clustered model below is the better guide.
 
-The feces-only linear model includes PD, decreased direction, and the PD-by-decreased interaction, with standard errors clustered by study. The cellulose z-score interaction term is `0.498` (95% CI `0.022` to `0.975`, `p=0.0404`). It tests whether the decreased direction has an extra PD-associated shift in cellulose annotation beyond the main PD and direction effects.
+The feces-only linear model includes PD, decreased direction, and the PD-by-decreased interaction, with standard errors clustered by study. The cellulose z-score interaction term is `0.494` (95% CI `0.018` to `0.970`, `nominal p=0.0419`, uncorrected across 3 non-intercept model terms plotted in `pd_cellulose_enrichment_test.png` and 8 terms across 2 outcomes in `pd_cellulose_interaction_model.tsv`). It tests whether the decreased direction has an extra PD-associated shift in cellulose annotation beyond the main PD and direction effects.
 
 See `pd_cellulose_enrichment_test.png` and `pd_cellulose_interaction_model.tsv`.
 

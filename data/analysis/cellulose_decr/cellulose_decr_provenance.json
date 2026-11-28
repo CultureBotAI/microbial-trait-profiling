@@ -1,6 +1,6 @@
 {
- "generated_at_utc": "2026-10-23T23:39:14Z",
- "code_commit": "511c891229b659e207cfe0f4281a97c3fc039a80",
+ "generated_at_utc": "2026-11-25T04:36:13Z",
+ "code_commit": "a01466daa46e060ae6470cde3c6cf8505c749079",
  "script": "src/mtp/cellulose_decr/analysis.py",
  "bugsigdb_vintage": "2026-04-24_00:41_UTC",
  "contrast_classifier_version": "contrast-orientation-v6",
@@ -18,16 +18,22 @@
   "U6": 20261023
  },
  "scripts": {
-  "src/mtp/cellulose_decr/__init__.py": "907a8db757a96e48d0a04ff342c7f4391e5a7e7ae2c691a67390f1e26a13fe20",
-  "src/mtp/cellulose_decr/analysis.py": "e22ab9b8104d86112df3b73f41249d2f9ef947d5851eb1057d7ab80bc6df500d",
-  "src/mtp/cellulose_decr/figures.py": "7891d20b77a123a4a15f2bf05708b8586f53d06a1bae7be38dc4c4b7ec74ef8a",
-  "src/mtp/cellulose_decr/selection_scan.py": "98f90a157250851f85af4adc3f058de635b3b9c4fd469662670b8f9d353e7a45"
+  "src/mtp/cellulose_decr/__init__.py": "a0d99b8fccc494bbaf980d2831a4fd1f1af2215767e2779d3c3b0cc5719dd4f2",
+  "src/mtp/cellulose_decr/analysis.py": "bd357fecc43a80aa90f656c46809ddb0565ece3f5aabd93a302d0419ea4ccc44",
+  "src/mtp/cellulose_decr/figures.py": "17c4a7db101ea9d1376b094a013e2305ebf0ccadc9c0db87a93cc9bbd5b2c010",
+  "src/mtp/cellulose_decr/retired_outputs.py": "b6ace84d381f42d4598f48b0866039c8b2f18532c3d70daf15bb9362053f214d",
+  "src/mtp/cellulose_decr/selection_scan.py": "725741ccf5bb9d942ddff61b3b34eab49ddbfcf235698196dbf60191a3644cc6",
+  "src/mtp/cellulose_decr/selection_scan_scopes.py": "6d092786d67bb008c42cb37877e02e03a3681fe818074f6d7405fa01ca5a2f1e",
+  "src/mtp/cellulose_decr/slide_figures.py": "9ed6b16ca348eaad3629971fe808a0742af874c82457a15c25326df9caa12c17",
+  "src/mtp/cellulose_decr/study_split.py": "fc40b9c0cc1c7154092149e560bcb029c59edccf3e0d3ce620a4aa2ac297fe27",
+  "src/mtp/cellulose_decr/study_split_run.py": "b9f0f1f869a72f09e8f0d4ac1e1da5f2773d0e37c3b5cca768095d8547f10e12",
+  "src/mtp/cellulose_decr/tufte_plates.py": "2b82c2122c638970ad93eaddc525f4e0609d3c71cc5c88d286338bf74456bdb2"
  },
  "inputs": {
   "profile_metadata": {
    "path": "trait-visualization/study_trait_profile_study_metadata.tsv",
-   "sha256": "0a4720f17263f057e4f64a2df2acc346259acc1b35ee87fc014234c81229c4e7",
-   "bytes": 2187717
+   "sha256": "c9871a2a595995912e761e71db59e13364d30594d50abf8cd343c0ef563caa48",
+   "bytes": 2187697
   },
   "experiments": {
    "path": "data/derived/experiments.tsv",
@@ -41,8 +47,8 @@
   },
   "profile_counts": {
    "path": "data/derived/study_trait_profiles_wide.tsv",
-   "sha256": "43b2e2302b0edf4836a21e247329a6cbf3245036d350ab533325596de897f4d0",
-   "bytes": 30625375
+   "sha256": "dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2",
+   "bytes": 30596643
   },
   "signature_taxa": {
    "path": "data/derived/bugsigdb_taxa.tsv",
@@ -51,13 +57,13 @@
   },
   "taxa_trait_matrix": {
    "path": "data/derived/taxa_trait_matrix.tsv",
-   "sha256": "45df0fe7120455a93361d79181953c338405160fff7a2e78d2a7d8d18584ec8e",
-   "bytes": 31582534
+   "sha256": "6638849b04137de73cad556446a1de024765b2a64301f841386fd9ed7bf389af",
+   "bytes": 31559093
   },
   "trait_columns": {
    "path": "data/derived/taxa_trait_matrix_columns.tsv",
-   "sha256": "1fa4b63dac02a18386915418ed54d4d4c70aecc5e96f4dfd3a97f99d3fc68a59",
-   "bytes": 553233
+   "sha256": "db8cdc96a95a758d4685807a7eedc9967c468299d83c85c02e5102eb81774cae",
+   "bytes": 695463
   },
   "contrast_manifest": {
    "path": "data/derived/contrast_orientation/contrast_manifest.tsv",
@@ -78,8 +84,8 @@
  "pinned_inputs": {
   "profile_metadata": {
    "path": "trait-visualization/study_trait_profile_study_metadata.tsv",
-   "sha256": "0a4720f17263f057e4f64a2df2acc346259acc1b35ee87fc014234c81229c4e7",
-   "bytes": 2187717
+   "sha256": "c9871a2a595995912e761e71db59e13364d30594d50abf8cd343c0ef563caa48",
+   "bytes": 2187697
   },
   "experiments": {
    "path": "data/derived/experiments.tsv",
@@ -93,8 +99,8 @@
   },
   "profile_counts": {
    "path": "data/derived/study_trait_profiles_wide.tsv",
-   "sha256": "43b2e2302b0edf4836a21e247329a6cbf3245036d350ab533325596de897f4d0",
-   "bytes": 30625375
+   "sha256": "dd20b920308d1ab9dd9ff58681e17de2526d2e70cc2cbce0b55e924e0a661ba2",
+   "bytes": 30596643
   },
   "signature_taxa": {
    "path": "data/derived/bugsigdb_taxa.tsv",
@@ -103,13 +109,13 @@
   },
   "taxa_trait_matrix": {
    "path": "data/derived/taxa_trait_matrix.tsv",
-   "sha256": "45df0fe7120455a93361d79181953c338405160fff7a2e78d2a7d8d18584ec8e",
-   "bytes": 31582534
+   "sha256": "6638849b04137de73cad556446a1de024765b2a64301f841386fd9ed7bf389af",
+   "bytes": 31559093
   },
   "trait_columns": {
    "path": "data/derived/taxa_trait_matrix_columns.tsv",
-   "sha256": "1fa4b63dac02a18386915418ed54d4d4c70aecc5e96f4dfd3a97f99d3fc68a59",
-   "bytes": 553233
+   "sha256": "db8cdc96a95a758d4685807a7eedc9967c468299d83c85c02e5102eb81774cae",
+   "bytes": 695463
   },
   "contrast_manifest": {
    "path": "data/derived/contrast_orientation/contrast_manifest.tsv",
@@ -131,8 +137,8 @@
  "repinned": true,
  "environment": {
   "python": "3.11.5",
-  "numpy": "2.4.4",
-  "pandas": "3.0.6",
+  "numpy": "2.4.6",
+  "pandas": "3.1.1",
   "scipy": "1.17.1"
  },
  "outputs": [

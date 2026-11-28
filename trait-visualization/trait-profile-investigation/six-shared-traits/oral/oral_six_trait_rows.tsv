@@ -1,118 +1,118 @@
-condition_body_site_pair	condition	body_site_group	max_trait_study_count	oral_site	oral_disease	inclusion_reason	supported_traits	in_main_figure
-Aggressive periodontitis | Oral cavity / dental	Aggressive periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Chronic periodontitis | Oral cavity / dental	Chronic periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Dental caries | Oral cavity / dental	Dental caries	Oral cavity / dental	2	True	True	oral site and oral disease	1	True
-Dental fluorosis | Oral cavity / dental	Dental fluorosis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Gingivitis | Oral cavity / dental	Gingivitis	Oral cavity / dental	2	True	True	oral site and oral disease	3	True
-Halitosis | Oral cavity / dental	Halitosis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Oral cavity carcinoma | Oral cavity / dental	Oral cavity carcinoma	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Oral leukoplakia | Oral cavity / dental	Oral leukoplakia	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Oral mucositis | Oral cavity / dental	Oral mucositis	Oral cavity / dental	3	True	True	oral site and oral disease	4	True
-Oral squamous cell carcinoma | Oral cavity / dental	Oral squamous cell carcinoma	Oral cavity / dental	6	True	True	oral site and oral disease	5	True
-Periapical Periodontitis | Oral cavity / dental	Periapical Periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Periodontitis | Oral cavity / dental	Periodontitis	Oral cavity / dental	7	True	True	oral site and oral disease	4	True
-Periodontitis,Type II diabetes mellitus | Oral cavity / dental	Periodontitis,Type II diabetes mellitus	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Root caries | Oral cavity / dental	Root caries	Oral cavity / dental	1	True	True	oral site and oral disease	0	True
-Abnormality on pulmonary function testing | Oral cavity / dental	Abnormality on pulmonary function testing	Oral cavity / dental	1	True	False	oral site	0	False
-Acne | Oral cavity / dental	Acne	Oral cavity / dental	1	True	False	oral site	0	False
-Acute myeloid leukemia | Oral cavity / dental	Acute myeloid leukemia	Oral cavity / dental	1	True	False	oral site	0	False
-Age | Oral cavity / dental	Age	Oral cavity / dental	2	True	False	oral site	0	False
-Age,Human papilloma virus infection | Oral cavity / dental	Age,Human papilloma virus infection	Oral cavity / dental	1	True	False	oral site	0	False
-Age-related macular degeneration | Oral cavity / dental	Age-related macular degeneration	Oral cavity / dental	1	True	False	oral site	0	False
-Aging | Oral cavity / dental	Aging	Oral cavity / dental	1	True	False	oral site	0	False
-Air pollution | Oral cavity / dental	Air pollution	Oral cavity / dental	1	True	False	oral site	0	False
-Alcohol drinking | Oral cavity / dental	Alcohol drinking	Oral cavity / dental	1	True	False	oral site	0	False
-Antimicrobial agent | Oral cavity / dental	Antimicrobial agent	Oral cavity / dental	1	True	False	oral site	0	False
-Arthritis | Oral cavity / dental	Arthritis	Oral cavity / dental	4	True	False	oral site	2	True
-Atopic asthma | Oral cavity / dental	Atopic asthma	Oral cavity / dental	1	True	False	oral site	0	False
-Behcet's syndrome | Oral cavity / dental	Behcet's syndrome	Oral cavity / dental	1	True	False	oral site	0	False
-Breast cancer | Oral cavity / dental	Breast cancer	Oral cavity / dental	1	True	False	oral site	0	False
-Breast ductal carcinoma in situ | Oral cavity / dental	Breast ductal carcinoma in situ	Oral cavity / dental	1	True	False	oral site	0	False
-CD4-positive T-lymphocyte count | Oral cavity / dental	CD4-positive T-lymphocyte count	Oral cavity / dental	1	True	False	oral site	0	False
-COVID-19 | Oral cavity / dental	COVID-19	Oral cavity / dental	1	True	False	oral site	0	False
-Cannabis use | Oral cavity / dental	Cannabis use	Oral cavity / dental	1	True	False	oral site	0	False
-Carotid artery intima media thickness | Oral cavity / dental	Carotid artery intima media thickness	Oral cavity / dental	1	True	False	oral site	0	False
-Chronic hepatitis B virus infection | Oral cavity / dental	Chronic hepatitis B virus infection	Oral cavity / dental	2	True	False	oral site	3	True
-Chronic kidney disease | Oral cavity / dental	Chronic kidney disease	Oral cavity / dental	1	True	False	oral site	0	False
-Chronic otitis media | Oral cavity / dental	Chronic otitis media	Oral cavity / dental	1	True	False	oral site	0	False
-Coinfection,Age | Oral cavity / dental	Coinfection,Age	Oral cavity / dental	1	True	False	oral site	0	False
-Colorectal adenoma | Oral cavity / dental	Colorectal adenoma	Oral cavity / dental	1	True	False	oral site	0	False
-Colorectal cancer | Oral cavity / dental	Colorectal cancer	Oral cavity / dental	5	True	False	oral site	6	True
-Diet | Oral cavity / dental	Diet	Oral cavity / dental	1	True	False	oral site	0	False
-Digestive system cancer | Oral cavity / dental	Digestive system cancer	Oral cavity / dental	1	True	False	oral site	0	False
-Down syndrome | Oral cavity / dental	Down syndrome	Oral cavity / dental	1	True	False	oral site	0	False
-Endometriosis | Oral cavity / dental	Endometriosis	Oral cavity / dental	1	True	False	oral site	0	False
-Esophageal cancer | Oral cavity / dental	Esophageal cancer	Oral cavity / dental	3	True	False	oral site	4	True
-Esophageal squamous cell carcinoma | Oral cavity / dental	Esophageal squamous cell carcinoma	Oral cavity / dental	3	True	False	oral site	4	True
-Ethnic group | Oral cavity / dental	Ethnic group	Oral cavity / dental	1	True	False	oral site	0	False
-Gastric cancer | Oral cavity / dental	Gastric cancer	Oral cavity / dental	4	True	False	oral site	4	True
-Gestational diabetes | Oral cavity / dental	Gestational diabetes	Oral cavity / dental	1	True	False	oral site	0	False
-Glaucoma | Oral cavity / dental	Glaucoma	Oral cavity / dental	3	True	False	oral site	3	True
-HDL cholesterol | Oral cavity / dental	HDL cholesterol	Oral cavity / dental	1	True	False	oral site	0	False
-HIV infection | Oral cavity / dental	HIV infection	Oral cavity / dental	3	True	False	oral site	1	True
-HIV infection,Human papilloma virus infection | Oral cavity / dental	HIV infection,Human papilloma virus infection	Oral cavity / dental	1	True	False	oral site	0	False
-HIV infection,Oral candidiasis | Oral cavity / dental	HIV infection,Oral candidiasis	Oral cavity / dental	2	True	False	oral site	0	False
-Head and neck carcinoma | Oral cavity / dental	Head and neck carcinoma	Oral cavity / dental	2	True	False	oral site	1	True
-Head and neck squamous cell carcinoma | Oral cavity / dental	Head and neck squamous cell carcinoma	Oral cavity / dental	3	True	False	oral site	2	True
-Health study participation | Oral cavity / dental	Health study participation	Oral cavity / dental	1	True	False	oral site	0	False
-Health trait | Oral cavity / dental	Health trait	Oral cavity / dental	1	True	False	oral site	0	False
-Household income | Oral cavity / dental	Household income	Oral cavity / dental	1	True	False	oral site	0	False
-Human papilloma virus infection | Oral cavity / dental	Human papilloma virus infection	Oral cavity / dental	3	True	False	oral site	4	True
-Human papillomavirus | Oral cavity / dental	Human papillomavirus	Oral cavity / dental	1	True	False	oral site	0	False
-Hyperglycemia | Oral cavity / dental	Hyperglycemia	Oral cavity / dental	1	True	False	oral site	0	False
-Hypertension | Oral cavity / dental	Hypertension	Oral cavity / dental	2	True	False	oral site	2	True
-Hypertriglyceridemia | Oral cavity / dental	Hypertriglyceridemia	Oral cavity / dental	1	True	False	oral site	0	False
-Hypertrophy | Oral cavity / dental	Hypertrophy	Oral cavity / dental	1	True	False	oral site	0	False
-Hypothyroidism | Oral cavity / dental	Hypothyroidism	Oral cavity / dental	1	True	False	oral site	0	False
-Illness severity status | Oral cavity / dental	Illness severity status	Oral cavity / dental	1	True	False	oral site	0	False
-Iron deficiency anemia | Oral cavity / dental	Iron deficiency anemia	Oral cavity / dental	1	True	False	oral site	0	False
-Irritable bowel syndrome | Oral cavity / dental	Irritable bowel syndrome	Oral cavity / dental	1	True	False	oral site	0	False
-Ischemic stroke | Oral cavity / dental	Ischemic stroke	Oral cavity / dental	1	True	False	oral site	0	False
-Juvenile idiopathic arthritis | Oral cavity / dental	Juvenile idiopathic arthritis	Oral cavity / dental	1	True	False	oral site	0	False
-Lifestyle measurement | Oral cavity / dental	Lifestyle measurement	Oral cavity / dental	1	True	False	oral site	0	False
-Lung cancer | Oral cavity / dental	Lung cancer	Oral cavity / dental	2	True	False	oral site	0	False
-Menopause | Oral cavity / dental	Menopause	Oral cavity / dental	1	True	False	oral site	0	False
-Mucositis | Oral cavity / dental	Mucositis	Oral cavity / dental	1	True	False	oral site	0	False
-Nasopharyngeal squamous cell carcinoma | Oral cavity / dental	Nasopharyngeal squamous cell carcinoma	Oral cavity / dental	1	True	False	oral site	0	False
-Nicotine dependence,Smoking behavior | Oral cavity / dental	Nicotine dependence,Smoking behavior	Oral cavity / dental	1	True	False	oral site	0	False
-Obesity | Oral cavity / dental	Obesity	Oral cavity / dental	2	True	False	oral site	0	False
-Open-angle glaucoma | Oral cavity / dental	Open-angle glaucoma	Oral cavity / dental	1	True	False	oral site	0	False
-Oral ulcer | Oral cavity / dental	Oral ulcer	Oral cavity / dental	1	True	False	oral site	0	False
-Osteoarthritis,Rheumatoid arthritis | Oral cavity / dental	Osteoarthritis,Rheumatoid arthritis	Oral cavity / dental	1	True	False	oral site	0	False
-Oxygen | Oral cavity / dental	Oxygen	Oral cavity / dental	1	True	False	oral site	0	False
-Pancreatic carcinoma | Oral cavity / dental	Pancreatic carcinoma	Oral cavity / dental	2	True	False	oral site	0	False
-Parkinson's disease | Oral cavity / dental	Parkinson's disease	Oral cavity / dental	2	True	False	oral site	3	True
-Peptic esophagitis | Oral cavity / dental	Peptic esophagitis	Oral cavity / dental	1	True	False	oral site	0	False
-Phenylketonuria | Oral cavity / dental	Phenylketonuria	Oral cavity / dental	1	True	False	oral site	0	False
-Physical activity | Oral cavity / dental	Physical activity	Oral cavity / dental	1	True	False	oral site	0	False
-Pituitary Gland Adenoma | Oral cavity / dental	Pituitary Gland Adenoma	Oral cavity / dental	1	True	False	oral site	0	False
-Population | Oral cavity / dental	Population	Oral cavity / dental	1	True	False	oral site	0	False
-Post-COVID-19 disorder | Oral cavity / dental	Post-COVID-19 disorder	Oral cavity / dental	1	True	False	oral site	0	False
-Pregnancy | Oral cavity / dental	Pregnancy	Oral cavity / dental	1	True	False	oral site	0	False
-Premature birth | Oral cavity / dental	Premature birth	Oral cavity / dental	1	True	False	oral site	0	False
-Primary bacterial infectious disease | Oral cavity / dental	Primary bacterial infectious disease	Oral cavity / dental	1	True	False	oral site	0	False
-Psoriasis | Oral cavity / dental	Psoriasis	Oral cavity / dental	2	True	False	oral site	2	True
-Respiratory tract infectious disease | Oral cavity / dental	Respiratory tract infectious disease	Oral cavity / dental	1	True	False	oral site	0	False
-Response to allogeneic hematopoietic stem cell transplant | Oral cavity / dental	Response to allogeneic hematopoietic stem cell transplant	Oral cavity / dental	2	True	False	oral site	0	False
-Response to combination chemotherapy | Oral cavity / dental	Response to combination chemotherapy	Oral cavity / dental	1	True	False	oral site	0	False
-Response to surgery | Oral cavity / dental	Response to surgery	Oral cavity / dental	1	True	False	oral site	0	False
-Rheumatoid arthritis | Oral cavity / dental	Rheumatoid arthritis	Oral cavity / dental	8	True	False	oral site	3	True
-Risk factor | Oral cavity / dental	Risk factor	Oral cavity / dental	1	True	False	oral site	0	False
-SARS coronavirus | Oral cavity / dental	SARS coronavirus	Oral cavity / dental	1	True	False	oral site	0	False
-Sensory perception of bitter taste | Oral cavity / dental	Sensory perception of bitter taste	Oral cavity / dental	1	True	False	oral site	0	False
-Sjogren syndrome | Oral cavity / dental	Sjogren syndrome	Oral cavity / dental	1	True	False	oral site	0	False
-Sleep Disorder | Oral cavity / dental	Sleep Disorder	Oral cavity / dental	1	True	False	oral site	0	False
-Smoking behavior | Oral cavity / dental	Smoking behavior	Oral cavity / dental	8	True	False	oral site	5	True
-Smoking behaviour measurement | Oral cavity / dental	Smoking behaviour measurement	Oral cavity / dental	1	True	False	oral site	0	False
-Smoking status measurement | Oral cavity / dental	Smoking status measurement	Oral cavity / dental	3	True	False	oral site	6	True
-Socioeconomic status | Oral cavity / dental	Socioeconomic status	Oral cavity / dental	1	True	False	oral site	0	False
-Specimen | Oral cavity / dental	Specimen	Oral cavity / dental	1	True	False	oral site	0	False
-Squamous cell carcinoma | Oral cavity / dental	Squamous cell carcinoma	Oral cavity / dental	5	True	False	oral site	4	True
-Systemic lupus erythematosus | Oral cavity / dental	Systemic lupus erythematosus	Oral cavity / dental	1	True	False	oral site	0	False
-Temporomandibular joint disorder | Oral cavity / dental	Temporomandibular joint disorder	Oral cavity / dental	1	True	False	oral site	0	False
-Time | Oral cavity / dental	Time	Oral cavity / dental	1	True	False	oral site	0	False
-Tongue neoplasm | Oral cavity / dental	Tongue neoplasm	Oral cavity / dental	1	True	False	oral site	0	False
-Treatment | Oral cavity / dental	Treatment	Oral cavity / dental	1	True	False	oral site	0	False
-Type II diabetes mellitus | Oral cavity / dental	Type II diabetes mellitus	Oral cavity / dental	5	True	False	oral site	4	True
-Viral load | Oral cavity / dental	Viral load	Oral cavity / dental	1	True	False	oral site	0	False
-Waist circumference | Oral cavity / dental	Waist circumference	Oral cavity / dental	1	True	False	oral site	0	False
+condition_body_site_pair	condition	body_site_group	max_trait_study_count	oral_site	oral_disease	inclusion_reason	supported_traits	finite_nonzero_displayed_traits	in_main_figure	main_figure_reason
+Aggressive periodontitis | Oral cavity / dental	Aggressive periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Chronic periodontitis | Oral cavity / dental	Chronic periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Dental caries | Oral cavity / dental	Dental caries	Oral cavity / dental	2	True	True	oral site and oral disease	1	1	True	finite non-zero displayed source effect
+Dental fluorosis | Oral cavity / dental	Dental fluorosis	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Gingivitis | Oral cavity / dental	Gingivitis	Oral cavity / dental	2	True	True	oral site and oral disease	3	3	True	finite non-zero displayed source effect
+Halitosis | Oral cavity / dental	Halitosis	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Oral cavity carcinoma | Oral cavity / dental	Oral cavity carcinoma	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Oral leukoplakia | Oral cavity / dental	Oral leukoplakia	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Oral mucositis | Oral cavity / dental	Oral mucositis	Oral cavity / dental	3	True	True	oral site and oral disease	4	4	True	finite non-zero displayed source effect
+Oral squamous cell carcinoma | Oral cavity / dental	Oral squamous cell carcinoma	Oral cavity / dental	6	True	True	oral site and oral disease	5	5	True	finite non-zero displayed source effect
+Periapical Periodontitis | Oral cavity / dental	Periapical Periodontitis	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Periodontitis | Oral cavity / dental	Periodontitis	Oral cavity / dental	7	True	True	oral site and oral disease	4	4	True	finite non-zero displayed source effect
+Periodontitis,Type II diabetes mellitus | Oral cavity / dental	Periodontitis,Type II diabetes mellitus	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Root caries | Oral cavity / dental	Root caries	Oral cavity / dental	1	True	True	oral site and oral disease	0	0	False	no finite non-zero displayed source effect
+Abnormality on pulmonary function testing | Oral cavity / dental	Abnormality on pulmonary function testing	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Acne | Oral cavity / dental	Acne	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Acute myeloid leukemia | Oral cavity / dental	Acute myeloid leukemia	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Age | Oral cavity / dental	Age	Oral cavity / dental	2	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Age,Human papilloma virus infection | Oral cavity / dental	Age,Human papilloma virus infection	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Age-related macular degeneration | Oral cavity / dental	Age-related macular degeneration	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Aging | Oral cavity / dental	Aging	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Air pollution | Oral cavity / dental	Air pollution	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Alcohol drinking | Oral cavity / dental	Alcohol drinking	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Antimicrobial agent | Oral cavity / dental	Antimicrobial agent	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Arthritis | Oral cavity / dental	Arthritis	Oral cavity / dental	4	True	False	oral site	2	2	True	finite non-zero displayed source effect
+Atopic asthma | Oral cavity / dental	Atopic asthma	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Behcet's syndrome | Oral cavity / dental	Behcet's syndrome	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Breast cancer | Oral cavity / dental	Breast cancer	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Breast ductal carcinoma in situ | Oral cavity / dental	Breast ductal carcinoma in situ	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+CD4-positive T-lymphocyte count | Oral cavity / dental	CD4-positive T-lymphocyte count	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+COVID-19 | Oral cavity / dental	COVID-19	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Cannabis use | Oral cavity / dental	Cannabis use	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Carotid artery intima media thickness | Oral cavity / dental	Carotid artery intima media thickness	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Chronic hepatitis B virus infection | Oral cavity / dental	Chronic hepatitis B virus infection	Oral cavity / dental	2	True	False	oral site	3	3	True	finite non-zero displayed source effect
+Chronic kidney disease | Oral cavity / dental	Chronic kidney disease	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Chronic otitis media | Oral cavity / dental	Chronic otitis media	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Coinfection,Age | Oral cavity / dental	Coinfection,Age	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Colorectal adenoma | Oral cavity / dental	Colorectal adenoma	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Colorectal cancer | Oral cavity / dental	Colorectal cancer	Oral cavity / dental	5	True	False	oral site	6	6	True	finite non-zero displayed source effect
+Diet | Oral cavity / dental	Diet	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Digestive system cancer | Oral cavity / dental	Digestive system cancer	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Down syndrome | Oral cavity / dental	Down syndrome	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Endometriosis | Oral cavity / dental	Endometriosis	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Esophageal cancer | Oral cavity / dental	Esophageal cancer	Oral cavity / dental	3	True	False	oral site	3	3	True	finite non-zero displayed source effect
+Esophageal squamous cell carcinoma | Oral cavity / dental	Esophageal squamous cell carcinoma	Oral cavity / dental	3	True	False	oral site	4	4	True	finite non-zero displayed source effect
+Ethnic group | Oral cavity / dental	Ethnic group	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Gastric cancer | Oral cavity / dental	Gastric cancer	Oral cavity / dental	4	True	False	oral site	4	4	True	finite non-zero displayed source effect
+Gestational diabetes | Oral cavity / dental	Gestational diabetes	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Glaucoma | Oral cavity / dental	Glaucoma	Oral cavity / dental	3	True	False	oral site	3	3	True	finite non-zero displayed source effect
+HDL cholesterol | Oral cavity / dental	HDL cholesterol	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+HIV infection | Oral cavity / dental	HIV infection	Oral cavity / dental	3	True	False	oral site	1	1	True	finite non-zero displayed source effect
+HIV infection,Human papilloma virus infection | Oral cavity / dental	HIV infection,Human papilloma virus infection	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+HIV infection,Oral candidiasis | Oral cavity / dental	HIV infection,Oral candidiasis	Oral cavity / dental	2	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Head and neck carcinoma | Oral cavity / dental	Head and neck carcinoma	Oral cavity / dental	2	True	False	oral site	1	1	True	finite non-zero displayed source effect
+Head and neck squamous cell carcinoma | Oral cavity / dental	Head and neck squamous cell carcinoma	Oral cavity / dental	3	True	False	oral site	4	4	True	finite non-zero displayed source effect
+Health study participation | Oral cavity / dental	Health study participation	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Health trait | Oral cavity / dental	Health trait	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Household income | Oral cavity / dental	Household income	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Human papilloma virus infection | Oral cavity / dental	Human papilloma virus infection	Oral cavity / dental	3	True	False	oral site	4	4	True	finite non-zero displayed source effect
+Human papillomavirus | Oral cavity / dental	Human papillomavirus	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Hyperglycemia | Oral cavity / dental	Hyperglycemia	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Hypertension | Oral cavity / dental	Hypertension	Oral cavity / dental	2	True	False	oral site	2	2	True	finite non-zero displayed source effect
+Hypertriglyceridemia | Oral cavity / dental	Hypertriglyceridemia	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Hypertrophy | Oral cavity / dental	Hypertrophy	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Hypothyroidism | Oral cavity / dental	Hypothyroidism	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Illness severity status | Oral cavity / dental	Illness severity status	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Iron deficiency anemia | Oral cavity / dental	Iron deficiency anemia	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Irritable bowel syndrome | Oral cavity / dental	Irritable bowel syndrome	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Ischemic stroke | Oral cavity / dental	Ischemic stroke	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Juvenile idiopathic arthritis | Oral cavity / dental	Juvenile idiopathic arthritis	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Lifestyle measurement | Oral cavity / dental	Lifestyle measurement	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Lung cancer | Oral cavity / dental	Lung cancer	Oral cavity / dental	2	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Menopause | Oral cavity / dental	Menopause	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Mucositis | Oral cavity / dental	Mucositis	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Nasopharyngeal squamous cell carcinoma | Oral cavity / dental	Nasopharyngeal squamous cell carcinoma	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Nicotine dependence,Smoking behavior | Oral cavity / dental	Nicotine dependence,Smoking behavior	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Obesity | Oral cavity / dental	Obesity	Oral cavity / dental	2	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Open-angle glaucoma | Oral cavity / dental	Open-angle glaucoma	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Oral ulcer | Oral cavity / dental	Oral ulcer	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Osteoarthritis,Rheumatoid arthritis | Oral cavity / dental	Osteoarthritis,Rheumatoid arthritis	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Oxygen | Oral cavity / dental	Oxygen	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Pancreatic carcinoma | Oral cavity / dental	Pancreatic carcinoma	Oral cavity / dental	2	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Parkinson's disease | Oral cavity / dental	Parkinson's disease	Oral cavity / dental	2	True	False	oral site	3	3	True	finite non-zero displayed source effect
+Peptic esophagitis | Oral cavity / dental	Peptic esophagitis	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Phenylketonuria | Oral cavity / dental	Phenylketonuria	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Physical activity | Oral cavity / dental	Physical activity	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Pituitary Gland Adenoma | Oral cavity / dental	Pituitary Gland Adenoma	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Population | Oral cavity / dental	Population	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Post-COVID-19 disorder | Oral cavity / dental	Post-COVID-19 disorder	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Pregnancy | Oral cavity / dental	Pregnancy	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Premature birth | Oral cavity / dental	Premature birth	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Primary bacterial infectious disease | Oral cavity / dental	Primary bacterial infectious disease	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Psoriasis | Oral cavity / dental	Psoriasis	Oral cavity / dental	2	True	False	oral site	2	2	True	finite non-zero displayed source effect
+Respiratory tract infectious disease | Oral cavity / dental	Respiratory tract infectious disease	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Response to allogeneic hematopoietic stem cell transplant | Oral cavity / dental	Response to allogeneic hematopoietic stem cell transplant	Oral cavity / dental	2	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Response to combination chemotherapy | Oral cavity / dental	Response to combination chemotherapy	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Response to surgery | Oral cavity / dental	Response to surgery	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Rheumatoid arthritis | Oral cavity / dental	Rheumatoid arthritis	Oral cavity / dental	8	True	False	oral site	3	3	True	finite non-zero displayed source effect
+Risk factor | Oral cavity / dental	Risk factor	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+SARS coronavirus | Oral cavity / dental	SARS coronavirus	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Sensory perception of bitter taste | Oral cavity / dental	Sensory perception of bitter taste	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Sjogren syndrome | Oral cavity / dental	Sjogren syndrome	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Sleep Disorder | Oral cavity / dental	Sleep Disorder	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Smoking behavior | Oral cavity / dental	Smoking behavior	Oral cavity / dental	8	True	False	oral site	5	5	True	finite non-zero displayed source effect
+Smoking behaviour measurement | Oral cavity / dental	Smoking behaviour measurement	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Smoking status measurement | Oral cavity / dental	Smoking status measurement	Oral cavity / dental	3	True	False	oral site	6	6	True	finite non-zero displayed source effect
+Socioeconomic status | Oral cavity / dental	Socioeconomic status	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Specimen | Oral cavity / dental	Specimen	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Squamous cell carcinoma | Oral cavity / dental	Squamous cell carcinoma	Oral cavity / dental	5	True	False	oral site	4	4	True	finite non-zero displayed source effect
+Systemic lupus erythematosus | Oral cavity / dental	Systemic lupus erythematosus	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Temporomandibular joint disorder | Oral cavity / dental	Temporomandibular joint disorder	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Time | Oral cavity / dental	Time	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Tongue neoplasm | Oral cavity / dental	Tongue neoplasm	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Treatment | Oral cavity / dental	Treatment	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Type II diabetes mellitus | Oral cavity / dental	Type II diabetes mellitus	Oral cavity / dental	5	True	False	oral site	4	4	True	finite non-zero displayed source effect
+Viral load | Oral cavity / dental	Viral load	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect
+Waist circumference | Oral cavity / dental	Waist circumference	Oral cavity / dental	1	True	False	oral site	0	0	False	no finite non-zero displayed source effect

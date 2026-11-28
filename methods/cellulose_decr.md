@@ -58,7 +58,7 @@ Two options change this:
 
 See #562 and #571. The pins describe the v6 contrast manifest, the `phenotype`-scope
 profile counts and the profile metadata table with each experiment's own labels (#555,
-#580), adopted with `--repin` in the final rerun at 511c891. The committed tables reproduce
+#580), first adopted with `--repin` at 511c891 and re-pinned at a01466daa46e. The committed tables reproduce
 from the pinned inputs at the provenance's `code_commit` (#642). A commit made before
 a re-pin still carries the old pins, so there, pass `--pinned-provenance` with the
 committed provenance file, or check out the commit that adds it; its analysis code is

@@ -9,31 +9,31 @@
   "completed_replicates": 10,
   "failed_replicates": 0,
   "invalid_replicates": 0,
-  "n_null_pvalues": 14309380,
+  "n_null_pvalues": 15437880,
   "complete_null_type_i": {
     "alpha": 0.05,
-    "empirical_rate": 0.015528555395132423,
-    "monte_carlo_se": 0.00023682715503354508,
+    "empirical_rate": 0.015229552244220063,
+    "monte_carlo_se": 0.00023019259516732327,
     "replicates": 10,
     "is_conservative": true,
-    "n_tests": 14309380
+    "n_tests": 15437880
   },
   "study_flip_null_type_i": null,
   "mixed_signal_fdr": {
     "target_q": 0.05,
-    "empirical_fdr": 0.3051282051282051,
-    "fdp_std": 0.29738800085915984,
+    "empirical_fdr": 0.0945945945945946,
+    "fdp_std": 0.299134373259171,
     "replicates": 10,
-    "mean_discoveries": 9.5,
-    "mean_false_discoveries": 6.1
+    "mean_discoveries": 4.6,
+    "mean_false_discoveries": 3.5
   },
   "mixed_signal_tpr": {
-    "empirical_tpr": 0.0015064244572441294,
-    "tpr_std": 0.00042804243822742397,
+    "empirical_tpr": 0.0005210800568450971,
+    "tpr_std": 0.00014979998390186544,
     "replicates": 10,
     "replicates_without_signal": 0,
-    "mean_true_signals": 2257.0,
-    "mean_true_discoveries": 3.4
+    "mean_true_signals": 2111.0,
+    "mean_true_discoveries": 1.1
   },
   "discovery_thresholds": [
     {
@@ -51,19 +51,19 @@
       },
       "mixed_signal_fdr": {
         "target_q": 0.05,
-        "empirical_fdr": 0.3051282051282051,
-        "fdp_std": 0.29738800085915984,
+        "empirical_fdr": 0.0945945945945946,
+        "fdp_std": 0.299134373259171,
         "replicates": 10,
-        "mean_discoveries": 9.5,
-        "mean_false_discoveries": 6.1
+        "mean_discoveries": 4.6,
+        "mean_false_discoveries": 3.5
       },
       "mixed_signal_tpr": {
-        "empirical_tpr": 0.0015064244572441294,
-        "tpr_std": 0.00042804243822742397,
+        "empirical_tpr": 0.0005210800568450971,
+        "tpr_std": 0.00014979998390186544,
         "replicates": 10,
         "replicates_without_signal": 0,
-        "mean_true_signals": 2257.0,
-        "mean_true_discoveries": 3.4
+        "mean_true_signals": 2111.0,
+        "mean_true_discoveries": 1.1
       }
     },
     {
@@ -81,18 +81,18 @@
       },
       "mixed_signal_fdr": {
         "target_q": 0.001,
-        "empirical_fdr": 0.1,
-        "fdp_std": 0.21081851067789198,
+        "empirical_fdr": 0.09,
+        "fdp_std": 0.28460498941515416,
         "replicates": 10,
-        "mean_discoveries": 1.2,
-        "mean_false_discoveries": 0.2
+        "mean_discoveries": 1.9,
+        "mean_false_discoveries": 0.9
       },
       "mixed_signal_tpr": {
-        "empirical_tpr": 0.00044306601683650863,
-        "tpr_std": 0.0,
+        "empirical_tpr": 0.000473709142586452,
+        "tpr_std": 5.714247181928225e-20,
         "replicates": 10,
         "replicates_without_signal": 0,
-        "mean_true_signals": 2257.0,
+        "mean_true_signals": 2111.0,
         "mean_true_discoveries": 1.0
       }
     }
@@ -104,20 +104,20 @@
     "max_fold": 0.5,
     "test_scope": "pairs_with_k_pop_gt_0_and_n_draws_gt_0",
     "m_universe": 5829,
-    "n_trait_columns": 317,
+    "n_trait_columns": 342,
     "trait_filter": "exclude_mediadive",
     "n_excluded_mediadive_columns": 2333,
     "correction_method": "BH",
     "correction_family": "all_testable_paired_profile_trait_pairs",
     "n_profiles": 4514,
-    "n_testable_traits": 317,
-    "n_tests": 1430938,
-    "n_input_shared_traits": 2650
+    "n_testable_traits": 342,
+    "n_tests": 1543788,
+    "n_input_shared_traits": 2675
   },
   "provenance": {
-    "started_utc": "2026-10-21T04:55:06.033983+00:00",
-    "finished_utc": "2026-10-21T04:56:12.670880+00:00",
-    "elapsed_seconds": 66.636,
+    "started_utc": "2026-11-25T04:34:34.575919+00:00",
+    "finished_utc": "2026-11-25T04:35:07.704158+00:00",
+    "elapsed_seconds": 33.128,
     "command_args": {
       "profiles": "data/derived/study_trait_profiles_ora_wide.tsv",
       "taxa_matrix": "data/derived/taxa_trait_matrix.tsv",
@@ -136,9 +136,9 @@
       "max_fold": 0.5,
       "signal_strength": 0.6,
       "spike_traits": [
+        "METPO:1000615",
         "METPO:1000872",
-        "METPO:1000699",
-        "METPO:1000667"
+        "METPO:1000699"
       ],
       "n_spike_traits": 3,
       "max_profiles": null,
@@ -147,21 +147,21 @@
     "inputs": {
       "profiles": {
         "path": "data/derived/study_trait_profiles_ora_wide.tsv",
-        "sha256": "37e7b032473e756388028b0b56f39e3ef3a839808b1dbbe25e39c4bf417333c1",
+        "sha256": "fdc09a47b17b3c8ca306496177bca1445e76bb857d51b52905d81b04d3a4107e",
         "rows_used": 5629
       },
       "taxa_matrix": {
         "path": "data/derived/taxa_trait_matrix.tsv",
-        "sha256": "f6de057663f3a3b0026579dfaf341745faac27df7f9c0afd6f5fa3e6aa034178",
+        "sha256": "6638849b04137de73cad556446a1de024765b2a64301f841386fd9ed7bf389af",
         "rows": 5829
       }
     },
     "output_dir": "data/derived/ora_calibration",
     "software": {
       "python": "3.11.5",
-      "numpy": "2.4.4",
-      "pandas": "3.0.6",
-      "platform": "macOS-26.5.1-arm64-arm-64bit"
+      "numpy": "2.4.6",
+      "pandas": "3.1.1",
+      "platform": "macOS-27.2.1-arm64-arm-64bit"
     },
     "requested_replicates": 10,
     "completed_replicates": 10,

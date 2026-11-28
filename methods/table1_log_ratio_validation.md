@@ -9,6 +9,14 @@ Three ratios have BY q <= 0.05 and none have BY q <= 0.001. These are explorator
 relative annotation comparisons conditional on positive counts. Both cutoffs
 are reported for transparency; no cutoff was selected to define a preferred set.
 
+> **Current-run crosswalk (2026-11-27, #2397).** This page is a dated snapshot of
+> the 2026-09-13 corpus. On the final-run inputs (`phenotype` scope, profile table
+> sha256 `dd20b920…`, code commit `83c90ae5`), the current
+> `data/derived/table1_composition/trait_log_ratio_stats.tsv` covers 932 studies
+> and 2,257 paired experiments. All 15 pairs are tested; 3 have BY q <= 0.05 and
+> none has BY q <= 0.001. The values in the tables below are the 2026-09-13
+> results, not current values.
+
 This snapshot compares Noel's original fraction-direction analysis with the
 paired log-ratio extension in [PR #181](https://github.com/CultureBotAI/microbial-trait-profiling/pull/181).
 The [three-framework comparison](three_arm_statistics.md) describes Jed's and
@@ -55,9 +63,11 @@ record to `corpus_identity.json` beside its outputs (#222).
 | Tested level | All body sites and conditions pooled; one contrast per study |
 
 The module hash moved after `b1f66ea` because the provenance block gained the
-shared-loader hash; the statistics are untouched. Rerunning on the same pinned
-inputs reproduces `trait_log_ratio_stats.tsv`, `trait_log_ratio_studies.tsv` and
-`trait_log_ratio_report.md` byte-identically, so the table below still holds.
+shared-loader hash; the statistics are untouched. On the 2026-09-13 inputs above,
+a rerun reproduced `trait_log_ratio_stats.tsv`, `trait_log_ratio_studies.tsv` and
+`trait_log_ratio_report.md` byte-identically. Those inputs are not the current
+corpus, so the table below does not hold for it; see the current-run crosswalk
+at the top of this page.
 
 Regenerate with the existing recipes on these input files:
 

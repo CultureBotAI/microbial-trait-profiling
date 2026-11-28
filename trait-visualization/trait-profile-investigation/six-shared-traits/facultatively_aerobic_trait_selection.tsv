@@ -1,2 +1,2 @@
-trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	9.253285415445715e-09	2.956321218992242e-11	0.1862991850074555	trait enriched in increased profiles
+trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction	paired_p_value_type	displayed_nominal_test_count	bh_family_size	bh_unfiltered_trait_count	paired_q_value_family
+METPO:1000608	facultative (aerobe or anaerobe)	facultatively_aerobic	#0072b2	1.8175742460169375e-10	5.377438597683247e-13	0.20115194031076986	trait enriched in increased profiles	nominal	1	338	342	pooled pair-level BH over 338 support/variance-selected traits (of 342 retained; select_stratum_traits support, positive-variance, and MediaDive-exclusion filter)

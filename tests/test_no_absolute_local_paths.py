@@ -106,7 +106,9 @@ REQUIRED_SCANNED: frozenset[str] = frozenset(
     }
 )
 
-# Regeneration follow-up issue for the four allowlisted provenance records.
+# Regeneration follow-up issue for the two allowlisted provenance records. The two
+# integrated-evidence records left the allowlist when the #2397 regeneration rewrote them
+# without local paths (#2433).
 PROVENANCE_REGENERATION_ISSUE = "#1664"
 
 
@@ -120,30 +122,12 @@ class AllowlistEntry:
 
 EXPECTED_ALLOWLIST_PATHS: frozenset[str] = frozenset(
     {
-        "data/derived/integrated_evidence/integrated_evidence_assessments.tsv",
-        "data/derived/integrated_evidence/integrated_evidence_provenance.json",
         "docs/reviews/2026-10-19-ora-provenance-refresh-audit.json",
         "docs/reviews/2026-10-19-ora-provenance-refresh-inputs.json",
     }
 )
 
 ALLOWLIST: dict[str, AllowlistEntry] = {
-    "data/derived/integrated_evidence/integrated_evidence_assessments.tsv": AllowlistEntry(
-        reason=(
-            "Run output recorded as written: the integrated-evidence assessment sidecar from "
-            "mtp.integrated_evidence._bound_assessment, with resolved source paths. Editing it "
-            "would misstate what the run wrote; regenerate under #1664."
-        ),
-        follow_up_issue=PROVENANCE_REGENERATION_ISSUE,
-    ),
-    "data/derived/integrated_evidence/integrated_evidence_provenance.json": AllowlistEntry(
-        reason=(
-            "Run output recorded as written: the integrated-evidence provenance record from "
-            "mtp.integrated_evidence.main, with resolved native_sources and assessment_status "
-            "source paths. Editing it would misstate what the run wrote; regenerate under #1664."
-        ),
-        follow_up_issue=PROVENANCE_REGENERATION_ISSUE,
-    ),
     "docs/reviews/2026-10-19-ora-provenance-refresh-audit.json": AllowlistEntry(
         reason=(
             "Audit output recorded as written by scripts/adhoc/issue720_audit_ora_refresh.py, "
@@ -177,8 +161,6 @@ SYNTHETIC_FIXTURE_FILES: dict[str, str] = {
 # Hits per family that each exempt file holds today (#1678). Counts, not hashes, so that
 # detect-secrets has nothing to flag; any added or removed local path changes a count.
 EXPECTED_EXEMPT_HIT_COUNTS: dict[str, dict[str, int]] = {
-    "data/derived/integrated_evidence/integrated_evidence_assessments.tsv": {"user_home": 2},
-    "data/derived/integrated_evidence/integrated_evidence_provenance.json": {"user_home": 8},
     "docs/reviews/2026-10-19-ora-provenance-refresh-audit.json": {"temp_root": 13, "user_home": 8},
     "docs/reviews/2026-10-19-ora-provenance-refresh-inputs.json": {"temp_root": 12, "user_home": 8},
     "tests/test_output_roots.py": {"temp_root": 3},
@@ -424,7 +406,7 @@ def _unexpected_hits(
 ) -> dict[str, list[Hit]]:
     """Return hits of `families` outside the exemptions.
 
-    `ALLOWLIST` exempts the four provenance records from both families.
+    `ALLOWLIST` exempts the two provenance records from both families.
     `SYNTHETIC_FIXTURE_FILES` exempts only temp-root hits, never user-home hits.
     `EXPECTED_EXEMPT_HIT_COUNTS` pins how many hits each exempt file may hold.
     """
@@ -801,10 +783,10 @@ def test_every_tracked_path_is_scanned_or_skipped_by_name() -> None:
     assert not text_as_binary, f"Text files skipped for a binary suffix: {text_as_binary}"
 
 
-def test_allowlist_has_exact_four_provenance_records_with_reason_and_issue() -> None:
-    """Allowlist must hold only the four provenance records, each with reason and issue."""
+def test_allowlist_has_exact_two_provenance_records_with_reason_and_issue() -> None:
+    """Allowlist must hold only the two provenance records, each with reason and issue."""
     assert set(ALLOWLIST) == EXPECTED_ALLOWLIST_PATHS
-    assert len(ALLOWLIST) == 4
+    assert len(ALLOWLIST) == 2
     hits = _tracked_hits()
     for rel_path, entry in ALLOWLIST.items():
         assert rel_path in _tracked_corpus().scanned, f"Allowlisted file not scanned: {rel_path}"

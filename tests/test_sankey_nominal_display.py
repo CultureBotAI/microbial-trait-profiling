@@ -555,9 +555,12 @@ def test_sankey_methods_paragraph_names_the_selection_q_family() -> None:
     normalized = " ".join(methods.split())
     assert "`retained_trait_count` after the" not in normalized
     assert (
-        "using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the "
-        "340 support/variance-selected traits that `select_stratum_traits` kept in that "
-        "table (its `correction_family_size`, of 344 retained non-MediaDive traits in "
+        "using `q_value <= 0.001`; in the regenerated table eight traits pass that rule, "
+        "the six plus slightly halophilic (`METPO:1000625`, q = 0.00043) and xylan "
+        "catabolic process (`METPO:2000103|GO:0045493`, q = 0.00074), which are not added "
+        "to the set. Here `q_value` is the pooled pair-level BH q over the "
+        "338 support/variance-selected traits that `select_stratum_traits` kept in that "
+        "table (its `correction_family_size`, of 342 retained non-MediaDive traits in "
         "`retained_trait_count` before the `select_stratum_traits` support-bounds, "
         "positive-variance, and MediaDive-exclusion filter; the selection keeps traits "
         "annotated in at least 6 and at most 95% of profiles with positive composition "

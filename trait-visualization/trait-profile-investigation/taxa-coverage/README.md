@@ -44,19 +44,30 @@ for downstream statistical tests. No recorded annotation is not biological absen
 
 | Distribution | Median | Q1 | Q3 | Mean |
 | --- | ---: | ---: | ---: | ---: |
-| Traits per mapped profile | 156 | 60 | 387 | 290.912 |
+| Traits per mapped profile | 154 | 60 | 385 | 289.668 |
 | Mapped taxa per mapped profile | 4 | 2 | 9 | 7.76887 |
-| Traits per reported taxon | 8 | 0 | 20 | 21.6143 |
-| Traits per trait-bearing taxon | 14 | 7 | 32 | 31.3586 |
+| Traits per reported taxon | 8 | 0 | 20 | 21.4514 |
+| Traits per trait-bearing taxon | 14 | 7 | 32 | 31.1222 |
 
 Annotation counts can include traits aggregated from descendants; they do not measure
 physiology, patient-level abundance or activity. Suggested zero-trait diagnoses are
 heuristics for review, not verified causes or permission to propagate annotations downward.
+Taxonomic placement uses NCBITaxon subclass-of ancestry in the supplied
+`--taxonomy-edges` file. This input is hashed independently; its identity as the
+matrix's producing KG is not verified. The top-zero table records taxonomy_group,
+taxonomy_status and JSON taxonomy_root_ids. Missing paths are explicit; conflicting
+recognized roots or reachable cycles reject the run before outputs are written.
+Ontology rank-class edges are skipped during organism-ancestry projection
+(counted in parser_audit as taxonomy_rank_class_edge_records_skipped, while
+excluded_records is always 0: the strict KG edge parser raises on a malformed record instead of dropping it).
+Explicit unresolved labels and slash composites retain their distinct diagnoses.
+Eukaryotic and viral ancestry precedes Candidatus/cultivation heuristics;
+alias suggestions do not transfer ancestry or traits.
 
 Regenerate from this repository's root with the same input paths and scope:
 
 ```sh
-just taxa-coverage --strain-rollup phenotype --taxa data/derived/bugsigdb_taxa.tsv --matrix data/derived/taxa_trait_matrix.tsv --profiles data/derived/study_trait_profiles_wide.tsv --experiments data/derived/experiments.tsv --output-dir trait-visualization/trait-profile-investigation/taxa-coverage --kg-provenance data/kg-microbe/provenance.json --raw-dump data/raw/full_dump.csv
+just taxa-coverage --strain-rollup phenotype --taxa data/derived/bugsigdb_taxa.tsv --matrix data/derived/taxa_trait_matrix.tsv --profiles data/derived/study_trait_profiles_wide.tsv --experiments data/derived/experiments.tsv --taxonomy-edges data/kg-microbe/merged-kg_edges.tsv --output-dir trait-visualization/trait-profile-investigation/taxa-coverage --kg-provenance data/kg-microbe/provenance.json --raw-dump data/raw/full_dump.csv
 ```
 The five TSVs, this README, and generated figures are inventoried by SHA-256 in `provenance.json`.
 `profile_coverage_by_rank.tsv` uses `pct_of_mapped_profiles`, whose denominator is the
