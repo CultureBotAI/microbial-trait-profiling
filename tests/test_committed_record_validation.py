@@ -54,6 +54,18 @@ def test_unknown_fixture_is_not_silently_excluded(helper: ModuleType) -> None:
     assert helper.classification("tests/fixtures/unreviewed.xyz")["kind"] == "unknown"
 
 
+def test_tier1_2_subject_control_taxa_coverage_provenance_is_visual_json(
+    helper: ModuleType,
+) -> None:
+    name = (
+        "trait-visualization/trait-profile-investigation/"
+        "taxa-coverage-tier1-2-subject-controls/provenance.json"
+    )
+    mapping = helper.classification(name)
+    assert mapping["kind"] == "noninstance"
+    assert mapping["format"] == "committed visualization JSON"
+
+
 def test_archive_root_generation_projects_one_producer_inventory(helper: ModuleType) -> None:
     name = "tests/fixtures/trait_key_policy/historical_union_core.tar.gz!generation.json"
     mapping = helper.classification(name)
